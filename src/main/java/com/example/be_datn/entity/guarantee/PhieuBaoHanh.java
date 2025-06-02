@@ -1,5 +1,6 @@
 package com.example.be_datn.entity.guarantee;
 
+import com.example.be_datn.entity.product.ImelDaBan;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;

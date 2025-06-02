@@ -1,5 +1,6 @@
 package com.example.be_datn.entity.discount;
 
+import com.example.be_datn.entity.product.ChiTietSanPham;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

@@ -1,5 +1,7 @@
 package com.example.be_datn.entity.order;
 
+import com.example.be_datn.entity.product.ChiTietSanPham;
+import com.example.be_datn.entity.product.ImelDaBan;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

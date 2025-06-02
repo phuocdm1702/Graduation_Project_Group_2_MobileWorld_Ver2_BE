@@ -16,7 +16,7 @@ public class HoaDonResponse {
     private Integer id;
     private String ma;
     private String tenKhachHang;
-    private String soDienThoaiKH;
+    private String soDienThoaiKhachHang;
     private BigDecimal tongTienSauGiam;
     private BigDecimal phiVanChuyen;
     private Date ngayTao;

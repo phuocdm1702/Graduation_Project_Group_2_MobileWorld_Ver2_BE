@@ -1,12 +1,12 @@
 package com.example.be_datn.controller.account;
 
+import com.example.be_datn.dto.account.response.NhanVienResponse;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.service.account.NhanVienServices;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -23,10 +23,20 @@ public class NhanVienController {
         this.nhanVienServices = nhanVienServices;
     }
 
-
+    //Lay du lieu
     @GetMapping("/home")
     public List<NhanVien> getallNhanVien() {
         return nhanVienServices.getall();
     }
 
+    //add nhan vien
+    @PostMapping("/add")
+    public ResponseEntity<?> addNhanVien(@RequestBody NhanVienResponse nhanVienResponse) {
+        try {
+            NhanVien nhanVien = nhanVienServices.addNhanVien(nhanVienResponse);
+            return new ResponseEntity<>(nhanVien, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Lỗi khi thêm nhân viên: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
 }

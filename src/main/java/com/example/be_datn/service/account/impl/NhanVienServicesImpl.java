@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.text.Normalizer;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class NhanVienServicesImpl implements NhanVienServices {
@@ -128,4 +129,60 @@ public class NhanVienServicesImpl implements NhanVienServices {
         return nhanVienRepository.save(nhanVien);
     }
 
+    //xoa mem nv
+    public boolean delete(Integer id) {
+        Optional<NhanVien> optionalKH = nhanVienRepository.findById(id);
+        if (optionalKH.isPresent()) {
+            NhanVien kh = optionalKH.get();
+            kh.setDeleted(true);
+            nhanVienRepository.save(kh);
+            return true;
+        }
+        return false;
+    }
+
+    //update nhan vien
+    public NhanVien updateNhanVien(Integer id, NhanVienResponse nhanVienResponse) {
+        return nhanVienRepository.findById(id)
+                .map(existingNhanVien -> {
+
+                    TaiKhoan taiKhoan = taiKhoanRepository.findById(existingNhanVien.getIdTaiKhoan().getId())
+                            .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại!"));
+                    taiKhoanRepository.findByEmail(nhanVienResponse.getEmail()).ifPresent(tk ->{
+                        if (!tk.getId().equals(taiKhoan.getId())){
+                            throw new RuntimeException("Email đã được sử dụng bởi tài khoản khác!");
+                        }
+                    });
+                    List<TaiKhoan> taiKhoanList = taiKhoanRepository.findBySoDienThoai(nhanVienResponse.getSoDienThoai());
+                    for (TaiKhoan tk : taiKhoanList) {
+                        if (!tk.getId().equals(taiKhoan.getId())) {
+                            throw new RuntimeException("Số điện thoại đã được sử dụng bởi tài khoản khác!");
+                        }
+                    }
+                    //tk
+                    taiKhoan.setEmail(nhanVienResponse.getEmail());
+                    taiKhoan.setSoDienThoai(nhanVienResponse.getSoDienThoai());
+                    taiKhoan.setDeleted(nhanVienResponse.getGioiTinh());
+                    taiKhoanRepository.save(taiKhoan);
+                    //khachhang
+                    existingNhanVien.setTenNhanVien(nhanVienResponse.getTenNhanVien());
+                    existingNhanVien.setNgaySinh(nhanVienResponse.getNgaySinh());
+                    existingNhanVien.setThanhPho(nhanVienResponse.getThanhPho());
+                    existingNhanVien.setQuan(nhanVienResponse.getQuan());
+                    existingNhanVien.setPhuong(nhanVienResponse.getPhuong());
+                    existingNhanVien.setAnhNhanVien(nhanVienResponse.getAnhNhanVien());
+                    existingNhanVien.setDiaChiCuThe(nhanVienResponse.getDiaChiCuThe());
+                    existingNhanVien.setCccd(nhanVienResponse.getCccd());
+                    existingNhanVien.setUpdatedAt(new Date().toInstant());
+                    existingNhanVien.setUpdatedBy(1);
+
+                    return nhanVienRepository.save(existingNhanVien);
+                }).orElseThrow(() -> new RuntimeException("Nhân viên không tồn tại!"));
+    }
+
+    //detail nhan vien
+    @Override
+    public Optional<NhanVien> findById(Integer id) {
+        return nhanVienRepository.findById(id);
+    }
 }

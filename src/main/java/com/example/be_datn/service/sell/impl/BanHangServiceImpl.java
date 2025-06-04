@@ -3,7 +3,6 @@ package com.example.be_datn.service.sell.impl;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
-import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.inventory.GioHang;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.repository.account.KhachHangRepository;
@@ -19,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
+import java.util.Random;
 
 @Service
 public class BanHangServiceImpl implements BanHangService {
@@ -38,6 +37,31 @@ public class BanHangServiceImpl implements BanHangService {
     @Autowired
     private HoaDonRepository hoaDonRepository;
 
+    private String generatedRandomCode() {
+        String character = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Random random = new Random();
+        StringBuilder code = new StringBuilder(6);
+        for(int i = 0; i < 6; i++) {
+            code.append(character.charAt(random.nextInt(character.length())));
+        }
+        return "HD_" + code.toString();
+    }
+
+    @Override
+    public List<HoaDon> getHDCho() {
+        return hoaDonRepository.findAllHDNotConfirm();
+    }
+
+    @Override
+    @Transactional
+    public void huyHDCho(Integer idHD) {
+        if(!hoaDonRepository.existsById(idHD)) {
+            throw new RuntimeException("Không tìm thấy hoá đơn có id: " + idHD);
+        }
+        gioHangRepository.deleteByIdHoaDon(idHD);
+        hoaDonRepository.deleteById(idHD);
+    }
+
     @Override
     @Transactional
     public HoaDonDTO taoHD() {
@@ -52,11 +76,20 @@ public class BanHangServiceImpl implements BanHangService {
         GioHang gioHang = gioHangRepository.findTopByIdKhachHangIdAndDeletedFalseOrderByIdDesc(khachHangId)
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại cho khách hàng ID 1"));
 
+//        List<ChiTietGioHang> chiTietGioHangs = chiTietGioHangRepository.findByIdGioHangIdAndDeletedFalse(gioHang.getId());
+//        if (chiTietGioHangs.isEmpty()) {
+//            throw new RuntimeException("Giỏ hàng trống, không thể tạo hóa đơn");
+//        }
+
+        // Tính tổng tiền sản phẩm
+//        BigDecimal tienSanPham = chiTietGioHangs.stream()
+//                .map(ChiTietGioHang::getTongTien)
+//                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         HoaDon hoaDon = HoaDon.builder()
                 .idKhachHang(khachHang)
                 .idNhanVien(nhanVien)
-                .ma("HD_" + UUID.randomUUID().toString())
+                .ma(generatedRandomCode())
                 .tienSanPham(BigDecimal.ZERO)
                 .loaiDon("Tại quầy")
                 .phiVanChuyen(BigDecimal.ZERO)
@@ -68,8 +101,8 @@ public class BanHangServiceImpl implements BanHangService {
                 .soDienThoaiKhachHang("N/A")
                 .email("N/A")
                 .ngayTao(new Date())
-                .trangThai((short) 0) // Trạng thái chờ
-                .deleted(false)
+                .trangThai((short) 0)
+                .deleted(true)
                 .createdAt(new Date())
                 .createdBy(nhanVienId)
                 .build();

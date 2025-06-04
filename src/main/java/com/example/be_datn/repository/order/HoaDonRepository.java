@@ -10,4 +10,7 @@ import java.util.List;
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer>, HoaDonCustomRepository {
     @Query("SELECT hd FROM HoaDon hd WHERE hd.trangThai = 0")
     List<HoaDon> findAllHDNotConfirm();
+
+    @Query("SELECT COUNT(h) > 0 FROM HoaDon h WHERE h.id = :id")
+    boolean existsById(Integer id);
 }

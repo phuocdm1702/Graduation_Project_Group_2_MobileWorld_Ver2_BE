@@ -1,11 +1,10 @@
 package com.example.be_datn.service.account.impl;
 
 import com.example.be_datn.entity.account.KhachHang;
-import com.example.be_datn.repository.account.impl.KhachHangRepository;
+import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.service.account.KhachHangServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
 import java.util.stream.Collectors;

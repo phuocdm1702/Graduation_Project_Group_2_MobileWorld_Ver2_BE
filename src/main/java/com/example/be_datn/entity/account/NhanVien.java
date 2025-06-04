@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.Instant;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -16,6 +17,7 @@ import java.time.Instant;
 @Table(name = "nhan_vien")
 public class NhanVien {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
@@ -34,7 +36,7 @@ public class NhanVien {
     private String tenNhanVien;
 
     @Column(name = "ngay_sinh")
-    private Instant ngaySinh;
+    private Date ngaySinh;
 
     @Size(max = 255)
     @Nationalized

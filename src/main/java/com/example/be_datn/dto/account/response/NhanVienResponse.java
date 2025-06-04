@@ -1,5 +1,6 @@
 package com.example.be_datn.dto.account.response;
 
+import java.time.Instant;
 import java.util.Date;
 
 public class NhanVienResponse {
@@ -15,9 +16,14 @@ public class NhanVienResponse {
     private String cccd;
     private String email;
     private String soDienThoai;
+    private String matKhau;
+    private String tenDangNhap;
+    private Boolean gioiTinh;
+
 
     public NhanVienResponse() {
     }
+
 
     public String getMa() {
         return ma;
@@ -105,5 +111,29 @@ public class NhanVienResponse {
 
     public void setSoDienThoai(String soDienThoai) {
         this.soDienThoai = soDienThoai;
+    }
+
+    public String getMatKhau() {
+        return matKhau;
+    }
+
+    public void setMatKhau(String matKhau) {
+        this.matKhau = matKhau;
+    }
+
+    public String getTenDangNhap() {
+        return tenDangNhap;
+    }
+
+    public void setTenDangNhap(String tenDangNhap) {
+        this.tenDangNhap = tenDangNhap;
+    }
+
+    public Boolean getGioiTinh() {
+        return gioiTinh;
+    }
+
+    public void setGioiTinh(Boolean gioiTinh) {
+        this.gioiTinh = gioiTinh;
     }
 }

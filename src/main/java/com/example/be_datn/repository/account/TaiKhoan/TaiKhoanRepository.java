@@ -16,4 +16,5 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Integer>,TaiK
     String findMaxMaTK();
 
     boolean existsByMa(String ma);
+
 }

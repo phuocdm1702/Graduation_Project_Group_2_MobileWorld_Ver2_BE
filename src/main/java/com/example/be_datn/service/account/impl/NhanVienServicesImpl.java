@@ -14,6 +14,7 @@ import java.text.Normalizer;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class NhanVienServicesImpl implements NhanVienServices {
@@ -184,5 +185,48 @@ public class NhanVienServicesImpl implements NhanVienServices {
     @Override
     public Optional<NhanVien> findById(Integer id) {
         return nhanVienRepository.findById(id);
+    }
+
+    //search nhan vien
+    @Override
+    public List<NhanVien> searchNhanVien(String keyword, String status) {
+        List<NhanVien> allNhanViens = nhanVienRepository.findAll();
+
+        // Lọc theo trạng thái
+        if (status != null && !status.isEmpty()) {
+            boolean isDeleted = status.equals("da-nghi");
+            allNhanViens = allNhanViens.stream()
+                    .filter(nv -> nv.getDeleted() == isDeleted)
+                    .collect(Collectors.toList());
+        }
+
+        //neu k co du lieu thi se tra lai du lieu ma da loc theo combobox
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return allNhanViens;
+        }
+
+        //search ra cac du lieu (ma,ten,email,sdt)
+        String keywordLower = keyword.toLowerCase();
+        return allNhanViens.stream()
+                .filter(nv ->
+                        (nv.getMa() != null && nv.getMa().toLowerCase().trim().contains(keywordLower)) ||
+                                (nv.getTenNhanVien() != null && nv.getTenNhanVien().toLowerCase().trim().contains(keywordLower)) ||
+                                (nv.getIdTaiKhoan() != null && nv.getIdTaiKhoan().getEmail() != null
+                                        && nv.getIdTaiKhoan().getEmail().toLowerCase().trim().contains(keywordLower)) ||
+                                (nv.getIdTaiKhoan() != null && nv.getIdTaiKhoan().getSoDienThoai() != null
+                                        && nv.getIdTaiKhoan().getSoDienThoai().toLowerCase().trim().contains(keywordLower))
+                )
+                .collect(Collectors.toList());
+    }
+
+    //thay doi trang thai
+    public NhanVien trangthai(Integer id) {
+        Optional<NhanVien> optionalNhanVien = nhanVienRepository.findById(id);
+        if (!optionalNhanVien.isPresent()) {
+            throw new RuntimeException("Không tìm thấy khách hàng với ID: " + id);
+        }
+        NhanVien nv = optionalNhanVien.get();
+        nv.setDeleted(!nv.getDeleted());
+        return nhanVienRepository.save(nv);
     }
 }

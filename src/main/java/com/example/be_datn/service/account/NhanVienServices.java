@@ -15,4 +15,8 @@ public interface NhanVienServices {
     NhanVien updateNhanVien(Integer id, NhanVienResponse nhanVienResponse);
 
     Optional<NhanVien> findById(Integer id);
+
+    List<NhanVien> searchNhanVien(String keyword, String status);
+
+    NhanVien trangthai(Integer id);
 }

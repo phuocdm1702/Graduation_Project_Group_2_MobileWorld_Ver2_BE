@@ -3,11 +3,10 @@ package com.example.be_datn.service.sell.impl;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
-import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.inventory.GioHang;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.repository.account.KhachHangRepository;
-import com.example.be_datn.repository.account.NhanVienRepository;
+import com.example.be_datn.repository.account.impl.NhanVienRepository;
 import com.example.be_datn.repository.inventory.GioHangChiTietRepository;
 import com.example.be_datn.repository.inventory.GioHangRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 @Service

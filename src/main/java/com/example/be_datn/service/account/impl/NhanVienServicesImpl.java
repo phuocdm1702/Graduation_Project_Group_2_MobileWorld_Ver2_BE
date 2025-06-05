@@ -1,5 +1,6 @@
 package com.example.be_datn.service.account.impl;
 
+import com.example.be_datn.common.Email.EmailServices;
 import com.example.be_datn.dto.account.response.NhanVienResponse;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.account.QuyenHan;
@@ -21,11 +22,13 @@ public class NhanVienServicesImpl implements NhanVienServices {
 
     private final NhanVienRepository nhanVienRepository;
     private final TaiKhoanRepository taiKhoanRepository;
+    private final EmailServices emailServices;
 
     @Autowired
-    public NhanVienServicesImpl(NhanVienRepository nhanVienRepository, TaiKhoanRepository taiKhoanRepository) {
+    public NhanVienServicesImpl(NhanVienRepository nhanVienRepository, TaiKhoanRepository taiKhoanRepository, EmailServices emailServices) {
         this.nhanVienRepository = nhanVienRepository;
         this.taiKhoanRepository = taiKhoanRepository;
+        this.emailServices = emailServices;
     }
 
     @Override
@@ -96,8 +99,8 @@ public class NhanVienServicesImpl implements NhanVienServices {
         taiKhoan.setDeleted(nhanVienResponse.getGioiTinh());
         taiKhoan.setTenDangNhap(nhanVienResponse.getTenDangNhap());
 
-//        String randomPassword = emailServices.generateRandomPassword(8);
-//        taiKhoan.setMatKhau(randomPassword);
+        String randomPassword = emailServices.generateRandomPassword(8);
+        taiKhoan.setMatKhau(randomPassword);
 
         taiKhoan = taiKhoanRepository.save(taiKhoan);
 
@@ -117,16 +120,16 @@ public class NhanVienServicesImpl implements NhanVienServices {
         nhanVien.setAnhNhanVien(nhanVienResponse.getAnhNhanVien());
         nhanVien.setDeleted(false);
 
-//        try {
-//            emailServices.sendWelcomeEmail(
-//                    nhanVienResponse.getEmail(),
-//                    nhanVienResponse.getTenNhanVien(),
-//                    nhanVienResponse.getEmail(),
-//                    randomPassword
-//            );
-//        } catch (Exception e) {
-//            System.err.println("Lỗi gửi email: " + e.getMessage());
-//        }
+        try {
+            emailServices.sendWelcomeEmail(
+                    nhanVienResponse.getEmail(),
+                    nhanVienResponse.getTenNhanVien(),
+                    nhanVienResponse.getEmail(),
+                    randomPassword
+            );
+        } catch (Exception e) {
+            System.err.println("Lỗi gửi email: " + e.getMessage());
+        }
         return nhanVienRepository.save(nhanVien);
     }
 

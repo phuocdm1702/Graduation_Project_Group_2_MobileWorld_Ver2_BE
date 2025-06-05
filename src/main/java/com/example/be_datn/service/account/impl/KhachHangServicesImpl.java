@@ -1,5 +1,6 @@
 package com.example.be_datn.service.account.impl;
 
+import com.example.be_datn.common.Email.EmailServices;
 import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.entity.account.DiaChiKhachHang;
 import com.example.be_datn.entity.account.KhachHang;
@@ -26,12 +27,15 @@ public class KhachHangServicesImpl implements KhachHangServices {
     private final KhachHangRepository khachHangRepository;
     private final TaiKhoanRepository taiKhoanRepository;
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
+    private final EmailServices emailServices;
+
 
     @Autowired
-    public KhachHangServicesImpl(KhachHangRepository khachHangRepository, TaiKhoanRepository taiKhoanRepository, DiaChiKhachHangRepository diaChiKhachHangRepository) {
+    public KhachHangServicesImpl(KhachHangRepository khachHangRepository, TaiKhoanRepository taiKhoanRepository, DiaChiKhachHangRepository diaChiKhachHangRepository, EmailServices emailServices) {
         this.khachHangRepository = khachHangRepository;
         this.taiKhoanRepository = taiKhoanRepository;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
+        this.emailServices = emailServices;
     }
 
     //hien thi du lieu
@@ -115,8 +119,8 @@ public class KhachHangServicesImpl implements KhachHangServices {
         taiKhoan.setIdQuyenHan(quyenHan);
         taiKhoan.setDeleted(khachHangResponse.getGioiTinh());
 
-//        String randomPassword = emailServices.generateRandomPassword(8);
-//        taiKhoan.setMatKhau(randomPassword);
+        String randomPassword = emailServices.generateRandomPassword(8);
+        taiKhoan.setMatKhau(randomPassword);
 
         taiKhoan = taiKhoanRepository.save(taiKhoan);
 
@@ -145,17 +149,17 @@ public class KhachHangServicesImpl implements KhachHangServices {
         diaChiKhachHangRepository.save(dchi);
 
         kh.setIdDiaChiKhachHang(dchi); // Gán lại địa chỉ khách hàng vào khachHang
-//        try {
-//            emailServices.EmailKH(
-//                    khachHangDTO.getEmail(),
-//                    khachHangDTO.getTenKH(),
-//                    khachHangDTO.getEmail(),
-//                    randomPassword
-//            );
-//        } catch (Exception e) {
-//            // Log lỗi nếu cần, nhưng không làm ảnh hưởng quá trình thêm nhân viên
-//            System.err.println("Lỗi gửi email: " + e.getMessage());
-//        }
+        try {
+            emailServices.EmailKH(
+                    khachHangResponse.getEmail(),
+                    khachHangResponse.getTenKH(),
+                    khachHangResponse.getEmail(),
+                    randomPassword
+            );
+        } catch (Exception e) {
+            // Log lỗi nếu cần, nhưng không làm ảnh hưởng quá trình thêm nhân viên
+            System.err.println("Lỗi gửi email: " + e.getMessage());
+        }
         return khachHangRepository.save(kh);
     }
 

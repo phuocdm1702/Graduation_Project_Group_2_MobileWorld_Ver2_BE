@@ -1,6 +1,7 @@
 package com.example.be_datn.repository.inventory;
 
 import com.example.be_datn.entity.inventory.GioHang;
+import com.example.be_datn.entity.order.HoaDon;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -9,6 +10,8 @@ import java.util.Optional;
 
 public interface GioHangRepository extends JpaRepository<GioHang, Integer>, GioHangCustomRepository {
     Optional<GioHang> findTopByIdKhachHangIdAndDeletedFalseOrderByIdDesc(Integer idKhachHang);
+
+    Optional<GioHang> findByIdHoaDon(HoaDon hoaDon);
 
     @Modifying
     @Query("DELETE FROM GioHang g WHERE g.idHoaDon.id = :idHoaDon")

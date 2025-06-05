@@ -1,6 +1,7 @@
 package com.example.be_datn.controller.sell;
 
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
+import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.service.sell.BanHangService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,11 @@ public class BanHangController {
     public ResponseEntity<Void> huyHDCho(@PathVariable Integer idHD) throws Exception {
         banHangService.huyHDCho(idHD);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/hoa-don/{idHD}/gio-hang")
+    public ResponseEntity<List<ChiTietGioHang>> getChiTietGioHang(@PathVariable Integer idHD) {
+        return ResponseEntity.ok(banHangService.getSanPhamGioHang(idHD));
     }
 
 }

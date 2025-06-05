@@ -4,9 +4,24 @@ import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.entity.account.KhachHang;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface KhachHangServices {
     List<KhachHang> getall();
 
     KhachHang addKhachHang(KhachHangResponse khachHangResponse);
+
+    KhachHang addKhachHangBH(KhachHangResponse khachHangResponse);
+
+    Optional<KhachHang> findByIdKH(Integer id);
+
+    KhachHang updateKhachHang(Integer id, KhachHangResponse khachHangResponse);
+
+    KhachHang updateDchi(Integer id, KhachHangResponse khachHangDTO);
+
+    boolean delete(Integer id);
+
+    KhachHang trangthai(Integer id);
+
+    List<KhachHang> searchKhachHang(String keyword);
 }

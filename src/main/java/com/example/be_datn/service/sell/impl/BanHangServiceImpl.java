@@ -3,10 +3,11 @@ package com.example.be_datn.service.sell.impl;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
+import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.inventory.GioHang;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.repository.account.KhachHangRepository;
-import com.example.be_datn.repository.account.NhanVienRepository;
+import com.example.be_datn.repository.account.impl.NhanVienRepository;
 import com.example.be_datn.repository.inventory.GioHangChiTietRepository;
 import com.example.be_datn.repository.inventory.GioHangRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+
 
 @Service
 public class BanHangServiceImpl implements BanHangService {
@@ -47,6 +49,26 @@ public class BanHangServiceImpl implements BanHangService {
         return "HD_" + code.toString();
     }
 
+    private String generatedRandomCodeGH() {
+        String character = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Random random = new Random();
+        StringBuilder code = new StringBuilder(8);
+        for(int i = 0; i < 8; i++) {
+            code.append(character.charAt(random.nextInt(character.length())));
+        }
+        return "GH_" + code.toString();
+    }
+
+    private String generatedRandomCodeCTGH() {
+        String character = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Random random = new Random();
+        StringBuilder code = new StringBuilder(8);
+        for(int i = 0; i < 8; i++) {
+            code.append(character.charAt(random.nextInt(character.length())));
+        }
+        return "CTGH_" + code.toString();
+    }
+
     @Override
     public List<HoaDon> getHDCho() {
         return hoaDonRepository.findAllHDNotConfirm();
@@ -58,7 +80,6 @@ public class BanHangServiceImpl implements BanHangService {
         if(!hoaDonRepository.existsById(idHD)) {
             throw new RuntimeException("Không tìm thấy hoá đơn có id: " + idHD);
         }
-        gioHangRepository.deleteByIdHoaDon(idHD);
         hoaDonRepository.deleteById(idHD);
     }
 
@@ -72,9 +93,6 @@ public class BanHangServiceImpl implements BanHangService {
         Integer nhanVienId = 1;
         NhanVien nhanVien = nhanVienRepository.findById(nhanVienId)
                 .orElseThrow(() -> new RuntimeException("Nhân viên với ID 1 không tồn tại"));
-
-        GioHang gioHang = gioHangRepository.findTopByIdKhachHangIdAndDeletedFalseOrderByIdDesc(khachHangId)
-                .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại cho khách hàng ID 1"));
 
 //        List<ChiTietGioHang> chiTietGioHangs = chiTietGioHangRepository.findByIdGioHangIdAndDeletedFalse(gioHang.getId());
 //        if (chiTietGioHangs.isEmpty()) {
@@ -108,9 +126,31 @@ public class BanHangServiceImpl implements BanHangService {
                 .build();
 
         hoaDon = hoaDonRepository.save(hoaDon);
-        gioHang.setIdHoaDon(hoaDon);
-        gioHangRepository.save(gioHang);
+
+        GioHang gh = GioHang.builder()
+                .idKhachHang(khachHang)
+                .ma(generatedRandomCodeGH())
+                .deleted(false)
+                .idHoaDon(hoaDon)
+                .build();
+        gioHangRepository.save(gh);
+
         return mapToHoaDonDto(hoaDon);
+    }
+
+    @Override
+    public List<ChiTietGioHang> getSanPhamGioHang(Integer idHoaDon) {
+        HoaDon hoaDon = hoaDonRepository.findById(idHoaDon)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hoá đơn có id: " + idHoaDon));
+
+        if(hoaDon.getTrangThai() != 0) {
+            throw new RuntimeException("Hoá đơn có id: " + idHoaDon + "không phải hoá đơn chờ!");
+        }
+
+        GioHang gioHang = gioHangRepository.findByIdHoaDon(hoaDon)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng có id hoá đơn: " + idHoaDon));
+
+        return chiTietGioHangRepository.findByIdGioHangIdAndDeletedFalse(gioHang.getId());
     }
 
     private HoaDonDTO mapToHoaDonDto(HoaDon hoaDon) {

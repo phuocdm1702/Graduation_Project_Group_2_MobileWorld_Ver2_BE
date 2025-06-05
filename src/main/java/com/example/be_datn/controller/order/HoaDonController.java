@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.sql.Timestamp;
+
 @RestController
 @RequestMapping("/api")
 public class HoaDonController {
@@ -22,9 +24,22 @@ public class HoaDonController {
     public ResponseEntity<Page<HoaDonResponse>> getHoaDon(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size
-
     ) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(hoaDonService.getHoaDon(pageable));
+    }
+
+    @GetMapping("/home")
+    public ResponseEntity<Page<HoaDonResponse>> getAllHoaDon(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long minAmount,
+            @RequestParam(required = false) Long maxAmount,
+            @RequestParam(required = false) Timestamp startDate,
+            @RequestParam(required = false) Timestamp endDate,
+            @RequestParam(required = false) Short trangThai) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai,pageable));
     }
 }

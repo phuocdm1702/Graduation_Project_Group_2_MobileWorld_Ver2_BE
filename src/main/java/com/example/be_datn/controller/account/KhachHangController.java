@@ -2,6 +2,7 @@ package com.example.be_datn.controller.account;
 
 import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.entity.account.KhachHang;
+import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.service.account.KhachHangServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -110,5 +111,17 @@ public class KhachHangController {
     public ResponseEntity<List<KhachHang>> searchKhachHang(@RequestParam("query") String keyword) {
         List<KhachHang> result = khachHangServices.searchKhachHang(keyword);
         return ResponseEntity.ok(result);
+    }
+
+    //import khach hang ra excel
+    @PostMapping("/import")
+    public ResponseEntity<String> importKhachHangFromExcel(@RequestBody List<KhachHangResponse> khachHangResponses) {
+        try {
+            khachHangServices.importKhachHangFromExcel(khachHangResponses);
+            return ResponseEntity.ok("Nhập dữ liệu từ Excel thành công!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        }
     }
 }

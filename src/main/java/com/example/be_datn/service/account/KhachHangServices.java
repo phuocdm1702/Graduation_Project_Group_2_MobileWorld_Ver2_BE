@@ -24,4 +24,6 @@ public interface KhachHangServices {
     KhachHang trangthai(Integer id);
 
     List<KhachHang> searchKhachHang(String keyword);
+
+    void importKhachHangFromExcel(List<KhachHangResponse> khachHangResponses);
 }

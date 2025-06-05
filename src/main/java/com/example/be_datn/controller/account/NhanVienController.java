@@ -94,4 +94,16 @@ public class NhanVienController {
         }
     }
 
+    //import ra excel
+    @PostMapping("/import")
+    public ResponseEntity<String> importNhanVien(@RequestBody List<NhanVien> nhanViens) {
+        try {
+            nhanVienServices.importNhanVien(nhanViens);
+            return ResponseEntity.ok("Nhập dữ liệu từ Excel thành công!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Nhập dữ liệu từ Excel thất bại: " + e.getMessage());
+        }
+    }
+
 }

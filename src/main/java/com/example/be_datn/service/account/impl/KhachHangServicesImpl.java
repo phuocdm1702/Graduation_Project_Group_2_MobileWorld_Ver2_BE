@@ -291,4 +291,100 @@ public class KhachHangServicesImpl implements KhachHangServices {
         }
         return khachHangRepository.searchBh(keyword.trim());
     }
+
+    //import khach hang ra excel
+    @Override
+    public void importKhachHangFromExcel(List<KhachHangResponse> khachHangResponses) {
+        for (KhachHangResponse dto : khachHangResponses) {
+            if (dto.getMa() == null || dto.getTenKH() == null || dto.getEmail() == null) {
+                throw new IllegalArgumentException("Mã, tên hoặc email khách hàng không được để trống!");
+            }
+
+            Optional<KhachHang> existingKhachHang = khachHangRepository.findByMa(dto.getMa());
+            if (existingKhachHang.isPresent()) {
+                // Cập nhật khách hàng hiện có
+                KhachHang existing = existingKhachHang.get();
+                existing.setTen(dto.getTenKH());
+                existing.setDeleted(dto.getGioiTinh() != null ? dto.getGioiTinh() : false);
+                existing.setUpdatedAt(new Date());
+
+                if (existing.getIdTaiKhoan() != null) {
+                    TaiKhoan taiKhoan = taiKhoanRepository.findById(existing.getIdTaiKhoan().getId())
+                            .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại!"));
+                    taiKhoan.setEmail(dto.getEmail());
+                    taiKhoan.setSoDienThoai(dto.getSoDienThoai());
+                    taiKhoan.setTenDangNhap(dto.getUserName() != null ? dto.getUserName() : dto.getEmail());
+                    taiKhoanRepository.save(taiKhoan);
+                }
+
+                List<DiaChiKhachHang> existingAddresses = diaChiKhachHangRepository.findByIdKhachHang(existing);
+                if (!existingAddresses.isEmpty()) {
+                    DiaChiKhachHang defaultAddress = existingAddresses.stream()
+                            .filter(DiaChiKhachHang::getMacDinh)
+                            .findFirst()
+                            .orElse(existingAddresses.get(0));
+                    defaultAddress.setDiaChiCuThe(dto.getDiaChiCuThe() != null ? dto.getDiaChiCuThe() : "Chưa có dữ liệu");
+                    defaultAddress.setThanhPho(dto.getThanhPho() != null ? dto.getThanhPho() : "N/A");
+                    defaultAddress.setQuan(dto.getQuan() != null ? dto.getQuan() : "N/A");
+                    defaultAddress.setPhuong(dto.getPhuong() != null ? dto.getPhuong() : "N/A");
+                    diaChiKhachHangRepository.save(defaultAddress);
+                } else {
+                    DiaChiKhachHang diaChi = new DiaChiKhachHang();
+                    diaChi.setMa(MaDiaChiKH());
+                    diaChi.setIdKhachHang(existing);
+                    diaChi.setDiaChiCuThe(dto.getDiaChiCuThe() != null ? dto.getDiaChiCuThe() : "Chưa có dữ liệu");
+                    diaChi.setThanhPho(dto.getThanhPho() != null ? dto.getThanhPho() : "N/A");
+                    diaChi.setQuan(dto.getQuan() != null ? dto.getQuan() : "N/A");
+                    diaChi.setPhuong(dto.getPhuong() != null ? dto.getPhuong() : "N/A");
+                    diaChi.setMacDinh(true);
+                    diaChiKhachHangRepository.save(diaChi);
+                    existing.setIdDiaChiKhachHang(diaChi);
+                }
+
+                khachHangRepository.save(existing);
+            } else {
+                // Thêm khách hàng mới
+                QuyenHan quyenHan = new QuyenHan();
+                quyenHan.setId(2);
+
+                TaiKhoan taiKhoan = new TaiKhoan();
+                taiKhoan.setMa(MaTaiKhoan());
+                taiKhoan.setEmail(dto.getEmail());
+                taiKhoan.setSoDienThoai(dto.getSoDienThoai());
+                taiKhoan.setTenDangNhap(dto.getUserName() != null ? dto.getUserName() : dto.getEmail());
+                taiKhoan.setIdQuyenHan(quyenHan);
+                taiKhoan.setDeleted(dto.getGioiTinh() != null ? dto.getGioiTinh() : false);
+
+                String randomPassword = emailServices.generateRandomPassword(8);
+                taiKhoan.setMatKhau(randomPassword);
+                taiKhoan = taiKhoanRepository.save(taiKhoan);
+
+                KhachHang khachHang = new KhachHang();
+                khachHang.setMa(dto.getMa());
+                khachHang.setIdTaiKhoan(taiKhoan);
+                khachHang.setTen(dto.getTenKH());
+                khachHang.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : new Date());
+                khachHang.setDeleted(dto.getGioiTinh() != null ? dto.getGioiTinh() : false);
+                khachHang = khachHangRepository.save(khachHang);
+
+                DiaChiKhachHang diaChi = new DiaChiKhachHang();
+                diaChi.setMa(MaDiaChiKH());
+                diaChi.setIdKhachHang(khachHang);
+                diaChi.setDiaChiCuThe(dto.getDiaChiCuThe() != null ? dto.getDiaChiCuThe() : "Chưa có dữ liệu");
+                diaChi.setThanhPho(dto.getThanhPho() != null ? dto.getThanhPho() : "N/A");
+                diaChi.setQuan(dto.getQuan() != null ? dto.getQuan() : "N/A");
+                diaChi.setPhuong(dto.getPhuong() != null ? dto.getPhuong() : "N/A");
+                diaChi.setMacDinh(true);
+                diaChiKhachHangRepository.save(diaChi);
+                khachHang.setIdDiaChiKhachHang(diaChi);
+                khachHangRepository.save(khachHang);
+
+                try {
+                    emailServices.sendWelcomeEmail(taiKhoan.getEmail(), khachHang.getTen(), taiKhoan.getEmail(), randomPassword);
+                } catch (Exception e) {
+                    System.err.println("Lỗi gửi email: " + e.getMessage());
+                }
+            }
+        }
+    }
 }

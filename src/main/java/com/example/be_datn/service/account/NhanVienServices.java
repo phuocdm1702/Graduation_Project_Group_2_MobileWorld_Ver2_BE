@@ -19,4 +19,6 @@ public interface NhanVienServices {
     List<NhanVien> searchNhanVien(String keyword, String status);
 
     NhanVien trangthai(Integer id);
+
+    void importNhanVien(List<NhanVien> nhanViens);
 }

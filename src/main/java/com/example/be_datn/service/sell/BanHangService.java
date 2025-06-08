@@ -1,8 +1,10 @@
 package com.example.be_datn.service.sell;
 
+import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
+import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
-import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.order.HoaDon;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -11,7 +13,15 @@ public interface BanHangService {
 
     void huyHDCho(Integer idHD) throws Exception;
 
-    HoaDonDTO taoHD();
 
-    List<ChiTietGioHang> getSanPhamGioHang(Integer idHoaDon);
+    @Transactional
+    HoaDonDTO taoHD(Integer khachHangId);
+
+    GioHangDTO themVaoGH(Integer idHD, ChiTietGioHangDTO chiTietGioHangDTO);
+
+    GioHangDTO layGioHang(Integer idHD);
+
+    HoaDonDTO layChiTietHoaDonCho(Integer idHD);
+
+    void xoaGioHang(Integer idHD);
 }

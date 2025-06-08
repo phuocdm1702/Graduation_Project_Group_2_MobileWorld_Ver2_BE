@@ -1,5 +1,7 @@
 package com.example.be_datn.controller.sell;
 
+import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
+import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.order.HoaDon;
@@ -21,9 +23,10 @@ public class BanHangController {
         return ResponseEntity.ok(banHangService.getHDCho());
     }
 
-    @PostMapping("/add/hd-cho")
-    public ResponseEntity<HoaDonDTO> addHD() {
-        return ResponseEntity.ok(banHangService.taoHD());
+    @PostMapping("/add/tao-hd-cho")
+    public ResponseEntity<HoaDonDTO> addHD(@RequestParam(required = false) Integer khachHangId) {
+        Integer idKhachHangToUse = (khachHangId != null) ? khachHangId : 1;
+        return ResponseEntity.ok(banHangService.taoHD(idKhachHangToUse));
     }
 
     @DeleteMapping("/xoa-hd-cho/{idHD}")
@@ -32,9 +35,23 @@ public class BanHangController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/hoa-don/{idHD}/gio-hang")
-    public ResponseEntity<List<ChiTietGioHang>> getChiTietGioHang(@PathVariable Integer idHD) {
-        return ResponseEntity.ok(banHangService.getSanPhamGioHang(idHD));
+    @PostMapping("/add/gio-hang")
+    public ResponseEntity<GioHangDTO> addGioHang(@RequestParam Integer idHD, @RequestBody ChiTietGioHangDTO chiTietGioHangDTO) {
+        GioHangDTO gh = banHangService.themVaoGH(idHD, chiTietGioHangDTO);
+        return ResponseEntity.ok(gh);
     }
+
+    @GetMapping("/gio-hang/data/{idHD}")
+    public ResponseEntity<GioHangDTO> getGioHang(@PathVariable Integer idHD) {
+        GioHangDTO gh = banHangService.layGioHang(idHD);
+        return ResponseEntity.ok(gh);
+    }
+
+    @GetMapping("/gio-hang-chi-tiet/data/{idHD}")
+    public ResponseEntity<HoaDonDTO> getHoaDonDetail(@PathVariable Integer idHD) {
+        HoaDonDTO hd = banHangService.layChiTietHoaDonCho(idHD);
+        return ResponseEntity.ok(hd);
+    }
+
 
 }

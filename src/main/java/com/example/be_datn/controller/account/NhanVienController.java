@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:3000/", "http://localhost:8080"})
+@CrossOrigin(origins = {"http://localhost:5173"})
 @RequestMapping("/nhan-vien")
 
 public class NhanVienController {

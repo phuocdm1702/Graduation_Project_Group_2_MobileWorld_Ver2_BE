@@ -1,5 +1,6 @@
 package com.example.be_datn.repository.order;
 
+import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.entity.order.HoaDon;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,27 +14,73 @@ import java.util.List;
 
 @Repository
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
-    //Phân trang hóa đơn
-    @Query("SELECT h FROM HoaDon h ORDER BY h.id DESC")
-    Page<HoaDon> getHoaDon(Pageable pageable);
+//    //Phân trang hóa đơn
+//    @Query("SELECT h FROM HoaDon h ORDER BY h.id DESC")
+//    Page<HoaDon> getHoaDon(Pageable pageable);
+//
+//    //Phân trang bộ lọc hóa đơn
+//    @Query("""
+//            SELECT hd FROM HoaDon hd
+//            WHERE (
+//            :keyword IS NULL OR hd.ma LIKE %:keyword%
+//            OR hd.idNhanVien.tenNhanVien LIKE %:keyword%
+//            OR hd.tenKhachHang LIKE %:keyword%
+//            OR hd.soDienThoaiKhachHang LIKE %:keyword%
+//            )
+//            AND (:minAmount IS NULL OR hd.tongTienSauGiam >= :minAmount)
+//            AND (:maxAmount IS NULL OR hd.tongTienSauGiam <= :maxAmount)
+//            AND (:startDate IS NULL OR hd.loaiDon >= :startDate)
+//            AND (:endDate IS NULL OR hd.loaiDon <= :endDate)
+//            AND (:trangThai IS NULL OR hd.loaiDon = :trangThai)
+//            ORDER BY hd.id DESC
+//            """)
+//    Page<HoaDon> getHoaDonAndFilters(
+//            @Param("keyword") String keyword,
+//            @Param("minAmount") Long minAmount,
+//            @Param("maxAmount") Long maxAmount,
+//            @Param("startDate") Timestamp startDate,
+//            @Param("endDate") Timestamp endDate,
+//            @Param("trangThai") Short trangThai,
+//            Pageable pageable);
 
-    //Phân trang bộ lọc hóa đơn
     @Query("""
-            SELECT hd FROM HoaDon hd
-            WHERE (
-            :keyword IS NULL OR hd.ma LIKE %:keyword%
-            OR hd.idNhanVien.tenNhanVien LIKE %:keyword%
-            OR hd.tenKhachHang LIKE %:keyword%
-            OR hd.soDienThoaiKhachHang LIKE %:keyword%
+            SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
+                h.id, 
+                h.ma, 
+                h.tenKhachHang,
+                h.soDienThoaiKhachHang, 
+                h.tongTienSauGiam,
+                h.phiVanChuyen, 
+                h.ngayTao, 
+                h.loaiDon, 
+                h.trangThai
             )
-            AND (:minAmount IS NULL OR hd.tongTienSauGiam >= :minAmount)
-            AND (:maxAmount IS NULL OR hd.tongTienSauGiam <= :maxAmount)
-            AND (:startDate IS NULL OR hd.loaiDon >= :startDate)
-            AND (:endDate IS NULL OR hd.loaiDon <= :endDate)
-            AND (:trangThai IS NULL OR hd.loaiDon = :trangThai)
-            ORDER BY hd.id DESC
+            FROM HoaDon h
+            WHERE h.loaiDon = :loaiDon
+            ORDER BY h.id DESC
             """)
-    Page<HoaDon> getHoaDonAndFilters(
+    Page<HoaDonResponse> getHoaDon(@Param("loaiDon") String loaiDon, Pageable pageable);
+
+    @Query("""
+            SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
+                h.id, h.ma, h.tenKhachHang, h.soDienThoaiKhachHang, h.tongTienSauGiam,
+                h.phiVanChuyen, h.ngayTao, h.loaiDon, h.trangThai
+            )
+            FROM HoaDon h
+            WHERE (
+                :keyword IS NULL 
+                OR h.ma LIKE %:keyword%
+                OR h.tenKhachHang LIKE %:keyword%
+                OR h.soDienThoaiKhachHang LIKE %:keyword%
+            )
+            AND (:minAmount IS NULL OR h.tongTienSauGiam >= :minAmount)
+            AND (:maxAmount IS NULL OR h.tongTienSauGiam <= :maxAmount)
+            AND (:startDate IS NULL OR h.ngayTao >= :startDate)
+            AND (:endDate IS NULL OR h.ngayTao <= :endDate)
+            AND (:trangThai IS NULL OR h.trangThai = :trangThai)
+            ORDER BY h.id DESC
+            """)
+    Page<HoaDonResponse> getHoaDonAndFilters(
             @Param("keyword") String keyword,
             @Param("minAmount") Long minAmount,
             @Param("maxAmount") Long maxAmount,

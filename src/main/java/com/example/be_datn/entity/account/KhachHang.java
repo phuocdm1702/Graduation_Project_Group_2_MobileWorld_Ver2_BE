@@ -39,7 +39,7 @@ public class KhachHang {
     private Short gioiTinh;
 
     @Column(name = "ngay_sinh")
-    private Instant ngaySinh;
+    private Date ngaySinh;
 
     @Column(name = "deleted")
     private Boolean deleted;

@@ -2,7 +2,7 @@ package com.example.be_datn.service.discount.impl;
 
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.repository.discount.PhieuGiamGiaCaNhanRepository;
-import com.example.be_datn.service.discount.PhieuGiamCaNhanService;
+import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class PhieuGiamGiaCaNhanServiceImpl implements PhieuGiamCaNhanService {
+public class PhieuGiamGiaCaNhanServiceImpl implements PhieuGiamGiaCaNhanService {
 
     @Autowired
     private PhieuGiamGiaCaNhanRepository phieuGiamGiaCaNhanRepository;

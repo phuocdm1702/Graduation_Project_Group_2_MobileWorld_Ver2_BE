@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-public interface PhieuGiamCaNhanService {
+public interface PhieuGiamGiaCaNhanService {
     List<PhieuGiamGiaCaNhan> getPGGCN();
 
     @Transactional

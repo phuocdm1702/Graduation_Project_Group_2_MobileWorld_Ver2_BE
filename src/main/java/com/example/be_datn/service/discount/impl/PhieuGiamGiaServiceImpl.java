@@ -5,7 +5,7 @@ import com.example.be_datn.dto.discount.request.PhieuGiamGiaRequest;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
-import com.example.be_datn.repository.account.KhachHangRepository;
+import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.discount.PhieuGiamGiaCaNhanRepository;
 import com.example.be_datn.repository.discount.PhieuGiamGiaRepository;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;

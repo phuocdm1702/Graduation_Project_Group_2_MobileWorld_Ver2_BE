@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:3000/", "http://localhost:8080"})
+@CrossOrigin(origins = {"http://localhost:5173"})
 @RequestMapping("/nhan-vien")
 
 public class NhanVienController {
@@ -69,6 +69,41 @@ public class NhanVienController {
             return ResponseEntity.ok(nhanVien.get());
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Nhân viên không tồn tại");
+    }
+    //search nhan vien
+    @GetMapping("/search")
+    public ResponseEntity<List<NhanVien>> searchNhanVien(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) String status) {
+        try {
+            List<NhanVien> nhanViens = nhanVienServices.searchNhanVien(keyword, status);
+            return ResponseEntity.ok(nhanViens);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    //doi trang thai nhanh di-lam?nghi-lam
+    @PutMapping("/trang-thai/{id}")
+    public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
+        try {
+            NhanVien updateNhanVien = nhanVienServices.trangthai(id);
+            String message = updateNhanVien.getDeleted() ? "Đã cho nghỉ làm!" : "Đã cho đi làm lại!";
+            return ResponseEntity.ok(message);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(400).body(null);
+        }
+    }
+
+    //import ra excel
+    @PostMapping("/import")
+    public ResponseEntity<String> importNhanVien(@RequestBody List<NhanVien> nhanViens) {
+        try {
+            nhanVienServices.importNhanVien(nhanViens);
+            return ResponseEntity.ok("Nhập dữ liệu từ Excel thành công!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Nhập dữ liệu từ Excel thất bại: " + e.getMessage());
+        }
     }
 
 }

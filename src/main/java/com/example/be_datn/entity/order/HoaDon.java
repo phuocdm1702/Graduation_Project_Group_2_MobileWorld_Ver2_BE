@@ -3,6 +3,7 @@ package com.example.be_datn.entity.order;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
+import com.example.be_datn.entity.pay.HinhThucThanhToan;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -13,6 +14,7 @@ import org.hibernate.annotations.Nationalized;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -23,96 +25,80 @@ import java.util.Date;
 @Table(name = "hoa_don")
 public class HoaDon {
     @Id
-    @Column(name = "id", nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
+    @OneToMany(mappedBy = "hoaDon")
+    private List<HoaDonChiTiet> chiTietHoaDon;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_khach_hang", nullable = false)
+    @OneToMany(mappedBy = "hoaDon")
+    private List<LichSuHoaDon> lichSuHoaDon;
+
+    @OneToMany(mappedBy = "hoaDon")
+    private List<HinhThucThanhToan> hinhThucThanhToan;
+
+    @ManyToOne
+    @JoinColumn(name = "id_khach_hang", referencedColumnName = "id")
     private KhachHang idKhachHang;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_nhan_vien", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "id_nhan_vien",referencedColumnName = "id")
     private NhanVien idNhanVien;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_phieu_giam_gia")
+    @ManyToOne
+    @JoinColumn(name = "id_phieu_giam_gia", referencedColumnName = "id")
     private PhieuGiamGia idPhieuGiamGia;
 
-    @Size(max = 255)
-    @Nationalized
-    @Column(name = "ma")
+    @Column(name = "ma", nullable = false)
     private String ma;
 
-    @NotNull
     @Column(name = "tien_san_pham", nullable = false, precision = 18, scale = 2)
     private BigDecimal tienSanPham;
 
-    @Size(max = 255)
-    @NotNull
-    @Nationalized
-    @Column(name = "loai_don", nullable = false)
+
+    @Column(name = "loai_don")
     private String loaiDon;
 
-    @NotNull
-    @ColumnDefault("0")
-    @Column(name = "phi_van_chuyen", nullable = false, precision = 18, scale = 2)
+
+    @Column(name = "phi_van_chuyen")
     private BigDecimal phiVanChuyen;
 
-    @Column(name = "tong_tien", precision = 38, scale = 2)
+
+    @Column(name = "tong_tien")
     private BigDecimal tongTien;
 
-    @Column(name = "tong_tien_sau_giam", precision = 38, scale = 2)
+    @Column(name = "tong_tien_sau_giam")
     private BigDecimal tongTienSauGiam;
 
-    @Size(max = 255)
-    @Nationalized
     @Column(name = "ghi_chu")
     private String ghiChu;
 
-    @Size(max = 255)
-    @NotNull
-    @Nationalized
-    @Column(name = "ten_khach_hang", nullable = false)
+    @Column(name = "ten_khach_hang")
     private String tenKhachHang;
 
-    @Size(max = 255)
-    @NotNull
-    @Nationalized
-    @Column(name = "dia_chi_khach_hang", nullable = false)
+    @Column(name = "dia_chi_khach_hang")
     private String diaChiKhachHang;
 
-    @Size(max = 255)
     @Column(name = "so_dien_thoai_khach_hang")
     private String soDienThoaiKhachHang;
 
-    @Size(max = 255)
-    @Nationalized
     @Column(name = "email")
     private String email;
 
-    @NotNull
-    @ColumnDefault("getdate()")
-    @Column(name = "ngay_tao", nullable = false)
+    @Column(name = "ngay_tao")
     private Date ngayTao;
 
     @Column(name = "ngay_thanh_toan")
-    private Instant ngayThanhToan;
+    private Date ngayThanhToan;
 
-    @ColumnDefault("1")
-    @Column(name = "trang_thai", columnDefinition = "tinyint not null")
+    @Column(name = "trang_thai")
     private Short trangThai;
 
-    @NotNull
-    @ColumnDefault("0")
-    @Column(name = "deleted", nullable = false)
+
+    @Column(name = "deleted")
     private Boolean deleted = false;
 
-    @NotNull
-    @ColumnDefault("getdate()")
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     private Date createdAt;
 
     @Column(name = "created_by")
@@ -123,5 +109,4 @@ public class HoaDon {
 
     @Column(name = "updated_by")
     private Integer updatedBy;
-
 }

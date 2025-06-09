@@ -20,33 +20,34 @@ import java.math.BigDecimal;
 @Table(name = "hoa_don_chi_tiet")
 public class HoaDonChiTiet {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_hoa_don", nullable = false)
-    private HoaDon idHoaDon;
+    @ManyToOne
+    @JoinColumn(name = "id_hoa_don",referencedColumnName = "id")
+    private HoaDon hoaDon;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_chi_tiet_san_pham", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "id_chi_tiet_san_pham", referencedColumnName = "id")
     private ChiTietSanPham idChiTietSanPham;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_imel_da_ban")
+    @ManyToOne
+    @JoinColumn(name = "id_imel_da_ban", referencedColumnName = "id")
     private ImelDaBan idImelDaBan;
 
     @Size(max = 255)
+    @NotNull
     @Nationalized
-    @Column(name = "ma")
+    @Column(name = "ma", nullable = false)
     private String ma;
 
     @NotNull
     @Column(name = "gia", nullable = false, precision = 18, scale = 2)
     private BigDecimal gia;
 
-    @ColumnDefault("1")
     @Column(name = "trang_thai", columnDefinition = "tinyint not null")
     private Short trangThai;
 
@@ -56,7 +57,6 @@ public class HoaDonChiTiet {
     private String ghiChu;
 
     @NotNull
-    @ColumnDefault("0")
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
 

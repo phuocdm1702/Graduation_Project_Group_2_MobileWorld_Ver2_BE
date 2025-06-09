@@ -15,12 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.sql.Timestamp;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/hoa-don")
 public class HoaDonController {
     @Autowired
     private HoaDonService hoaDonService;
 
-    @GetMapping("/hoa-don")
+    @GetMapping("/home/trang-thai")
     public ResponseEntity<Page<HoaDonResponse>> getHoaDon(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size

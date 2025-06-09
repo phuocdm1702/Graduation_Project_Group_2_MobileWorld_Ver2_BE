@@ -47,6 +47,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
                 h.id, 
                 h.ma, 
+                h.idNhanVien.ma,
                 h.tenKhachHang,
                 h.soDienThoaiKhachHang, 
                 h.tongTienSauGiam,
@@ -63,8 +64,16 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     @Query("""
             SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
-                h.id, h.ma, h.tenKhachHang, h.soDienThoaiKhachHang, h.tongTienSauGiam,
-                h.phiVanChuyen, h.ngayTao, h.loaiDon, h.trangThai
+                h.id, 
+                h.ma, 
+                h.idNhanVien.ma,
+                h.tenKhachHang, 
+                h.soDienThoaiKhachHang, 
+                h.tongTienSauGiam,
+                h.phiVanChuyen, 
+                h.ngayTao, 
+                h.loaiDon, 
+                h.trangThai
             )
             FROM HoaDon h
             WHERE (

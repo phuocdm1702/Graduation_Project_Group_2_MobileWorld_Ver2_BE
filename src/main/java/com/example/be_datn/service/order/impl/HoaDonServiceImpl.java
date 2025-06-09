@@ -49,9 +49,21 @@ public class HoaDonServiceImpl implements HoaDonService {
 
     @Override
     @Cacheable(value = "hoaDonFiltered", key = "#keyword + '-' + #minAmount + '-' + #maxAmount + '-' + #startDate + '-' + #endDate + '-' + #trangThai + '-' + #pageable")
-    public Page<HoaDonResponse> getHoaDonAndFilters(String keyword, Long minAmount, Long maxAmount,
-                                                    Timestamp startDate, Timestamp endDate, Short trangThai, Pageable pageable) {
-        Page<HoaDonResponse> result = hoaDonRepository.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, pageable);
+    public Page<HoaDonResponse> getHoaDonAndFilters(String keyword,
+                                                    Long minAmount,
+                                                    Long maxAmount,
+                                                    Timestamp startDate,
+                                                    Timestamp endDate,
+                                                    Short trangThai,
+                                                    Pageable pageable) {
+        Page<HoaDonResponse> result = hoaDonRepository.getHoaDonAndFilters(
+                keyword,
+                minAmount,
+                maxAmount,
+                startDate,
+                endDate,
+                trangThai,
+                pageable);
         return result;
     }
 }

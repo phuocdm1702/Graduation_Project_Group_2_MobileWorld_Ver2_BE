@@ -2,6 +2,7 @@ package com.example.be_datn.dto.sell.request;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 public class HoaDonDTO {
     private Integer id;
@@ -22,10 +23,12 @@ public class HoaDonDTO {
     private Date ngayTao;
     private Short trangThai;
 
+    private List<ChiTietGioHangDTO> chiTietGioHangDTOS;
+
     public HoaDonDTO() {
     }
 
-    public HoaDonDTO(Integer id, Integer idKhachHang, Integer idPhieuGiamGia, Integer idNhanVien, String ma, BigDecimal tienSanPham, String loaiDon, BigDecimal phiVanChuyen, BigDecimal tongTien, BigDecimal tongTienSauGiam, String ghiChu, String tenKhachHang, String diaChiKhachHang, String soDienThoaiKhachHang, String email, Date ngayTao, Short trangThai) {
+    public HoaDonDTO(Integer id, Integer idKhachHang, Integer idPhieuGiamGia, Integer idNhanVien, String ma, BigDecimal tienSanPham, String loaiDon, BigDecimal phiVanChuyen, BigDecimal tongTien, BigDecimal tongTienSauGiam, String ghiChu, String tenKhachHang, String diaChiKhachHang, String soDienThoaiKhachHang, String email, Date ngayTao, Short trangThai, List<ChiTietGioHangDTO> chiTietGioHangDTOS) {
         this.id = id;
         this.idKhachHang = idKhachHang;
         this.idPhieuGiamGia = idPhieuGiamGia;
@@ -43,6 +46,7 @@ public class HoaDonDTO {
         this.email = email;
         this.ngayTao = ngayTao;
         this.trangThai = trangThai;
+        this.chiTietGioHangDTOS = chiTietGioHangDTOS;
     }
 
     public Integer getId() {
@@ -179,5 +183,13 @@ public class HoaDonDTO {
 
     public void setTrangThai(Short trangThai) {
         this.trangThai = trangThai;
+    }
+
+    public List<ChiTietGioHangDTO> getChiTietGioHangDTOS() {
+        return chiTietGioHangDTOS;
+    }
+
+    public void setChiTietGioHangDTOS(List<ChiTietGioHangDTO> chiTietGioHangDTOS) {
+        this.chiTietGioHangDTOS = chiTietGioHangDTOS;
     }
 }

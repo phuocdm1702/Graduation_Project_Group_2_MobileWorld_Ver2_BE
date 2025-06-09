@@ -19,6 +19,7 @@ import org.hibernate.annotations.Nationalized;
 public class GioHang {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @NotNull

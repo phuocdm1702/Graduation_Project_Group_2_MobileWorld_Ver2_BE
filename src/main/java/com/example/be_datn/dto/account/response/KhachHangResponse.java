@@ -1,12 +1,12 @@
-package com.example.be_datn.dto.discount.request;
+package com.example.be_datn.dto.account.response;
 
 import java.util.Date;
 
-public class PhieuGiamGiaCaNhanRequest {
+public class KhachHangResponse {
 
     private Integer id;
     private String ma;
-    private String ten;
+    private String tenKH;
     private Date ngaySinh;
     private String anhKhachHang;
     private String thanhPho;
@@ -21,14 +21,7 @@ public class PhieuGiamGiaCaNhanRequest {
     private Date createdAt;
     private Boolean macDinh;
 
-    public PhieuGiamGiaCaNhanRequest() {
-    }
-
-    public PhieuGiamGiaCaNhanRequest(Integer id, String ma, String ten, Date ngaySinh) {
-        this.id = id;
-        this.ma = ma;
-        this.ten = ten;
-        this.ngaySinh = ngaySinh;
+    public KhachHangResponse() {
     }
 
     public Integer getId() {
@@ -47,12 +40,12 @@ public class PhieuGiamGiaCaNhanRequest {
         this.ma = ma;
     }
 
-    public String getTen() {
-        return ten;
+    public String getTenKH() {
+        return tenKH;
     }
 
-    public void setTen(String ten) {
-        this.ten = ten;
+    public void setTenKH(String tenKH) {
+        this.tenKH = tenKH;
     }
 
     public Date getNgaySinh() {

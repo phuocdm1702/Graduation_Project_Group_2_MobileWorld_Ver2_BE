@@ -7,9 +7,10 @@ import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.product.ChiTietSanPham;
-import com.example.be_datn.repository.account.KhachHangRepository;
-import com.example.be_datn.repository.account.impl.NhanVienRepository;
 
+
+import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
+import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
 import com.example.be_datn.repository.product.ChiTietSanPhamRepository;
 import com.example.be_datn.service.sell.BanHangService;

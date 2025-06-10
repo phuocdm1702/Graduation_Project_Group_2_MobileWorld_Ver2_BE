@@ -9,6 +9,7 @@ import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.Instant;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -50,10 +51,10 @@ public class PhieuGiamGia {
     private Integer soLuongDung;
 
     @Column(name = "ngay_bat_dau")
-    private Instant ngayBatDau;
+    private Date ngayBatDau;
 
     @Column(name = "ngay_ket_thuc")
-    private Instant ngayKetThuc;
+    private Date ngayKetThuc;
 
     @Column(name = "trang_thai")
     private Boolean trangThai;

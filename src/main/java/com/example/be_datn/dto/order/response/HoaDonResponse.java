@@ -23,4 +23,6 @@ public class HoaDonResponse {
     private Date ngayTao;
     private String loaiDon;
     private Short trangThai;
+    private Boolean deleted;
+
 }

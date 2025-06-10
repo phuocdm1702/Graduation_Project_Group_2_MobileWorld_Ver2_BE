@@ -11,38 +11,10 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
-//    //Phân trang hóa đơn
-//    @Query("SELECT h FROM HoaDon h ORDER BY h.id DESC")
-//    Page<HoaDon> getHoaDon(Pageable pageable);
-//
-//    //Phân trang bộ lọc hóa đơn
-//    @Query("""
-//            SELECT hd FROM HoaDon hd
-//            WHERE (
-//            :keyword IS NULL OR hd.ma LIKE %:keyword%
-//            OR hd.idNhanVien.tenNhanVien LIKE %:keyword%
-//            OR hd.tenKhachHang LIKE %:keyword%
-//            OR hd.soDienThoaiKhachHang LIKE %:keyword%
-//            )
-//            AND (:minAmount IS NULL OR hd.tongTienSauGiam >= :minAmount)
-//            AND (:maxAmount IS NULL OR hd.tongTienSauGiam <= :maxAmount)
-//            AND (:startDate IS NULL OR hd.loaiDon >= :startDate)
-//            AND (:endDate IS NULL OR hd.loaiDon <= :endDate)
-//            AND (:trangThai IS NULL OR hd.loaiDon = :trangThai)
-//            ORDER BY hd.id DESC
-//            """)
-//    Page<HoaDon> getHoaDonAndFilters(
-//            @Param("keyword") String keyword,
-//            @Param("minAmount") Long minAmount,
-//            @Param("maxAmount") Long maxAmount,
-//            @Param("startDate") Timestamp startDate,
-//            @Param("endDate") Timestamp endDate,
-//            @Param("trangThai") Short trangThai,
-//            Pageable pageable);
-
     @Query("""
             SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
                 h.id, 
@@ -54,7 +26,8 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
                 h.phiVanChuyen, 
                 h.ngayTao, 
                 h.loaiDon, 
-                h.trangThai
+                h.trangThai,
+                h.deleted
             )
             FROM HoaDon h
             WHERE h.loaiDon = :loaiDon
@@ -73,7 +46,8 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
                 h.phiVanChuyen, 
                 h.ngayTao, 
                 h.loaiDon, 
-                h.trangThai
+                h.trangThai,
+                h.deleted
             )
             FROM HoaDon h
             WHERE (
@@ -87,6 +61,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             AND (:startDate IS NULL OR h.ngayTao >= :startDate)
             AND (:endDate IS NULL OR h.ngayTao <= :endDate)
             AND (:trangThai IS NULL OR h.trangThai = :trangThai)
+            AND (:deleted IS NULL OR h.deleted = :deleted)
             ORDER BY h.id DESC
             """)
     Page<HoaDonResponse> getHoaDonAndFilters(
@@ -96,6 +71,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             @Param("startDate") Timestamp startDate,
             @Param("endDate") Timestamp endDate,
             @Param("trangThai") Short trangThai,
+            @Param("deleted") Boolean deleted,
             Pageable pageable);
 
     @Query("SELECT hd FROM HoaDon hd WHERE hd.trangThai = 0")
@@ -103,4 +79,21 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     @Query("SELECT COUNT(h) > 0 FROM HoaDon h WHERE h.id = :id")
     boolean existsById(Integer id);
+
+    @Query("""
+            SELECT hd FROM HoaDon hd 
+            LEFT JOIN FETCH hd.idKhachHang
+            LEFT JOIN FETCH hd.idNhanVien
+            LEFT JOIN FETCH hd.idPhieuGiamGia
+            LEFT JOIN FETCH hd.chiTietHoaDon cthd
+            LEFT JOIN FETCH cthd.idChiTietSanPham ctsp
+            LEFT JOIN FETCH ctsp.idSanPham
+            LEFT JOIN FETCH cthd.idImelDaBan
+            LEFT JOIN FETCH hd.lichSuHoaDon lshd
+            LEFT JOIN FETCH lshd.idNhanVien
+            LEFT JOIN FETCH hd.hinhThucThanhToan httt
+            LEFT JOIN FETCH httt.idPhuongThucThanhToan
+            WHERE hd.id = :id AND hd.deleted = false
+            """)
+    Optional<HoaDon> findHoaDonDetailById(@Param("id") Integer id);
 }

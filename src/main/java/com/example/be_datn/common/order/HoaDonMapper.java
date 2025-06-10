@@ -20,6 +20,7 @@ public interface HoaDonMapper {
     @Mapping(source = "ngayTao", target = "ngayTao")
     @Mapping(source = "loaiDon", target = "loaiDon")
     @Mapping(source = "trangThai", target = "trangThai")
+    @Mapping(source = "deleted", target = "deleted")
     HoaDonResponse mapToDto(HoaDon hoaDon);
 
 //    @Named("formatDate")

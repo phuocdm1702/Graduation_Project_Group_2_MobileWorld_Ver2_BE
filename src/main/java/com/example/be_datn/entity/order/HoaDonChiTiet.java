@@ -26,7 +26,7 @@ public class HoaDonChiTiet {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_hoa_don", nullable = false)
-    private HoaDon idHoaDon;
+    private HoaDon hoaDon;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

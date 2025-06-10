@@ -6,7 +6,7 @@ import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.service.account.KhachHangServices;
-import com.example.be_datn.service.account.TaiKhoanServices;
+import com.example.be_datn.service.account.TaiKhoanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public class AddPhieuGiamGiaController {
     private PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService;
 
     @Autowired
-    private TaiKhoanServices taiKhoanServices;
+    private TaiKhoanService taiKhoanServices;
 
     @Autowired
     private EmailSend emailSend;

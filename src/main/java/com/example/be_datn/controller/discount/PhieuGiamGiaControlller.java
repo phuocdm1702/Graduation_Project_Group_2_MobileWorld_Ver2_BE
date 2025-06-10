@@ -8,7 +8,7 @@ import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.repository.discount.PhieuGiamGiaCaNhanRepository;
 import com.example.be_datn.repository.discount.PhieuGiamGiaRepository;
 import com.example.be_datn.service.account.KhachHangServices;
-import com.example.be_datn.service.account.TaiKhoanServices;
+import com.example.be_datn.service.account.TaiKhoanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -43,7 +43,7 @@ public class PhieuGiamGiaControlller {
     private KhachHangServices khachHangServices;
 
     @Autowired
-    private TaiKhoanServices taiKhoanServices;
+    private TaiKhoanService taiKhoanService;
 
     @Autowired
     private EmailSend emailSend;

@@ -97,7 +97,7 @@ public class BanHangServiceImpl implements BanHangService {
                 .idNhanVien(nhanVien)
                 .ma(generatedRandomCode())
                 .tienSanPham(BigDecimal.ZERO)
-                .loaiDon("Tại quầy")
+                .loaiDon("trực tiếp")
                 .phiVanChuyen(BigDecimal.ZERO)
                 .tongTien(BigDecimal.ZERO)
                 .tongTienSauGiam(BigDecimal.ZERO)

@@ -182,7 +182,7 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
         PhieuGiamGia pgg = detailPGG.get();
 
         List<PhieuGiamGiaCaNhan> pggCNList = phieuGiamGiaCaNhanRepository.findByIdPhieuGiamGia(pgg);
-        List<KhachHang> allCustomers = khachHangRepository.findAll();
+//        List<KhachHang> allCustomers = khachHangRepository.findAll();
 
         PhieuGiamGiaRequest pggDTO = new PhieuGiamGiaRequest();
         pggDTO.setId(pgg.getId());
@@ -212,10 +212,10 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
                 .collect(Collectors.toList());
         pggDTO.setCustomerIds(customerIds);
 
-        List<PhieuGiamGiaCaNhanRequest> allCustomersDTO = allCustomers.stream()
-                .map(kh -> new PhieuGiamGiaCaNhanRequest(kh.getId(), kh.getMa(), kh.getTen(), kh.getNgaySinh()))
-                .collect(Collectors.toList());
-        pggDTO.setAllCustomers(allCustomersDTO);
+//        List<PhieuGiamGiaCaNhanRequest> allCustomersDTO = allCustomers.stream()
+//                .map(kh -> new PhieuGiamGiaCaNhanRequest(kh.getId(), kh.getMa(), kh.getTen(), kh.getNgaySinh()))
+//                .collect(Collectors.toList());
+//        pggDTO.setAllCustomers(allCustomersDTO);
 
         return pggDTO;
     }

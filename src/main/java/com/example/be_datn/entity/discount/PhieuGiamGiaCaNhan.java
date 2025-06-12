@@ -19,6 +19,7 @@ import java.util.Date;
 public class PhieuGiamGiaCaNhan {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)

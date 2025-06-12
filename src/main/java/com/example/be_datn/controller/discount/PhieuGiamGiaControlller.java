@@ -106,7 +106,7 @@ public class PhieuGiamGiaControlller {
         }
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/phieu-giam-gia/{id}")
     public ResponseEntity<PhieuGiamGiaRequest> getDetail(@PathVariable Integer id) {
         try {
             PhieuGiamGiaRequest dto = phieuGiamGiaService.getDetailPGG(id);
@@ -335,7 +335,7 @@ public class PhieuGiamGiaControlller {
         PhieuGiamGiaRequest updatedPgg = phieuGiamGiaService.updateTrangthai(id, trangThai);
         return ResponseEntity.ok(updatedPgg);
     }
-    @GetMapping("/Pgg/Getall")
+    @GetMapping("/phieu-giam-gia")
     public List<PhieuGiamGia> getall(){
         return phieuGiamGiaService.getall();
     }

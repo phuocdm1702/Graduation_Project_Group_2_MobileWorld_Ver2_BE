@@ -13,7 +13,6 @@ import java.util.Date;
 @Getter
 @Setter
 @Entity
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Table(name = "chi_tiet_san_pham")
@@ -23,32 +22,32 @@ public class ChiTietSanPham {
     private Integer id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne
     @JoinColumn(name = "id_imel", nullable = false)
     private Imel idImel;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne
     @JoinColumn(name = "id_san_pham", nullable = false)
     private SanPham idSanPham;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne
     @JoinColumn(name = "id_anh_san_pham", nullable = false)
     private AnhSanPham idAnhSanPham;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne
     @JoinColumn(name = "id_mau_sac", nullable = false)
     private MauSac idMauSac;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne
     @JoinColumn(name = "id_ram", nullable = false)
     private Ram idRam;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne
     @JoinColumn(name = "id_bo_nho_trong", nullable = false)
     private BoNhoTrong idBoNhoTrong;
 
@@ -85,4 +84,6 @@ public class ChiTietSanPham {
     @Column(name = "updated_by")
     private Integer updatedBy;
 
+    public ChiTietSanPham() {
+    }
 }

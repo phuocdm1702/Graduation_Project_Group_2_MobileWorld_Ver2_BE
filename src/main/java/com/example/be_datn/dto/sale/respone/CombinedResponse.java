@@ -1,16 +1,16 @@
-package com.example.be_datn.controller.sale;
+package com.example.be_datn.dto.sale.respone;
 
-import com.example.be_datn.dto.sale.respone.ViewCTSPDTO;
-import com.example.be_datn.dto.sale.respone.ViewSanPhamDTO;
+import com.example.be_datn.entity.product.HeDieuHanh;
+import com.example.be_datn.entity.product.NhaSanXuat;
 import lombok.*;
 
 import java.util.List;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CombinedResponse {
     private List<ViewSanPhamDTO> spList;
     private List<ViewCTSPDTO> ctspList;
@@ -20,4 +20,7 @@ public class CombinedResponse {
     private int totalPagesCTSP;
     private int currentPageCTSP;
     private long totalElementsCTSP;
+
+    private List<HeDieuHanh> heDieuHanhList;
+    private List<NhaSanXuat> nhaSanXuatList;
 }

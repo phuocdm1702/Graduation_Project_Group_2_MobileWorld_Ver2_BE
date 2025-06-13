@@ -10,6 +10,8 @@ import com.example.be_datn.entity.product.HeDieuHanh;
 import com.example.be_datn.entity.product.NhaSanXuat;
 import com.example.be_datn.entity.product.SanPham;
 import com.example.be_datn.repository.sale.DotGiamGiaRepository;
+import com.example.be_datn.repository.sale.Product.HDHForDGGRepo;
+import com.example.be_datn.repository.sale.Product.NSXForDGGRepo;
 import com.example.be_datn.repository.sale.RepoDongSanPhamDGG;
 import com.example.be_datn.repository.sale.saleDetail.CTSPForCTDGG;
 import com.example.be_datn.repository.sale.saleDetail.ChiTietDotGiamGiaRepository;
@@ -38,11 +40,17 @@ public class DotGiamGiaService {
     private RepoDongSanPhamDGG sanPhamRepository;
     private CTSPForCTDGG chiTietSanPhamRepository;
 
-    public DotGiamGiaService(DotGiamGiaRepository repository, ChiTietDotGiamGiaRepository repo2, RepoDongSanPhamDGG sanPhamRepository, CTSPForCTDGG chiTietSanPhamRepository) throws Exception {
+    private HDHForDGGRepo hdhForDGGRepo;
+
+    private NSXForDGGRepo nsxForDGGRepo;
+
+    public DotGiamGiaService(DotGiamGiaRepository repository, ChiTietDotGiamGiaRepository repo2, RepoDongSanPhamDGG sanPhamRepository, CTSPForCTDGG chiTietSanPhamRepository, HDHForDGGRepo hdhForDGGRepo, NSXForDGGRepo nsxForDGGRepo) {
         this.repository = repository;
         this.repo2 = repo2;
         this.sanPhamRepository = sanPhamRepository;
         this.chiTietSanPhamRepository = chiTietSanPhamRepository;
+        this.hdhForDGGRepo = hdhForDGGRepo;
+        this.nsxForDGGRepo = nsxForDGGRepo;
     }
 
     public Page<DotGiamGia> HienThi(Pageable pageable) {
@@ -61,20 +69,29 @@ public class DotGiamGiaService {
         return repository.hienThiFinish(pageable);
     }
 
-    public Page<ViewSanPhamDTO> getDSP(String timKiem, List<Integer> idHeDieuHanh, List<Integer> idNhaSanXuat, Pageable pageable) {
-        return repository.getAllSanPham(timKiem, idHeDieuHanh, idNhaSanXuat, pageable);
+    public List<ViewSanPhamDTO> getDSP(String timKiem, List<Integer> idHeDieuHanh, List<Integer> idNhaSanXuat) {
+        return repository.getAllSanPham(timKiem, idHeDieuHanh, idNhaSanXuat);
     }
 
     public List<HeDieuHanh> getAllHeDieuHanh() {
-        return repository.findAllHeDieuHanh();
+        try {
+            System.out.println("Calling findAllHeDieuHanh, repository: " + repository.getClass().getName());
+            List<HeDieuHanh> result = hdhForDGGRepo.findAllByDeletedFalse();
+            System.out.println("HeDieuHanh list: " + result);
+            return result;
+        } catch (Exception e) {
+            System.err.println("Error in getAllHeDieuHanh: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch HeDieuHanh list", e);
+        }
     }
 
     public List<NhaSanXuat> getAllNhaSanXuat() {
-        return repository.findAllNhaSanXuat();
+        return nsxForDGGRepo.findAllByDeletedFalse();
     }
 
-    public Page<ViewCTSPDTO> getAllCTSP(List<Integer> ids, List<Integer> idBoNhoTrongs, List<Integer> mauSac, Pageable pageable) {
-        return repository.getAllCTSP(ids, idBoNhoTrongs, mauSac, pageable);
+    public List<ViewCTSPDTO> getAllCTSP(List<Integer> ids, List<Integer> idBoNhoTrongs, List<Integer> mauSac) {
+        return repository.getAllCTSP(ids, idBoNhoTrongs, mauSac);
     }
 
     public Boolean existByMa(String ma) {
@@ -278,16 +295,29 @@ public class DotGiamGiaService {
     }
 
     public List<ChiTietSanPham> getChiTietSanPhamByDotGiamGia(Integer id) {
-        return repo2.getChiTietSanPhamByDotGiamGia(id);
+        System.out.println("Thực thi getChiTietSanPhamByDotGiamGia với ID: " + id);
+        List<ChiTietSanPham> ctspList = repo2.getChiTietSanPhamByDotGiamGia(id);
+        System.out.println("getChiTietSanPhamByDotGiamGia trả về: " + (ctspList != null ? ctspList.size() : 0) + " bản ghi");
+        return ctspList;
     }
 
     public Map<String, Object> getDataForUpdate(Integer id) {
         Map<String, Object> response = new HashMap<>();
-        response.put("dspList", getThatDongSanPham(id));
-        response.put("ctspIds", getChiTietSanPhamByDotGiamGia(id).stream()
-                .map(ChiTietSanPham::getId)
-                .collect(Collectors.toList()));
-        return response;
+        try {
+            System.out.println("Bắt đầu getDataForUpdate với ID: " + id);
+            List<SanPham> dspList = getThatDongSanPham(id);
+            List<Integer> ctspIds = getChiTietSanPhamByDotGiamGia(id).stream()
+                    .map(ChiTietSanPham::getId)
+                    .collect(Collectors.toList());
+
+            response.put("dspList", dspList != null ? dspList : Collections.emptyList());
+            response.put("ctspIds", ctspIds != null ? ctspIds : Collections.emptyList());
+            return response;
+        } catch (Exception e) {
+            System.err.println("Lỗi trong getDataForUpdate: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Lỗi khi lấy dữ liệu cập nhật: " + e.getMessage());
+        }
     }
 
     public Optional<DotGiamGia> findOne(Integer id) {

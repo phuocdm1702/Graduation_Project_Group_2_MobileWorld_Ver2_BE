@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 
 @Getter
@@ -19,12 +20,13 @@ import java.time.Instant;
 public class LichSuHoaDon {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_hoa_don", nullable = false)
-    private HoaDon idHoaDon;
+    @ManyToOne
+    @JoinColumn(name = "id_hoa_don", referencedColumnName = "id")
+    private HoaDon hoaDon;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_nhan_vien")
@@ -41,7 +43,7 @@ public class LichSuHoaDon {
     private String hanhDong;
 
     @Column(name = "thoi_gian")
-    private Instant thoiGian;
+    private Timestamp thoiGian;
 
     @Column(name = "deleted")
     private Boolean deleted;

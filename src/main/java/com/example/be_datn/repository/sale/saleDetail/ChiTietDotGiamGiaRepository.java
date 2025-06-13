@@ -1,4 +1,4 @@
-package com.example.be_datn.repository.sale.saleDetail;
+        package com.example.be_datn.repository.sale.saleDetail;
 
 import com.example.be_datn.entity.discount.ChiTietDotGiamGia;
 import com.example.be_datn.entity.discount.DotGiamGia;
@@ -20,9 +20,9 @@ public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGia
     @Query("SELECT MAX(c.ma) FROM ChiTietDotGiamGia c")
     String findMaxMa();
 
-
-    @Query("SELECT ctsp FROM ChiTietSanPham ctsp " +
-            "JOIN ChiTietDotGiamGia ctdgg ON ctdgg.idChiTietSanPham = ctsp " +
+    @Query("SELECT new com.example.be_datn.entity.product.ChiTietSanPham(ctsp.id, ctsp.idImel, ctsp.idSanPham, ctsp.idAnhSanPham, ctsp.idMauSac, ctsp.idRam, ctsp.idBoNhoTrong, ctsp.ma, ctsp.giaBan, ctsp.ghiChu, ctsp.deleted, ctsp.createdAt, ctsp.createdBy, ctsp.updatedAt, ctsp.updatedBy) " +
+            "FROM ChiTietSanPham ctsp " +
+            "JOIN ChiTietDotGiamGia ctdgg ON ctdgg.idChiTietSanPham.id = ctsp.id " +
             "WHERE ctdgg.idDotGiamGia.id = :id AND ctdgg.deleted = false")
     List<ChiTietSanPham> getChiTietSanPhamByDotGiamGia(@Param("id") Integer id);
 
@@ -42,7 +42,6 @@ public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGia
             @Param("idDotGiamGia") DotGiamGia idDotGiamGia,
             @Param("deleted") boolean deleted);
 
-    // Tìm ChiTietDotGiamGia theo idChiTietSanPham và deleted
     @Query("SELECT c FROM ChiTietDotGiamGia c WHERE c.idChiTietSanPham = :idChiTietSanPham AND c.deleted = :deleted")
     List<ChiTietDotGiamGia> findByIdChiTietSanPhamAndDeleted(
             @Param("idChiTietSanPham") ChiTietSanPham idChiTietSanPham,
@@ -57,7 +56,7 @@ public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGia
     @Modifying
     @Transactional
     @Query("UPDATE ChiTietDotGiamGia ct SET ct.deleted = true WHERE ct.idDotGiamGia.id = :id")
-    public void updateChiTietDotGiamGiaDeleted(@Param("id") Integer id);
+    void updateChiTietDotGiamGiaDeleted(@Param("id") Integer id);
 
     @Modifying
     @Transactional

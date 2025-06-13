@@ -13,8 +13,6 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 @Table(name = "chi_tiet_dot_giam_gia")
 public class ChiTietDotGiamGia {

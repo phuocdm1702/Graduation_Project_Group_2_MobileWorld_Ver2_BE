@@ -1,6 +1,7 @@
 package com.example.be_datn.controller.sale;
 
 import com.example.be_datn.dto.sale.request.AddDotGiamGiaDTO;
+import com.example.be_datn.dto.sale.respone.CombinedResponse;
 import com.example.be_datn.dto.sale.respone.RequestDTO;
 import com.example.be_datn.dto.sale.respone.ViewCTSPDTO;
 import com.example.be_datn.dto.sale.respone.ViewSanPhamDTO;
@@ -25,17 +26,18 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173/")
 @RestController
-@RequestMapping("/dot_giam_gia")
+@RequestMapping("/api/dotGiamGia")
 public class DotGiamGiaController {
     @Autowired
     private DotGiamGiaService sr;
 
-    @GetMapping("/dot_giam_gia")
+    @GetMapping("/dotGiamGia")
     public Page<DotGiamGia> hienThi(@RequestParam(defaultValue = "0") int page,
                                     @RequestParam(defaultValue = "5") int size,
                                     Model model) {
@@ -70,8 +72,11 @@ public class DotGiamGiaController {
             @RequestParam(required = false) Boolean trangThai,
             @RequestParam(required = false) Boolean deleted
     ) {
+        System.out.println("Search params: maDGG=" + maDGG + ", tenDGG=" + tenDGG +
+                ", loaiGiamGiaApDung=" + loaiGiamGiaApDung + ", giaTriGiamGia=" + giaTriGiamGia +
+                ", soTienGiamToiDa=" + soTienGiamToiDa + ", ngayBatDau=" + ngayBatDau +
+                ", ngayKetThuc=" + ngayKetThuc + ", trangThai=" + trangThai + ", deleted=" + deleted);
         Pageable pageable = PageRequest.of(page, size);
-
         Date sqlNgayBatDau = ngayBatDau != null ? java.sql.Date.valueOf(ngayBatDau) : null;
         Date sqlNgayKetThuc = ngayKetThuc != null ? java.sql.Date.valueOf(ngayKetThuc) : null;
 
@@ -88,57 +93,66 @@ public class DotGiamGiaController {
         return sr.hienThiFinish(pageable);
     }
 
-
-    @PostMapping("/ViewAddDotGiamGia")
+    @PostMapping("/form")
     public ResponseEntity<CombinedResponse> hienThiAdd(
             @RequestBody RequestDTO request,
             @RequestParam(defaultValue = "0") int pageDSP,
             @RequestParam(defaultValue = "5") int sizeDSP,
             @RequestParam(defaultValue = "0") int pageCTSP,
             @RequestParam(defaultValue = "5") int sizeCTSP) {
+
+        System.out.println("Nhận được RequestDTO: " + request);
+        System.out.println("idDSPs: " + request.getIdDSPs());
+        System.out.println("mauSac: " + request.getMauSac());
+        System.out.println("idBoNhoTrongs: " + request.getIdBoNhoTrongs());
+        System.out.println("idHeDieuHanh: " + request.getIdHeDieuHanh());
+        System.out.println("idNhaSanXuat: " + request.getIdNhaSanXuat());
+
         String keyword = request.getKeyword();
         List<Integer> idDSPs = request.getIdDSPs();
         List<Integer> idBoNhoTrongs = request.getIdBoNhoTrongs();
         List<Integer> idMauSac = request.getMauSac();
-        List<Integer> idHeDieuHanh = request.getIdHeDieuHanh(); // Thêm lọc Hệ điều hành
-        List<Integer> idNhaSanXuat = request.getIdNhaSanXuat(); // Thêm lọc Nhà sản xuất
+        List<Integer> idHeDieuHanh = request.getIdHeDieuHanh();
+        List<Integer> idNhaSanXuat = request.getIdNhaSanXuat();
 
-        Pageable pageableDSP = PageRequest.of(pageDSP, sizeDSP);
-        Page<ViewSanPhamDTO> dspPage = sr.getDSP(keyword, idHeDieuHanh, idNhaSanXuat, pageableDSP);
+        List<ViewSanPhamDTO> dspList = sr.getDSP(keyword, idHeDieuHanh, idNhaSanXuat);
 
         Pageable pageableCTSP = PageRequest.of(pageCTSP, sizeCTSP);
-        Page<ViewCTSPDTO> ctspPage = null;
-        if (idDSPs != null && !idDSPs.isEmpty()) {
-            ctspPage = sr.getAllCTSP(idDSPs, idBoNhoTrongs, idMauSac, pageableCTSP);
-        } else {
-            ctspPage = Page.empty();
-        }
+        List<ViewCTSPDTO> ctspList = idDSPs != null && !idDSPs.isEmpty()
+                ? sr.getAllCTSP(idDSPs, idBoNhoTrongs, idMauSac)
+                : Collections.emptyList();
+
+        List<HeDieuHanh> heDieuHanhList = sr.getAllHeDieuHanh();
+        List<NhaSanXuat> nhaSanXuatList = sr.getAllNhaSanXuat();
 
         CombinedResponse response = new CombinedResponse(
-                dspPage.getContent(),
-                ctspPage.getContent(),
-                dspPage.getTotalPages(),
-                dspPage.getNumber(),
-                dspPage.getTotalElements(),
-                ctspPage.getTotalPages(),
-                ctspPage.getNumber(),
-                ctspPage.getTotalElements()
+                dspList,                   // Không phân trang
+                ctspList,                  // Không phân trang
+                1,                         // totalPagesDSP = 1
+                0,                         // currentPageDSP = 0
+                dspList.size(),
+                1,                         // totalPagesCTSP = 1
+                0,                         // currentPageCTSP = 0
+                ctspList.size(),           // totalElementsCTSP
+                heDieuHanhList,
+                nhaSanXuatList
         );
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/he-dieu-hanh")
-    public ResponseEntity<List<HeDieuHanh>> getAllHeDieuHanh() {
-        List<HeDieuHanh> heDieuHanhList = sr.getAllHeDieuHanh();
-        return ResponseEntity.ok(heDieuHanhList);
-    }
 
-    // API lấy tất cả Nhà sản xuất
-    @GetMapping("/nha-san-xuat")
-    public ResponseEntity<List<NhaSanXuat>> getAllNhaSanXuat() {
-        List<NhaSanXuat> nhaSanXuatList = sr.getAllNhaSanXuat();
-        return ResponseEntity.ok(nhaSanXuatList);
-    }
+//
+//    @GetMapping("/he-dieu-hanh")
+//    public ResponseEntity<List<HeDieuHanh>> getAllHeDieuHanh() {
+//        List<HeDieuHanh> heDieuHanhList = sr.getAllHeDieuHanh();
+//        return ResponseEntity.ok(heDieuHanhList);
+//    }
+//
+//    @GetMapping("/nha-san-xuat")
+//    public ResponseEntity<List<NhaSanXuat>> getAllNhaSanXuat() {
+//        List<NhaSanXuat> nhaSanXuatList = sr.getAllNhaSanXuat();
+//        return ResponseEntity.ok(nhaSanXuatList);
+//    }
 
     @PostMapping("/AddDotGiamGia")
     public ResponseEntity<?> addData(@RequestBody AddDotGiamGiaDTO request) {

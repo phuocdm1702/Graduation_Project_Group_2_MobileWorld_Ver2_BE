@@ -28,7 +28,7 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
     @Query("SELECT dgg FROM DotGiamGia dgg WHERE dgg.deleted = true")
     public Page<DotGiamGia> hienThiFinish(Pageable pageable);
 
-    @Query("SELECT new com.example.be_datn.dto.sale.respone.viewSanPhamDTO(sp, nsx, hdh, " +
+    @Query("SELECT new com.example.be_datn.dto.sale.respone.ViewSanPhamDTO(sp, nsx, hdh, " +
             "(SELECT COUNT(ctsp) FROM ChiTietSanPham ctsp WHERE ctsp.idSanPham.id = sp.id AND ctsp.deleted = false)) " +
             "FROM SanPham sp " +
             "INNER JOIN sp.idHeDieuHanh hdh " +
@@ -37,19 +37,11 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
             "AND (:idHeDieuHanh IS NULL OR hdh.id IN :idHeDieuHanh) " +
             "AND (:idNhaSanXuat IS NULL OR nsx.id IN :idNhaSanXuat) " +
             "AND sp.deleted = false")
-    Page<ViewSanPhamDTO> getAllSanPham(@Param("timKiem") String timKiem,
+    List<ViewSanPhamDTO> getAllSanPham(@Param("timKiem") String timKiem,
                                        @Param("idHeDieuHanh") List<Integer> idHeDieuHanh,
-                                       @Param("idNhaSanXuat") List<Integer> idNhaSanXuat,
-                                       Pageable pageable);
+                                       @Param("idNhaSanXuat") List<Integer> idNhaSanXuat);
 
 
-    // Lấy tất cả Hệ điều hành không bị xóa
-    @Query("SELECT hdh FROM HeDieuHanh hdh WHERE hdh.deleted = false")
-    List<HeDieuHanh> findAllHeDieuHanh();
-
-    // Lấy tất cả Nhà sản xuất không bị xóa
-    @Query("SELECT nsx FROM NhaSanXuat nsx WHERE nsx.deleted = false")
-    List<NhaSanXuat> findAllNhaSanXuat();
 
 //    @Query("SELECT new com.example.graduation_project_group_2_mobileworld.dto.dot_giam_gia.viewCTSPDTO(sp, ctsp, anh, bnt, ms) " +
 //            "FROM SanPham sp " +
@@ -99,10 +91,9 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
             "    AND ctsp2.deleted = false " +
             "    GROUP BY ctsp2.idSanPham.id, ctsp2.idMauSac.id, ctsp2.idBoNhoTrong.id" +
             ")")
-    Page<ViewCTSPDTO> getAllCTSP(@Param("ids") List<Integer> ids,
+    List<ViewCTSPDTO> getAllCTSP(@Param("ids") List<Integer> ids,
                                  @Param("idBoNhoTrongs") List<Integer> idBoNhoTrongs,
-                                 @Param("idMauSacs") List<Integer> idMauSacs,
-                                 Pageable pageable);
+                                 @Param("idMauSacs") List<Integer> idMauSacs);
 
     @Modifying
     @Transactional
@@ -120,12 +111,12 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
     boolean existsByMaAndDeletedTrue(@Param("ma") String ma);
 
     @Query("SELECT d FROM DotGiamGia d WHERE "
-            + "((:maDGG IS NULL AND :tenDGG IS NULL) " // Nếu cả hai null thì bỏ qua điều kiện này
+            + "((:maDGG IS NULL AND :tenDGG IS NULL) "
             + " OR (:maDGG IS NOT NULL AND d.ma LIKE CONCAT('%', :maDGG, '%')) "
             + " OR (:tenDGG IS NOT NULL AND d.tenDotGiamGia LIKE CONCAT('%', :tenDGG, '%'))) AND "
-            + "(:loaiGiamGiaApDung IS NULL OR d.loaiGiamGiaApDung = :loaiGiamGiaApDung) AND "
+            + "(:loaiGiamGiaApDung IS NULL OR LOWER(d.loaiGiamGiaApDung) = LOWER(:loaiGiamGiaApDung)) AND "
             + "(:giaTriGiamGia IS NULL OR d.giaTriGiamGia = :giaTriGiamGia) AND "
-            + "(:soTienGiamToiDa IS NULL OR d.soTienGiamToiDa <= :soTienGiamToiDa) AND "
+            + "(:soTienGiamToiDa IS NULL OR d.soTienGiamToiDa = :soTienGiamToiDa) AND "
             + "(:ngayBatDau IS NULL OR d.ngayBatDau >= :ngayBatDau) AND "
             + "(:ngayKetThuc IS NULL OR d.ngayKetThuc <= :ngayKetThuc) AND "
             + "(:trangThai IS NULL OR d.trangThai = :trangThai) AND "

@@ -111,4 +111,10 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .build();
     }
 
+    @Override
+    public HoaDonResponse getHoaDonByMa(String maHD) {
+        HoaDonResponse hoaDon = hoaDonRepository.findByMa(maHD)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với mã: " + maHD));
+        return hoaDon;
+    }
 }

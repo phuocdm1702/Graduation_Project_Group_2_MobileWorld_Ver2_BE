@@ -14,4 +14,5 @@ public interface HoaDonService {
                                              Timestamp startDate, Timestamp endDate, Short trangThai, Pageable pageable);
 
     HoaDonDetailResponse getHoaDonDetail(Integer id);
+    HoaDonResponse getHoaDonByMa(String maHD);
 }

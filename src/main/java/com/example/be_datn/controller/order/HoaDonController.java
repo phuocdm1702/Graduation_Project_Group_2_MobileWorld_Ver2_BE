@@ -66,4 +66,14 @@ public class HoaDonController {
 
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
+
+    // API lấy hóa đơn theo mã QR
+    @GetMapping("/QR-by-ma/{ma}")
+    public ResponseEntity<HoaDonResponse> getHoaDonByMa(@PathVariable String maHD) {
+        try {
+            return ResponseEntity.ok(hoaDonService.getHoaDonByMa(maHD));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
 }

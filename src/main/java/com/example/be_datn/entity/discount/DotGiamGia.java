@@ -1,9 +1,6 @@
 package com.example.be_datn.entity.discount;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -11,6 +8,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.time.LocalDate;
 
 @Getter
@@ -22,12 +20,14 @@ import java.time.LocalDate;
 @Table(name = "dot_giam_gia")
 public class DotGiamGia {
     @Id
-    @Column(name = "id", nullable = false)
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Size(max = 255)
+//    @NotNull
     @Nationalized
-    @Column(name = "ma")
+    @Column(name = "ma", nullable = false)
     private String ma;
 
     @Size(max = 255)
@@ -50,19 +50,19 @@ public class DotGiamGia {
     @Column(name = "so_tien_giam_toi_da", nullable = false, precision = 18, scale = 2)
     private BigDecimal soTienGiamToiDa;
 
-    @Column(name = "ngay_bat_dau")
-    private LocalDate ngayBatDau;
-
-    @Column(name = "ngay_ket_thuc")
-    private LocalDate ngayKetThuc;
+    @NotNull
+    @Column(name = "ngay_bat_dau", nullable = false)
+    private Date ngayBatDau;
 
     @NotNull
-    @ColumnDefault("1")
+    @Column(name = "ngay_ket_thuc", nullable = false)
+    private Date ngayKetThuc;
+
+    @NotNull
     @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai = false;
 
     @NotNull
-    @ColumnDefault("0")
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
 

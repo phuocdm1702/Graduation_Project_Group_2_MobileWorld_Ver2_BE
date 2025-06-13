@@ -24,12 +24,12 @@ import java.util.*;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/statistics/doanh-thu")
+@RequestMapping("/api/thongKe")
 public class ThongKeController {
     @Autowired
     private ThongKeService sr;
 
-    @GetMapping("/dashboard")
+    @GetMapping()
     public ResponseEntity<Map<String, Object>> hienThi(
             @RequestParam(required = false, defaultValue = "month") String filterType,
             @RequestParam(required = false) String startDate,

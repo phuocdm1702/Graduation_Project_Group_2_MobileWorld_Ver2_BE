@@ -13,10 +13,12 @@ public interface HoaDonDetailMapper {
     HoaDonDetailMapper INSTANCE = Mappers.getMapper(HoaDonDetailMapper.class);
 
     @Mapping(source = "idChiTietSanPham.idSanPham.ma", target = "maSanPham")
-    @Mapping(source = "idChiTietSanPham.idSanPham.tenSanPham", target = "tenSanPham") // Giả sử SanPham có field ten
+    @Mapping(source = "idChiTietSanPham.idSanPham.tenSanPham", target = "tenSanPham")
     @Mapping(source = "idImelDaBan.imel", target = "imel")
     @Mapping(source = "gia", target = "giaBan")
     @Mapping(source = "ghiChu", target = "ghiChu")
+    @Mapping(source = "idChiTietSanPham.idMauSac.mauSac", target = "mauSac") // Thêm ánh xạ cho màu sắc
+    @Mapping(source = "idChiTietSanPham.idBoNhoTrong.dungLuongBoNhoTrong", target = "boNho") // Thêm ánh xạ cho bộ nhớ
     HoaDonDetailResponse.SanPhamChiTietInfo mapToSanPhamChiTietInfo(HoaDonChiTiet hoaDonChiTiet);
 
     @Mapping(source = "idPhuongThucThanhToan.ma", target = "maHinhThucThanhToan")
@@ -28,6 +30,6 @@ public interface HoaDonDetailMapper {
     @Mapping(source = "ma", target = "ma")
     @Mapping(source = "hanhDong", target = "hanhDong")
     @Mapping(source = "thoiGian", target = "thoiGian")
-    @Mapping(source = "idNhanVien.tenNhanVien", target = "tenNhanVien") // Giả sử NhanVien có field ten
+    @Mapping(source = "idNhanVien.tenNhanVien", target = "tenNhanVien")
     HoaDonDetailResponse.LichSuHoaDonInfo mapToLichSuHoaDonInfo(LichSuHoaDon lichSuHoaDon);
 }

@@ -15,6 +15,7 @@ import java.util.Optional;
 
 @Repository
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
+
     @Query("""
             SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
                 h.id, 
@@ -74,12 +75,15 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             @Param("deleted") Boolean deleted,
             Pageable pageable);
 
+
     @Query("SELECT hd FROM HoaDon hd WHERE hd.trangThai = 0")
     List<HoaDon> findAllHDNotConfirm();
 
     @Query("SELECT COUNT(h) > 0 FROM HoaDon h WHERE h.id = :id")
     boolean existsById(Integer id);
 
+
+    //Detail HDCT...
     @Query("""
             SELECT hd FROM HoaDon hd 
             LEFT JOIN FETCH hd.idKhachHang
@@ -96,4 +100,8 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             WHERE hd.id = :id AND hd.deleted = false
             """)
     Optional<HoaDon> findHoaDonDetailById(@Param("id") Integer id);
+
+    // Tìm hóa đơn theo mã
+    @Query("SELECT hd FROM HoaDon hd WHERE hd.ma = :ma")
+    Optional<HoaDonResponse> findByMa(@Param("ma") String ma);
 }

@@ -67,5 +67,4 @@ public class PhieuGiamGia {
 
     @Column(name = "deleted")
     private Boolean deleted;
-
 }

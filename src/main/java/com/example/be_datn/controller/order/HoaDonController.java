@@ -3,10 +3,14 @@ package com.example.be_datn.controller.order;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.service.order.HoaDonService;
+import com.example.be_datn.service.order.InHoaDonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +22,9 @@ import java.sql.Timestamp;
 public class HoaDonController {
     @Autowired
     private HoaDonService hoaDonService;
+
+    @Autowired
+    private InHoaDonService inHoaDonService;
 
     @GetMapping("/home/trang-thai")
     public ResponseEntity<Page<HoaDonResponse>> getHoaDon(
@@ -46,5 +53,17 @@ public class HoaDonController {
     public ResponseEntity<HoaDonDetailResponse> getHoaDonDetail(@PathVariable Integer id) {
         HoaDonDetailResponse response = hoaDonService.getHoaDonDetail(id);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> inHoaDon(@PathVariable Integer id) throws Exception {
+        HoaDonDetailResponse hoaDon = hoaDonService.getHoaDonDetail(id);
+        byte[] pdfBytes = inHoaDonService.generateHoaDonPdf(hoaDon);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "hoa_don_" + hoaDon.getMaHoaDon() + ".pdf");
+
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 }

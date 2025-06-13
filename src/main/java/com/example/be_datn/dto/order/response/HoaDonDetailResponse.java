@@ -24,6 +24,8 @@ public class HoaDonDetailResponse {
     private String loaiDon;
     private Short trangThai;
     private String maGiamGia;
+    private BigDecimal tienGiam; // Thêm trường này
+    private Double phanTramGiam; // Thêm trường này
     private Date ngayTao;
     private String tenKhachHang;
     private String soDienThoaiKhachHang;
@@ -44,7 +46,6 @@ public class HoaDonDetailResponse {
 
     // Lịch sử hóa đơn
     private List<LichSuHoaDonInfo> lichSuHoaDonInfos;
-
 
     // DTO con cho thanh toán
     @Getter
@@ -69,6 +70,8 @@ public class HoaDonDetailResponse {
         private String imel;
         private BigDecimal giaBan;
         private String ghiChu;
+        private String mauSac; // Thêm nếu cần
+        private String boNho; // Thêm nếu cần
     }
 
     // DTO con cho lịch sử hóa đơn
@@ -92,10 +95,14 @@ public class HoaDonDetailResponse {
         }
 
         public Builder withHoaDonInfo(HoaDon hoaDon, PhieuGiamGia phieuGiamGia) {
+            response.id = hoaDon.getId();
             response.maHoaDon = hoaDon.getMa();
             response.loaiDon = hoaDon.getLoaiDon();
             response.trangThai = hoaDon.getTrangThai();
             response.maGiamGia = phieuGiamGia != null ? phieuGiamGia.getMa() : null;
+            response.tienGiam = phieuGiamGia != null && phieuGiamGia.getSoTienGiamToiDa() != null
+                    ? BigDecimal.valueOf(phieuGiamGia.getSoTienGiamToiDa()) : BigDecimal.ZERO;
+            response.phanTramGiam = phieuGiamGia != null ? phieuGiamGia.getPhanTramGiamGia() : 0.0;
             response.ngayTao = hoaDon.getNgayTao();
             response.tenKhachHang = hoaDon.getTenKhachHang();
             response.soDienThoaiKhachHang = hoaDon.getSoDienThoaiKhachHang();
@@ -108,7 +115,7 @@ public class HoaDonDetailResponse {
 
         public Builder withNhanVienInfo(NhanVien nhanVien) {
             response.maNhanVien = nhanVien.getMa();
-            response.tenNhanVien = nhanVien.getTenNhanVien(); // Giả sử NhanVien có field ten
+            response.tenNhanVien = nhanVien.getTenNhanVien();
             return this;
         }
 

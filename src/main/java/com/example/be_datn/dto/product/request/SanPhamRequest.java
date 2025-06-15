@@ -3,7 +3,7 @@ package com.example.be_datn.dto.product.request;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record SanPhamRequestDto(
+public record SanPhamRequest(
         @Size(max = 255, message = "Ma must not exceed 255 characters")
         String ma,
 

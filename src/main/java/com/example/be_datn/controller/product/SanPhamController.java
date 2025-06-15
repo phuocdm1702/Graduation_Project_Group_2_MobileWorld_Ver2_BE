@@ -1,7 +1,7 @@
 package com.example.be_datn.controller.product;
 
-import com.example.be_datn.dto.product.response.SanPhamResponseDto;
-import com.example.be_datn.dto.product.request.SanPhamRequestDto;
+import com.example.be_datn.dto.product.response.SanPhamResponse;
+import com.example.be_datn.dto.product.request.SanPhamRequest;
 import com.example.be_datn.entity.product.SanPham;
 import com.example.be_datn.service.product.SanPhamService;
 import jakarta.validation.Valid;
@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:5173")
 @Controller
 @RequestMapping("/san-pham")
 public class SanPhamController {
@@ -25,15 +24,15 @@ public class SanPhamController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<SanPhamResponseDto>> getAllSanPham(
+    public ResponseEntity<Page<SanPhamResponse>> getAllSanPham(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
-        Page<SanPhamResponseDto> sanPhams = sanPhamService.getAllSanPham(page, size);
+        Page<SanPhamResponse> sanPhams = sanPhamService.getAllSanPham(page, size);
         return ResponseEntity.ok(sanPhams);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Page<SanPhamResponseDto>> searchSanPham(
+    public ResponseEntity<Page<SanPhamResponse>> searchSanPham(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer idNhaSanXuat,
             @RequestParam(required = false) Integer idHeDieuHanh,
@@ -56,7 +55,7 @@ public class SanPhamController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
 
-        Page<SanPhamResponseDto> sanPhams = sanPhamService.searchSanPham(
+        Page<SanPhamResponse> sanPhams = sanPhamService.searchSanPham(
                 keyword, idNhaSanXuat, idHeDieuHanh, heDieuHanh, phienBan,
                 idCongNgheManHinh, congNgheManHinh, chuanManHinh,
                 idPin, loaiPin, dungLuongPin,
@@ -67,20 +66,20 @@ public class SanPhamController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SanPhamResponseDto> getSanPhamById(@PathVariable Integer id) {
+    public ResponseEntity<SanPhamResponse> getSanPhamById(@PathVariable Integer id) {
         Optional<SanPham> sanPham = sanPhamService.getSanPhamById(id);
         return sanPham.map(sp -> ResponseEntity.ok(sanPhamService.mapToDTO(sp)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<SanPhamResponseDto> createSanPham(@Valid @RequestBody SanPhamRequestDto requestDto) {
+    public ResponseEntity<SanPhamResponse> createSanPham(@Valid @RequestBody SanPhamRequest requestDto) {
         SanPham sanPham = sanPhamService.createSanPham(requestDto);
         return ResponseEntity.ok(sanPhamService.mapToDTO(sanPham));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateSanPham(@PathVariable Integer id, @Valid @RequestBody SanPhamRequestDto requestDto) {
+    public ResponseEntity<?> updateSanPham(@PathVariable Integer id, @Valid @RequestBody SanPhamRequest requestDto) {
         Optional<SanPham> existingSanPham = sanPhamService.getSanPhamById(id);
         if (existingSanPham.isPresent()) {
             try {

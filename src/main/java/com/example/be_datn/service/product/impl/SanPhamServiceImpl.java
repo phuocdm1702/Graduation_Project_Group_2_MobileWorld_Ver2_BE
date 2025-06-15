@@ -1,7 +1,7 @@
 package com.example.be_datn.service.product.impl;
 
-import com.example.be_datn.dto.product.request.SanPhamRequestDto;
-import com.example.be_datn.dto.product.response.SanPhamResponseDto;
+import com.example.be_datn.dto.product.request.SanPhamRequest;
+import com.example.be_datn.dto.product.response.SanPhamResponse;
 import com.example.be_datn.entity.product.*;
 import com.example.be_datn.repository.product.ChiTietSanPhamRepository;
 import com.example.be_datn.repository.product.SanPhamRepository;
@@ -36,14 +36,14 @@ public class SanPhamServiceImpl implements SanPhamService {
     }
 
     @Override
-    public Page<SanPhamResponseDto> getAllSanPham(int page, int size) {
+    public Page<SanPhamResponse> getAllSanPham(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<SanPham> sanPhamPage = sanPhamRepository.findByDeletedFalse(pageable);
         return mapToDTOPage(sanPhamPage, pageable);
     }
 
     @Override
-    public Page<SanPhamResponseDto> searchSanPham(
+    public Page<SanPhamResponse> searchSanPham(
             String keyword,
             Integer idNhaSanXuat,
             Integer idHeDieuHanh,
@@ -171,14 +171,14 @@ public class SanPhamServiceImpl implements SanPhamService {
         return mapToDTOPage(sanPhamPage, pageable);
     }
 
-    private Page<SanPhamResponseDto> mapToDTOPage(Page<SanPham> sanPhamPage, Pageable pageable) {
-        List<SanPhamResponseDto> dtos = sanPhamPage.getContent().stream().map(this::mapToDTO).collect(Collectors.toList());
+    private Page<SanPhamResponse> mapToDTOPage(Page<SanPham> sanPhamPage, Pageable pageable) {
+        List<SanPhamResponse> dtos = sanPhamPage.getContent().stream().map(this::mapToDTO).collect(Collectors.toList());
         return new PageImpl<>(dtos, pageable, sanPhamPage.getTotalElements());
     }
 
     @Override
-    public SanPhamResponseDto mapToDTO(SanPham sanPham) {
-        return new SanPhamResponseDto(
+    public SanPhamResponse mapToDTO(SanPham sanPham) {
+        return new SanPhamResponse(
                 sanPham.getId(),
                 sanPham.getMa(),
                 sanPham.getTenSanPham(),
@@ -245,7 +245,7 @@ public class SanPhamServiceImpl implements SanPhamService {
 
     @Override
     @Transactional
-    public SanPham createSanPham(SanPhamRequestDto requestDto) {
+    public SanPham createSanPham(SanPhamRequest requestDto) {
         SanPham sanPham = SanPham.builder()
                 .ma(requestDto.ma())
                 .tenSanPham(requestDto.tenSanPham())
@@ -270,7 +270,7 @@ public class SanPhamServiceImpl implements SanPhamService {
 
     @Override
     @Transactional
-    public SanPham updateSanPham(Integer id, SanPhamRequestDto requestDto) {
+    public SanPham updateSanPham(Integer id, SanPhamRequest requestDto) {
         SanPham sanPham = sanPhamRepository.findByIdAndDeletedFalse(id);
         sanPham.setMa(requestDto.ma());
         sanPham.setTenSanPham(requestDto.tenSanPham());

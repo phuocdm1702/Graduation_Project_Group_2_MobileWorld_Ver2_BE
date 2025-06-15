@@ -113,8 +113,8 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
             + " OR (:maDGG IS NOT NULL AND d.ma LIKE CONCAT('%', :maDGG, '%')) "
             + " OR (:tenDGG IS NOT NULL AND d.tenDotGiamGia LIKE CONCAT('%', :tenDGG, '%'))) AND "
             + "(:loaiGiamGiaApDung IS NULL OR LOWER(d.loaiGiamGiaApDung) = LOWER(:loaiGiamGiaApDung)) AND "
-            + "(:giaTriGiamGia IS NULL OR d.giaTriGiamGia = :giaTriGiamGia) AND "
-            + "(:soTienGiamToiDa IS NULL OR d.soTienGiamToiDa = :soTienGiamToiDa) AND "
+            + "(:giaTriGiamGia IS NULL OR d.giaTriGiamGia <= :giaTriGiamGia) AND "
+            + "(:soTienGiamToiDa IS NULL OR d.soTienGiamToiDa <= :soTienGiamToiDa) AND "
             + "(:ngayBatDau IS NULL OR d.ngayBatDau >= :ngayBatDau) AND "
             + "(:ngayKetThuc IS NULL OR d.ngayKetThuc <= :ngayKetThuc) AND "
             + "(:trangThai IS NULL OR d.trangThai = :trangThai) AND "
@@ -131,6 +131,12 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
             @Param("trangThai") Boolean trangThai,
             @Param("deleted") Boolean deleted
     );
+
+    @Query("SELECT MAX(d.giaTriGiamGia) FROM DotGiamGia d")
+    BigDecimal maxGiaTriGiamGia();
+
+    @Query("SELECT MAX(d.soTienGiamToiDa) FROM DotGiamGia d")
+    BigDecimal maxSoTienGiamToiDa();
 
     @Modifying
     @Transactional

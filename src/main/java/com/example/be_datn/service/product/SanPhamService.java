@@ -1,15 +1,15 @@
 package com.example.be_datn.service.product;
 
-import com.example.be_datn.dto.product.response.SanPhamResponseDto;
-import com.example.be_datn.dto.product.request.SanPhamRequestDto;
+import com.example.be_datn.dto.product.response.SanPhamResponse;
+import com.example.be_datn.dto.product.request.SanPhamRequest;
 import com.example.be_datn.entity.product.SanPham;
 import org.springframework.data.domain.Page;
 import java.util.Optional;
 
 public interface SanPhamService {
-    Page<SanPhamResponseDto> getAllSanPham(int page, int size);
+    Page<SanPhamResponse> getAllSanPham(int page, int size);
 
-    Page<SanPhamResponseDto> searchSanPham(
+    Page<SanPhamResponse> searchSanPham(
             String keyword,
             Integer idNhaSanXuat,
             Integer idHeDieuHanh,
@@ -34,11 +34,11 @@ public interface SanPhamService {
 
     Optional<SanPham> getSanPhamById(Integer id);
 
-    SanPham createSanPham(SanPhamRequestDto requestDto);
+    SanPham createSanPham(SanPhamRequest requestDto);
 
-    SanPham updateSanPham(Integer id, SanPhamRequestDto requestDto);
+    SanPham updateSanPham(Integer id, SanPhamRequest requestDto);
 
-    SanPhamResponseDto mapToDTO(SanPham sanPham);
+    SanPhamResponse mapToDTO(SanPham sanPham);
 
     Long countChiTietSanPhamBySanPhamId(Integer sanPhamId);
 }

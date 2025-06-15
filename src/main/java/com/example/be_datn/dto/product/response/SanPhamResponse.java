@@ -3,7 +3,7 @@ package com.example.be_datn.dto.product.response;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-public record SanPhamResponseDto(
+public record SanPhamResponse(
         Integer id,
         String ma,
         String tenSanPham,

@@ -7,6 +7,9 @@ import com.example.be_datn.dto.statistics.respone.TopSellingProductDTO;
 import com.example.be_datn.entity.product.ChiTietSanPham;
 import com.example.be_datn.repository.statistics.CTSPForThongKe;
 import com.example.be_datn.repository.statistics.ThongKeRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,9 @@ import java.util.stream.Collectors;
 public class ThongKeService {
     private ThongKeRepository tkRepo;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Autowired
     private CTSPForThongKe chiTietSanPhamRepository;
 
@@ -29,7 +35,6 @@ public class ThongKeService {
         this.tkRepo = tkRepo;
     }
 
-    // Loại bỏ static
     public Map<String, Object> getThongKeTheoNgay() {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.HOUR_OF_DAY, 0);
@@ -37,33 +42,65 @@ public class ThongKeService {
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
         Date ngayHienTai = cal.getTime();
-        return tkRepo.thongKeTheoNgay(ngayHienTai);
+        Map<String, Object> result = tkRepo.thongKeTheoNgay(ngayHienTai);
+        return convertNumberValuesToInteger(result);
     }
 
-    // Loại bỏ static
     public Map<String, Object> getThongKeTheoTuan() {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
         Date startOfWeek = cal.getTime();
         cal.add(Calendar.WEEK_OF_YEAR, 1);
         Date endOfWeek = cal.getTime();
-        return tkRepo.thongKeTheoTuan(startOfWeek, endOfWeek);
+        Map<String, Object> result = tkRepo.thongKeTheoTuan(startOfWeek, endOfWeek);
+        return convertNumberValuesToInteger(result);
     }
 
-    // Loại bỏ static
     public Map<String, Object> getThongKeTheoThang() {
         Calendar cal = Calendar.getInstance();
         int thang = cal.get(Calendar.MONTH) + 1; // +1 vì tháng bắt đầu từ 0
         int nam = cal.get(Calendar.YEAR);
-        return tkRepo.thongKeTheoThang(thang, nam);
+        Map<String, Object> result = tkRepo.thongKeTheoThang(thang, nam);
+        return convertNumberValuesToInteger(result);
     }
 
-    // Loại bỏ static
     public Map<String, Object> getThongKeTheoNam() {
         Calendar cal = Calendar.getInstance();
         int nam = cal.get(Calendar.YEAR);
-        return tkRepo.thongKeTheoNam(nam);
+        Map<String, Object> result = tkRepo.thongKeTheoNam(nam);
+        return convertNumberValuesToInteger(result);
     }
+
+
+    public List<Map<String, Object>> thongKeDoanhThuTheoKhungGio(Date ngayHienTai) {
+        return tkRepo.thongKeDoanhThuTheoKhungGio(ngayHienTai);
+    }
+
+    public List<Map<String, Object>> thongKeDoanhThuTheoNgayTrongTuan(Date startOfWeek, Date endOfWeek) {
+        return tkRepo.thongKeDoanhThuTheoNgayTrongTuan(startOfWeek, endOfWeek);
+    }
+
+    public List<Map<String, Object>> thongKeDoanhThuTheoTuanTrongThang(int thang, int nam) {
+        return tkRepo.thongKeDoanhThuTheoTuanTrongThang(thang, nam);
+    }
+
+
+    public List<Map<String, Object>> thongKeDoanhThuTheoQuy(int nam) {
+        return tkRepo.thongKeDoanhThuTheoQuy(nam);
+    }
+
+
+    public List<Map<String, Object>> thongKeDoanhThuTheoThangTrongKhoangThoiGian(Date startDate, Date endDate) {
+        return tkRepo.thongKeDoanhThuTheoThangTrongKhoangThoiGian(startDate, endDate);
+    }
+
+
+    public BigDecimal doanhThuTheoKhoangThoiGian(Date startDate, Date endDate) {
+        BigDecimal revenue = tkRepo.doanhThuTheoKhoangThoiGian(startDate, endDate);
+        return revenue != null ? revenue : BigDecimal.ZERO;
+    }
+
+
 
     public Page<TopSellingProductDTO> getTopSellingProducts(String filterType, String startDateStr, String endDateStr, int page, int size) {
         Date startDate = null;
@@ -81,6 +118,19 @@ public class ThongKeService {
                 cal.set(Calendar.SECOND, 0);
                 cal.set(Calendar.MILLISECOND, 0);
                 startDate = cal.getTime();
+                cal.set(Calendar.HOUR_OF_DAY, 23);
+                cal.set(Calendar.MINUTE, 59);
+                cal.set(Calendar.SECOND, 59);
+                cal.set(Calendar.MILLISECOND, 999);
+                endDate = cal.getTime();
+            } else if ("week".equals(filterType)) {
+                cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+                cal.set(Calendar.HOUR_OF_DAY, 0);
+                cal.set(Calendar.MINUTE, 0);
+                cal.set(Calendar.SECOND, 0);
+                cal.set(Calendar.MILLISECOND, 0);
+                startDate = cal.getTime();
+                cal.add(Calendar.DAY_OF_WEEK, 6);
                 cal.set(Calendar.HOUR_OF_DAY, 23);
                 cal.set(Calendar.MINUTE, 59);
                 cal.set(Calendar.SECOND, 59);
@@ -199,7 +249,7 @@ public class ThongKeService {
                 map.put("imageUrl", ctsp.getIdAnhSanPham().getDuongDan());
                 map.put("productName", productName);
                 map.put("price", ctsp.getGiaBan());
-                map.put("soldQuantity", ((Number) result[1]).longValue());
+                map.put("soldQuantity", ((Number) result[1]).intValue());
                 return map;
             }
             return null;
@@ -228,9 +278,9 @@ public class ThongKeService {
         growthData.put("doanhThuNgay", getDoubleValue(ngayHienTai, "doanhThu"));
         growthData.put("doanhThuThang", getDoubleValue(thangHienTai, "doanhThu"));
         growthData.put("doanhThuNam", getDoubleValue(namHienTai, "doanhThu"));
-        growthData.put("sanPhamDaBanThang", getLongValue(thangHienTai, "sanPhamDaBan"));
-        growthData.put("hoaDonTheoNgay", getLongValue(ngayHienTai, "tongSoDonHang"));
-        growthData.put("hoaDonTheoNam", getLongValue(namHienTai, "tongSoDonHang"));
+        growthData.put("sanPhamDaBanThang", getIntegerValue(thangHienTai, "sanPhamDaBan"));
+        growthData.put("hoaDonTheoNgay", getIntegerValue(ngayHienTai, "tongSoDonHang"));
+        growthData.put("hoaDonTheoNam", getIntegerValue(namHienTai, "tongSoDonHang"));
 
         growthData.put("growthDoanhThuNgay", calculateGrowth(getDoubleValue(ngayHienTai, "doanhThu"), getDoubleValue(ngayTruoc, "doanhThu")));
         growthData.put("growthDoanhThuThang", calculateGrowth(getDoubleValue(thangHienTai, "doanhThu"), getDoubleValue(thangTruoc, "doanhThu")));
@@ -246,18 +296,18 @@ public class ThongKeService {
         Object value = map.get(key);
         if (value instanceof BigDecimal) {
             return ((BigDecimal) value).doubleValue();
-        } else if (value instanceof Long) {
-            return ((Long) value).doubleValue();
+        } else if (value instanceof Number) {
+            return ((Number) value).doubleValue();
         }
         return 0.0;
     }
 
-    private long getLongValue(Map<String, Object> map, String key) {
+    private int getIntegerValue(Map<String, Object> map, String key) {
         Object value = map.get(key);
-        if (value instanceof Long) {
-            return (Long) value;
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
         }
-        return 0L;
+        return 0;
     }
 
     private double calculateGrowth(double current, double previous) {
@@ -301,6 +351,7 @@ public class ThongKeService {
         List<Map<String, Object>> result = tkRepo.thongKeTrangThaiDonHang(filterType, date);
         Map<String, Long> statusStats = new HashMap<>();
 
+        // Khởi tạo giá trị mặc định
         statusStats.put("Chờ xác nhận", 0L);
         statusStats.put("Chờ giao hàng", 0L);
         statusStats.put("Đang giao", 0L);
@@ -310,34 +361,50 @@ public class ThongKeService {
         for (Map<String, Object> entry : result) {
             Object trangThaiObj = entry.get("trangThai");
             Integer trangThai = null;
-            if (trangThaiObj instanceof Short) {
-                trangThai = ((Short) trangThaiObj).intValue();
-            } else if (trangThaiObj instanceof Integer) {
-                trangThai = (Integer) trangThaiObj;
+            try {
+                if (trangThaiObj instanceof Number) {
+                    trangThai = ((Number) trangThaiObj).intValue();
+                } else if (trangThaiObj instanceof String) {
+                    trangThai = Integer.parseInt((String) trangThaiObj);
+                }
+            } catch (Exception e) {
+                System.err.println("Invalid trangThai value: " + trangThaiObj);
+                continue;
             }
 
-            Long soLuong = (Long) entry.get("soLuong");
+            Object soLuongObj = entry.get("soLuong");
+            Long soLuong = 0L;
+            try {
+                if (soLuongObj instanceof Number) {
+                    soLuong = ((Number) soLuongObj).longValue();
+                }
+            } catch (Exception e) {
+                System.err.println("Invalid soLuong value: " + soLuongObj);
+                continue;
+            }
+
             if (trangThai != null) {
                 switch (trangThai) {
-                    case 0:
-                        statusStats.put("Chờ xác nhận", soLuong);
-                        break;
-                    case 1:
-                        statusStats.put("Chờ giao hàng", soLuong);
-                        break;
-                    case 2:
-                        statusStats.put("Đang giao", soLuong);
-                        break;
-                    case 3:
-                        statusStats.put("Hoàn thành", soLuong);
-                        break;
-                    case 4:
-                        statusStats.put("Đã hủy", soLuong);
-                        break;
+                    case 0: statusStats.put("Chờ xác nhận", soLuong); break;
+                    case 1: statusStats.put("Chờ giao hàng", soLuong); break;
+                    case 2: statusStats.put("Đang giao", soLuong); break;
+                    case 3: statusStats.put("Hoàn thành", soLuong); break;
+                    case 4: statusStats.put("Đã hủy", soLuong); break;
                 }
             }
         }
 
         return statusStats;
+    }
+
+    private Map<String, Object> convertNumberValuesToInteger(Map<String, Object> input) {
+        Map<String, Object> result = new HashMap<>(input);
+        if (result.get("sanPhamDaBan") instanceof Number) {
+            result.put("sanPhamDaBan", ((Number) result.get("sanPhamDaBan")).intValue());
+        }
+        if (result.get("tongSoDonHang") instanceof Number) {
+            result.put("tongSoDonHang", ((Number) result.get("tongSoDonHang")).intValue());
+        }
+        return result;
     }
 }

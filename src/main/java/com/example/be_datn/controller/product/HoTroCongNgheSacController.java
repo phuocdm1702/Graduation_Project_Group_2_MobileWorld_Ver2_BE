@@ -1,0 +1,188 @@
+package com.example.be_datn.controller.product;
+
+import com.example.be_datn.dto.product.request.HoTroCongNgheSacRequest;
+import com.example.be_datn.dto.product.response.HoTroCongNgheSacResponse;
+import com.example.be_datn.service.product.HoTroCongNgheSacService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/ho-tro-cong-nghe-sac")
+@RequiredArgsConstructor
+@Slf4j
+public class HoTroCongNgheSacController {
+
+    private final HoTroCongNgheSacService service;
+
+    @GetMapping
+    public ResponseEntity<Page<HoTroCongNgheSacResponse>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("Getting all charging technologies - page: {}, size: {}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<HoTroCongNgheSacResponse> result = service.getAllHoTroCongNgheSac(pageable);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<HoTroCongNgheSacResponse>> getAllList() {
+        log.info("Getting all charging technologies as list");
+        List<HoTroCongNgheSacResponse> result = service.getAllHoTroCongNgheSacList();
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getById(@PathVariable Integer id) {
+        log.info("Getting charging technology by id: {}", id);
+        try {
+            HoTroCongNgheSacResponse hoTroCongNgheSac = service.getHoTroCongNgheSacById(id);
+            return ResponseEntity.ok(hoTroCongNgheSac);
+        } catch (RuntimeException e) {
+            log.error("Error getting charging technology by id {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> create(
+            @Valid @RequestBody HoTroCongNgheSacRequest request,
+            BindingResult result) {
+        log.info("Creating new charging technology with code: {}", request.getMa());
+
+        if (result.hasErrors()) {
+            log.warn("Validation errors in create request: {}", result.getAllErrors());
+            return ResponseEntity.badRequest().body(getErrorMap(result));
+        }
+
+        try {
+            HoTroCongNgheSacResponse created = service.createHoTroCongNgheSac(request);
+            log.info("Successfully created charging technology with id: {}", created.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (RuntimeException e) {
+            log.error("Error creating charging technology: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(
+            @PathVariable Integer id,
+            @Valid @RequestBody HoTroCongNgheSacRequest request,
+            BindingResult result) {
+        log.info("Updating charging technology with id: {}", id);
+
+        if (result.hasErrors()) {
+            log.warn("Validation errors in update request for id {}: {}", id, result.getAllErrors());
+            return ResponseEntity.badRequest().body(getErrorMap(result));
+        }
+
+        try {
+            HoTroCongNgheSacResponse updated = service.updateHoTroCongNgheSac(id, request);
+            log.info("Successfully updated charging technology with id: {}", id);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            log.error("Error updating charging technology with id {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Integer id) {
+        log.info("Deleting charging technology with id: {}", id);
+        try {
+            service.deleteHoTroCongNgheSac(id);
+            log.info("Successfully deleted charging technology with id: {}", id);
+            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
+        } catch (RuntimeException e) {
+            log.error("Error deleting charging technology with id {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<HoTroCongNgheSacResponse>> search(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String congSac,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("Searching charging technologies - keyword: {}, congSac: {}, page: {}, size: {}",
+                keyword, congSac, page, size);
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        if (congSac != null && !congSac.trim().isEmpty()) {
+            return ResponseEntity.ok(service.filterByCongSac(congSac.trim(), pageable));
+        }
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return ResponseEntity.ok(service.searchHoTroCongNgheSac(keyword.trim(), pageable));
+        }
+
+        return ResponseEntity.ok(service.getAllHoTroCongNgheSac(pageable));
+    }
+
+    @GetMapping("/all-ports")
+    public ResponseEntity<List<String>> getAllChargingPorts() {
+        log.info("Getting all charging port names");
+        List<String> ports = service.getAllCongSacNames();
+        return ResponseEntity.ok(ports);
+    }
+
+    @GetMapping("/exists/ma")
+    public ResponseEntity<Boolean> checkMaExists(
+            @RequestParam String ma,
+            @RequestParam(required = false) Integer excludeId) {
+        log.info("Checking if charging technology code exists: {}, excludeId: {}", ma, excludeId);
+        boolean exists = service.existsByMa(ma, excludeId);
+        return ResponseEntity.ok(exists);
+    }
+
+    @GetMapping("/exists/cong-sac")
+    public ResponseEntity<Boolean> checkCongSacExists(
+            @RequestParam String congSac,
+            @RequestParam(required = false) Integer excludeId) {
+        log.info("Checking if charging port exists: {}, excludeId: {}", congSac, excludeId);
+        boolean exists = service.existsByCongSac(congSac, excludeId);
+        return ResponseEntity.ok(exists);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getStats() {
+        log.info("Getting charging technology statistics");
+        try {
+            List<HoTroCongNgheSacResponse> allChargingTechnologies = service.getAllHoTroCongNgheSacList();
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("total", allChargingTechnologies.size());
+            stats.put("active", allChargingTechnologies.stream()
+                    .filter(h -> !h.getDeleted())
+                    .count());
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error getting charging technology statistics: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Không thể lấy thống kê"));
+        }
+    }
+
+    private Map<String, String> getErrorMap(BindingResult result) {
+        Map<String, String> errors = new HashMap<>();
+        result.getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage()));
+        result.getGlobalErrors().forEach(error ->
+                errors.put("global", error.getDefaultMessage()));
+        return errors;
+    }
+}

@@ -1,0 +1,21 @@
+package com.example.be_datn.dto.product.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MauSacRequest {
+
+    @NotBlank(message = "Mã màu sắc không được để trống")
+    @Size(max = 255, message = "Mã màu sắc không được vượt quá 255 ký tự")
+    private String ma;
+
+    @NotBlank(message = "Tên màu sắc không được để trống")
+    @Size(max = 255, message = "Tên màu sắc không được vượt quá 255 ký tự")
+    private String mauSac;
+}

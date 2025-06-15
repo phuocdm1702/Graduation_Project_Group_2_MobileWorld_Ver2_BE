@@ -31,7 +31,6 @@ public class HoTroCongNgheSac {
     private String congSac;
 
     @Nationalized
-    @Lob
     @Column(name = "cong_nghe_ho_tro")
     private String congNgheHoTro;
 

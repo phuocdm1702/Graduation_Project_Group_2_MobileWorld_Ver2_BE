@@ -14,6 +14,16 @@ public interface PhieuGiamGiaService {
 
     Page<PhieuGiamGia> searchData(String keyword, Pageable pageable);
 
+    Page<PhieuGiamGia> filterByLoaiPhieu(String loaiPhieu, Pageable pageable);
+
+    Page<PhieuGiamGia> filterByTrangThai(String trangThai, Pageable pageable);
+
+    Page<PhieuGiamGia> filterByDateRange(Date ngayBatDau, Date ngayKetThuc, Pageable pageable);
+
+    Page<PhieuGiamGia> filterByMinOrder(Double minOrder, Pageable pageable);
+
+    Page<PhieuGiamGia> filterByValue(Double valueFilter, Pageable pageable);
+
     Page<PhieuGiamGia> filterPhieuGiamGia(
             String loaiPhieuGiamGia,
             String trangThai,

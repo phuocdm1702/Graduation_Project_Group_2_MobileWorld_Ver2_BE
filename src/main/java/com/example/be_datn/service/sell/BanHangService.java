@@ -1,5 +1,6 @@
 package com.example.be_datn.service.sell;
 
+import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
@@ -24,4 +25,7 @@ public interface BanHangService {
     HoaDonDTO layChiTietHoaDonCho(Integer idHD);
 
     void xoaGioHang(Integer idHD);
+
+    @Transactional
+    HoaDonDTO thanhToan(Integer idHD, HoaDonRequest hoaDonRequest);
 }

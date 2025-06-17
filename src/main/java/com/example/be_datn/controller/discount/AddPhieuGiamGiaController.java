@@ -21,7 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-@RequestMapping("/api")
+@RequestMapping("/api/phieu-giam-gia")
 @RestController
 @CrossOrigin("http://localhost:5173")
 public class AddPhieuGiamGiaController {
@@ -73,7 +73,7 @@ public class AddPhieuGiamGiaController {
         pgg.setSoLuongDung(dtoPGG.getSoLuongDung());
         pgg.setNgayBatDau(dtoPGG.getNgayBatDau());
         pgg.setNgayKetThuc(dtoPGG.getNgayKetThuc());
-        pgg.setTrangThai(false);
+        pgg.setTrangThai(true);
         pgg.setRiengTu(Objects.equals(dtoPGG.getRiengTu(), 1));
         pgg.setMoTa(dtoPGG.getMoTa());
         pgg.setDeleted(false);

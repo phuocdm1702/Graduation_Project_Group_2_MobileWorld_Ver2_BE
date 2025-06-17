@@ -1,17 +1,25 @@
 package com.example.be_datn.service.sell.impl;
 
+import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.order.HoaDon;
+import com.example.be_datn.entity.order.HoaDonChiTiet;
+import com.example.be_datn.entity.order.LichSuHoaDon;
+import com.example.be_datn.entity.pay.HinhThucThanhToan;
 import com.example.be_datn.entity.product.ChiTietSanPham;
 
 
 import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
+import com.example.be_datn.repository.order.HoaDonChiTietRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
+import com.example.be_datn.repository.order.LichSuHoaDonRepository;
+import com.example.be_datn.repository.pay.HinhThucThanhToanRepository;
+import com.example.be_datn.repository.pay.PhuongThucThanhToanRepository;
 import com.example.be_datn.repository.product.ChiTietSanPhamRepository;
 import com.example.be_datn.service.sell.BanHangService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 
@@ -39,7 +45,19 @@ public class BanHangServiceImpl implements BanHangService {
     private HoaDonRepository hoaDonRepository;
 
     @Autowired
+    private HoaDonChiTietRepository hoaDonChiTietRepository;
+
+    @Autowired
+    private LichSuHoaDonRepository lichSuHoaDonRepository;
+
+    @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
+    @Autowired
+    private HinhThucThanhToanRepository hinhThucThanhToanRepository;
+
+    @Autowired
+    private PhuongThucThanhToanRepository phuongThucThanhToanRepository;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -212,6 +230,81 @@ public class BanHangServiceImpl implements BanHangService {
     public void xoaGioHang(Integer idHD) {
         String ghKey = GH_PREFIX + idHD;
         redisTemplate.delete(ghKey);
+    }
+
+    @Override
+    @Transactional
+    public HoaDonDTO thanhToan(Integer idHD, HoaDonRequest hoaDonRequest) {
+        HoaDon hoaDon = hoaDonRepository.findById(idHD)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
+
+        String ghKen = GH_PREFIX + idHD;
+        GioHangDTO gioHangDTO = (GioHangDTO) redisTemplate.opsForValue().get(ghKen);
+        if (gioHangDTO == null || gioHangDTO.getChiTietGioHangDTOS().isEmpty()) {
+            throw new RuntimeException("Giỏ hàng trống, không thể thanh toán!");
+        }
+
+        BigDecimal tienSanPham = gioHangDTO.getChiTietGioHangDTOS().stream()
+                .map(ChiTietGioHangDTO::getTongTien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal tongTienSauGiam = tienSanPham;
+
+        List<HoaDonChiTiet> chiTietList = new ArrayList<>();
+        for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
+                    .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
+
+            HoaDonChiTiet chiTiet = new HoaDonChiTiet();
+            chiTiet.setHoaDon(hoaDon);
+            chiTiet.setIdChiTietSanPham(chiTietSanPham);
+            chiTiet.setGia(chiTietSanPham.getGiaBan());
+            chiTiet.setTrangThai((short) 1); // Đánh dấu đã thanh toán
+            chiTiet.setDeleted(false);
+            chiTietList.add(chiTiet);
+        }
+        hoaDonChiTietRepository.saveAll(chiTietList);
+
+        Set<HinhThucThanhToan> hinhThucThanhToans = hoaDonRequest.getHinhThucThanhToan();
+        if (hinhThucThanhToans == null || hinhThucThanhToans.isEmpty()) {
+            throw new RuntimeException("Thông tin thanh toán không được cung cấp!");
+        }
+
+        BigDecimal tongThanhToan = BigDecimal.ZERO;
+        for (HinhThucThanhToan hinhThuc : hinhThucThanhToans) {
+            hinhThuc.setHoaDon(hoaDon);
+            hinhThucThanhToanRepository.save(hinhThuc);
+            tongThanhToan = tongThanhToan.add(hinhThuc.getTienMat().add(hinhThuc.getTienChuyenKhoan()));
+        }
+        hoaDon.getHinhThucThanhToan().addAll(hinhThucThanhToans);
+
+        if (tongThanhToan.compareTo(tongTienSauGiam) != 0) {
+            throw new RuntimeException("Tổng tiền thanh toán không khớp với tổng tiền hóa đơn!");
+        }
+
+        hoaDon.setTienSanPham(tienSanPham);
+        hoaDon.setTongTien(tienSanPham);
+        hoaDon.setLoaiDon("trực tiếp");
+        hoaDon.setTongTienSauGiam(tongTienSauGiam);
+        hoaDon.setTrangThai((short) 1);
+        hoaDon.setNgayThanhToan(Instant.now());
+        hoaDon.setDeleted(false);
+        hoaDon = hoaDonRepository.save(hoaDon);
+
+        // Lưu lịch sử hóa đơn
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hoaDon);
+        lichSu.setIdNhanVien(nhanVienRepository.findById(1)
+                .orElseThrow(() -> new RuntimeException("Nhân viên với ID 1 không tồn tại")));
+        lichSu.setMa(hoaDon.getMa());
+        lichSu.setHanhDong("Thanh toán hóa đơn");
+        lichSu.setThoiGian(Instant.now());
+        lichSu.setDeleted(false);
+        lichSuHoaDonRepository.save(lichSu);
+
+        xoaGioHang(idHD);
+
+        return mapToHoaDonDto(hoaDon);
     }
 
     private HoaDonDTO mapToHoaDonDto(HoaDon hoaDon) {

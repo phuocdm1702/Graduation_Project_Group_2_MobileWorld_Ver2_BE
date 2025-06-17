@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 public class HoaDonChiTiet {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @NotNull

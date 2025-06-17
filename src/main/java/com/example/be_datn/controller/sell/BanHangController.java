@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.sell;
 
+import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
@@ -51,6 +52,12 @@ public class BanHangController {
     public ResponseEntity<HoaDonDTO> getHoaDonDetail(@PathVariable Integer idHD) {
         HoaDonDTO hd = banHangService.layChiTietHoaDonCho(idHD);
         return ResponseEntity.ok(hd);
+    }
+
+    @PostMapping("/thanh-toan/{idHD}")
+    public ResponseEntity<HoaDonDTO> thanhToan(@PathVariable Integer idHD, @RequestBody HoaDonRequest hoaDonRequest) {
+        HoaDonDTO hoaDonDTO = banHangService.thanhToan(idHD, hoaDonRequest);
+        return ResponseEntity.ok(hoaDonDTO);
     }
 
 

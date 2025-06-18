@@ -1,0 +1,70 @@
+[33m649b614[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mphuoc[m[33m)[m commit remove keyapi
+[33m0286182[m commit CREATE chatbot
+[33mcf3fc3f[m[33m ([m[1;31morigin/phuoc[m[33m, [m[1;31morigin/HEAD[m[33m)[m Commit load SP from BanHang
+[33m58acf8f[m Merge pull request #21 from phuocdm1702/huan
+[33m90b375e[m fix lai thanh lay imel
+[33m45ee220[m fix lai trung class
+[33mf057608[m Merge pull request #20 from phuocdm1702/huan
+[33m71c16c3[m Them crossgorigin cho BE va them truong id tu dong tang cho HTTT
+[33m4da2ffe[m Merge pull request #19 from phuocdm1702/phuc
+[33m3639ac0[m Merge branch 'main' into phuc
+[33mfeeef5b[m Merge pull request #18 from phuocdm1702/huan
+[33mc74719d[m fix lai crud pgg va them thanh toan(BE)
+[33m6f58bd4[m Merge pull request #17 from phuocdm1702/minh
+[33m1465dcc[m Update Validate dgg
+[33ma92cbfa[m Merge pull request #16 from phuocdm1702/minh
+[33mf8e5d7e[m Update BE thong ke
+[33m74a19b2[m Merge pull request #15 from phuocdm1702/khoa
+[33mf1e8319[m done thuoc tinh sp
+[33m6341143[m Merge pull request #14 from phuocdm1702/khoa
+[33m7923fd5[m done man san pham
+[33m6752b8a[m Merge pull request #13 from phuocdm1702/khoa
+[33m2812abd[m nha san xuat
+[33mff08a4f[m Merge pull request #12 from phuocdm1702/khoa
+[33m5894c7d[m san pham
+[33m7d58522[m Merge pull request #11 from phuocdm1702/minh
+[33mb300f89[m Update BE dot giam gia, thong ke
+[33mee9b1ea[m Merge pull request #10 from phuocdm1702/phuoc
+[33mafa71e0[m commit scanner and down QR HoaDon
+[33m497d38a[m Merge pull request #6 from phuocdm1702/phuoc
+[33m832ca18[m Commit in PDF HoaDon
+[33m55e2e78[m Merge pull request #5 from phuocdm1702/huan
+[33m880211e[m commit pgg
+[33mf71acd2[m Merge pull request #4 from phuocdm1702/khoa
+[33m60579d3[m san pham
+[33mcbb0deb[m Merge pull request #3 from phuocdm1702/phuoc
+[33m09ad272[m commit API BE GET/Detail HoaDon
+[33mcca1a76[m Merge branch 'huan' of https://github.com/phuocdm1702/Graduation_Project_Group_2_MobileWorld_Ver2_BE into phuoc
+[33m9dae80c[m commit API Get HoaDon Final
+[33m2cb1c74[m[33m ([m[1;31morigin/huan[m[33m)[m Fix lại lỗi passEncoder
+[33m2af3ff0[m Bổ sung thêm gửi email
+[33mf844771[m Sửa lại cấu trúc file và bổ sung các chức năng ở module pgg, kh, nv, tk
+[33m4742f49[m Pgg BE -ver1
+[33m2640904[m commit dto update
+[33m22a18c9[m Merge branch 'huan' of https://github.com/phuocdm1702/Graduation_Project_Group_2_MobileWorld_Ver2_BE into phuoc
+[33m6bd3255[m Done crud giỏ hàng + detail hoá đơn
+[33m02b91fb[m[33m ([m[1;31morigin/phuc[m[33m)[m sưa lai locahost5173
+[33m5c72987[m commit Get HoaDon update
+[33m6895460[m Done hoá đơn chờ tích và tích hợp xong hoá đơn với giỏ hàng
+[33mf63314d[m Merge remote-tracking branch 'origin/phuoc' into huan
+[33m2f9f816[m Theem import kh và nv ra excel
+[33m4ec17c2[m thêm porm email và gửi email
+[33m1da74a8[m Done Khach Hang
+[33mefe8b26[m Done nhân viên + add khách hàng
+[33m8234eda[m Merge remote-tracking branch 'origin/phuoc' into phuoc
+[33m098762f[m Commit update package GET HoaDon
+[33mce7152d[m Done full hoá đơn chờ bên bán hàng
+[33mac0fd68[m chỉa sửa lại package
+[33ma6e82e8[m Merge remote-tracking branch 'origin/phuc' into phuoc
+[33mc55d2a7[m Merge remote-tracking branch 'origin/revert-1-phuc' into phuoc
+[33mc67b23d[m Merge pull request #2 from phuocdm1702/phuc
+[33mdff01ca[m done crud nhanvien
+[33ma4b6f7e[m them add Nvien
+[33me732d4e[m Add hoá đơn chờ và viết sẵn entity pgg
+[33mbcce2d5[m Revert "Getall dữ liệu nhân viên và khách hàng"
+[33maa8c75f[m Merge pull request #1 from phuocdm1702/phuc
+[33mf118637[m Getall dữ liệu nhân viên và khách hàng
+[33m4c26ff1[m Commit GET HoaDon
+[33me136da4[m Commit HoaDon
+[33m32a5b41[m Commit update Project BE Package
+[33m7b883c8[m[33m ([m[1;31morigin/khoa[m[33m)[m Commit Project BE

@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 public class HinhThucThanhToan {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @NotNull

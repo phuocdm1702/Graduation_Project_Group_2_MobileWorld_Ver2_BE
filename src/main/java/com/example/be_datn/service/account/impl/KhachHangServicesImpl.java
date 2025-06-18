@@ -11,6 +11,7 @@ import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.KhachHangServices;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,6 @@ public class KhachHangServicesImpl implements KhachHangServices {
                 .filter(kh -> !"KH00001".equals(kh.getMa())).collect(Collectors.toUnmodifiableList());
     }
 
-
     //tao ma Tk
     public String MaTaiKhoan() {
         int index = 1;
@@ -72,6 +72,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         return Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "");
     }
+
 
     @Override
     public List<KhachHang> searchFormAddPgg(String keyword) {

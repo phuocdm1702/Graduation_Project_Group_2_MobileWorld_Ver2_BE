@@ -36,7 +36,7 @@ public class KhachHang {
     private String ten;
 
     @Column(name = "gioi_tinh", columnDefinition = "tinyint")
-    private Short gioiTinh;
+    private Boolean gioiTinh;
 
     @Column(name = "ngay_sinh")
     private Date ngaySinh;

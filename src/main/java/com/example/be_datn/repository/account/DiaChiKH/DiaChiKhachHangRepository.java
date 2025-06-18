@@ -10,4 +10,6 @@ public interface DiaChiKhachHangRepository extends JpaRepository<DiaChiKhachHang
     boolean existsByMa(String ma);
 
     List<DiaChiKhachHang> findByIdKhachHang(KhachHang existing);
+
+    List<DiaChiKhachHang> findAllByIdKhachHangId(Integer idKhachHang);
 }

@@ -20,4 +20,26 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         return tk != null ? tk.get().getEmail() : null;
     }
 
+    @Override
+    public TaiKhoan trangthaiKH(Integer id) {
+        Optional<TaiKhoan> tk = taiKhoanRepository.findById(id);
+        if (!tk.isPresent()) {
+            throw new RuntimeException("Không tìm thấy khách hàng với ID: " + id);
+        }
+        TaiKhoan khachHang = tk.get();
+        khachHang.setDeleted(!khachHang.getDeleted());
+        return taiKhoanRepository.save(khachHang);
+    }
+
+    @Override
+    public TaiKhoan trangthaiNV(Integer id) {
+        Optional<TaiKhoan> tk = taiKhoanRepository.findById(id);
+        if (!tk.isPresent()) {
+            throw new RuntimeException("Không tìm thấy nhân viên với ID: " + id);
+        }
+        TaiKhoan nv = tk.get();
+        nv.setDeleted(!nv.getDeleted()); // Toggle trạng thái
+        return taiKhoanRepository.save(nv);
+    }
+
 }

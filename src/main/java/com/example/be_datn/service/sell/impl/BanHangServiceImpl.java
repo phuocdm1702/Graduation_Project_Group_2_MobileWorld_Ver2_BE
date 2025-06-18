@@ -4,6 +4,7 @@ import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
+import com.example.be_datn.dto.sell.response.ChiTietSanPhamGroupDTO;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.order.HoaDon;
@@ -23,6 +24,11 @@ import com.example.be_datn.repository.pay.PhuongThucThanhToanRepository;
 import com.example.be_datn.repository.product.ChiTietSanPhamRepository;
 import com.example.be_datn.service.sell.BanHangService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +37,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -305,6 +312,48 @@ public class BanHangServiceImpl implements BanHangService {
         xoaGioHang(idHD);
 
         return mapToHoaDonDto(hoaDon);
+    }
+
+    @Override
+    @Cacheable(value = "sanPhamCache", key = "#page + '-' + #size + '-' + #keyword")
+    public Page<ChiTietSanPhamGroupDTO> getAllCTSP(int page, int size, String keyword) {
+        Pageable pageable = PageRequest.of(page, size);
+        List<Object[]> results = chiTietSanPhamRepository.findGroupedProductsBySanPhamId(null); // Lấy tất cả sản phẩm
+        List<ChiTietSanPhamGroupDTO> dtos = results.stream().map(this::convertToChiTietSanPhamGroupDTO).collect(Collectors.toList());
+
+        // Lọc theo từ khóa nếu có
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String lowerKeyword = keyword.toLowerCase();
+            dtos = dtos.stream()
+                    .filter(dto -> dto.getTenSanPham().toLowerCase().contains(lowerKeyword) ||
+                            dto.getMa().toLowerCase().contains(lowerKeyword))
+                    .collect(Collectors.toList());
+        }
+
+        // Phân trang thủ công
+        int start = Math.min((page * size), dtos.size());
+        int end = Math.min(((page + 1) * size), dtos.size());
+        List<ChiTietSanPhamGroupDTO> pagedDtos = dtos.subList(start, end);
+
+        return new PageImpl<>(pagedDtos, pageable, dtos.size());
+    }
+
+    @Override
+    public List<String> getIMEIsBySanPhamIdAndAttributes(Integer sanPhamId, String mauSac, String dungLuongRam, String dungLuongBoNhoTrong) {
+        return chiTietSanPhamRepository.findIMEIsBySanPhamIdAndAttributes(sanPhamId, mauSac, dungLuongRam, dungLuongBoNhoTrong);
+    }
+
+    private ChiTietSanPhamGroupDTO convertToChiTietSanPhamGroupDTO(Object[] result) {
+        ChiTietSanPhamGroupDTO dto = new ChiTietSanPhamGroupDTO();
+        dto.setMa((String) result[0]);
+        dto.setTenSanPham((String) result[1]);
+        dto.setMauSac((String) result[2]);
+        dto.setDungLuongRam((String) result[3]);
+        dto.setDungLuongBoNhoTrong((String) result[4]);
+        dto.setSoLuong(((Number) result[5]).intValue());
+        dto.setGiaBan((BigDecimal) result[6]);
+        dto.setIdSanPham(((Number) result[7]).intValue());
+        return dto;
     }
 
     private HoaDonDTO mapToHoaDonDto(HoaDon hoaDon) {

@@ -4,10 +4,13 @@ import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
+import com.example.be_datn.dto.sell.response.ChiTietSanPhamGroupDTO;
 import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.service.sell.BanHangService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -61,5 +64,25 @@ public class BanHangController {
         return ResponseEntity.ok(hoaDonDTO);
     }
 
+    @GetMapping("/san-pham")
+    public Page<ChiTietSanPhamGroupDTO> getSanPham(@RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size,
+                                                   @RequestParam(defaultValue = "") String keyword) {
+        return banHangService.getAllCTSP(page, size, keyword);
+    }
+
+    @GetMapping("/san-pham/{sanPhamId}/imeis")
+    public ResponseEntity<List<String>> getIMEIsBySanPhamId(@PathVariable Integer sanPhamId,
+                                                            @RequestParam String mauSac,
+                                                            @RequestParam String dungLuongRam,
+                                                            @RequestParam String dungLuongBoNhoTrong) {
+        try {
+            List<String> imeis = banHangService.getIMEIsBySanPhamIdAndAttributes(sanPhamId, mauSac, dungLuongRam, dungLuongBoNhoTrong);
+            return ResponseEntity.ok(imeis);
+        } catch (Exception e) {
+            System.out.println("Lỗi khi lấy danh sách IMEI: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
 }

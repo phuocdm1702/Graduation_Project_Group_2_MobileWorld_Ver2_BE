@@ -58,6 +58,15 @@ public class BanHangController {
         return ResponseEntity.ok(hd);
     }
 
+    @DeleteMapping("/gio-hang/xoa")
+    public ResponseEntity<GioHangDTO> xoaSanPhamKhoiGioHang(
+            @RequestParam Integer hdId,
+            @RequestParam Integer spId,
+            @RequestParam(required = false) String maImel) {
+        GioHangDTO updatedGioHang = banHangService.xoaSanPhamKhoiGioHang(hdId, spId, maImel);
+        return ResponseEntity.ok(updatedGioHang);
+    }
+
     @PostMapping("/thanh-toan/{idHD}")
     public ResponseEntity<HoaDonDTO> thanhToan(@PathVariable Integer idHD, @RequestBody HoaDonRequest hoaDonRequest) {
         HoaDonDTO hoaDonDTO = banHangService.thanhToan(idHD, hoaDonRequest);
@@ -83,6 +92,16 @@ public class BanHangController {
             System.out.println("Lỗi khi lấy danh sách IMEI: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+
+    @GetMapping("/chi-tiet-san-pham/id")
+    public ResponseEntity<Integer> getChiTietSanPhamId(
+            @RequestParam Integer sanPhamId,
+            @RequestParam String mauSac,
+            @RequestParam String dungLuongRam,
+            @RequestParam String dungLuongBoNhoTrong) {
+        Integer chiTietSanPhamId = banHangService.getChiTietSanPhamId(sanPhamId, mauSac, dungLuongRam, dungLuongBoNhoTrong);
+        return ResponseEntity.ok(chiTietSanPhamId);
     }
 
 }

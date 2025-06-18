@@ -15,6 +15,7 @@ import java.util.Date;
 public class HoaDonResponse {
     private Integer id;
     private String ma;
+    private String maNhanVien;
     private String tenKhachHang;
     private String soDienThoaiKhachHang;
     private BigDecimal tongTienSauGiam;
@@ -22,4 +23,6 @@ public class HoaDonResponse {
     private Date ngayTao;
     private String loaiDon;
     private Short trangThai;
+    private Boolean deleted;
+
 }

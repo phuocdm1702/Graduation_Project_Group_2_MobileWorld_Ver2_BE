@@ -8,6 +8,11 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+import org.hibernate.annotations.Nationalized;
+
 @Getter
 @Setter
 @Entity
@@ -17,12 +22,13 @@ import org.hibernate.annotations.Nationalized;
 @Table(name = "nha_san_xuat")
 public class NhaSanXuat {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
     @Size(max = 255)
     @Nationalized
-    @Column(name = "ma")
+    @Column(name = "ma", unique = true)
     private String ma;
 
     @Size(max = 255)
@@ -31,6 +37,6 @@ public class NhaSanXuat {
     private String nhaSanXuat;
 
     @Column(name = "deleted")
-    private Boolean deleted;
-
+    @Builder.Default
+    private Boolean deleted = false;
 }

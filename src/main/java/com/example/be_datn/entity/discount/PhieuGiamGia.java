@@ -1,14 +1,12 @@
 package com.example.be_datn.entity.discount;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.Instant;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -20,6 +18,7 @@ import java.time.Instant;
 public class PhieuGiamGia {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Size(max = 255)
@@ -50,10 +49,10 @@ public class PhieuGiamGia {
     private Integer soLuongDung;
 
     @Column(name = "ngay_bat_dau")
-    private Instant ngayBatDau;
+    private Date ngayBatDau;
 
     @Column(name = "ngay_ket_thuc")
-    private Instant ngayKetThuc;
+    private Date ngayKetThuc;
 
     @Column(name = "trang_thai")
     private Boolean trangThai;
@@ -68,5 +67,4 @@ public class PhieuGiamGia {
 
     @Column(name = "deleted")
     private Boolean deleted;
-
 }

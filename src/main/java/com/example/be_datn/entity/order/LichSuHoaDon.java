@@ -19,12 +19,13 @@ import java.time.Instant;
 public class LichSuHoaDon {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_hoa_don", nullable = false)
-    private HoaDon idHoaDon;
+    private HoaDon hoaDon;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_nhan_vien")

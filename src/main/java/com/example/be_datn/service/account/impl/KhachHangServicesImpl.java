@@ -12,8 +12,9 @@ import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.KhachHangServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.text.Normalizer;
 import java.util.Date;
@@ -70,6 +71,21 @@ public class KhachHangServicesImpl implements KhachHangServices {
     private String removeAccents(String input) {
         return Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "");
+    }
+
+
+    @Override
+    public List<KhachHang> searchFormAddPgg(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return khachHangRepository.findAll();
+        }
+        return khachHangRepository.searchFormAdd(keyword);
+    }
+
+    @Override
+    public KhachHang findById(Integer id) {
+        Optional<KhachHang> khachHang = khachHangRepository.findById(id);
+        return khachHang.orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + id));
     }
 
     //MatutangNV

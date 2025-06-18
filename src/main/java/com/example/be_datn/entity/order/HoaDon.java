@@ -2,7 +2,9 @@ package com.example.be_datn.entity.order;
 
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
+import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
+import com.example.be_datn.entity.pay.HinhThucThanhToan;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -13,6 +15,9 @@ import org.hibernate.annotations.Nationalized;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -24,6 +29,7 @@ import java.util.Date;
 public class HoaDon {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @NotNull
@@ -123,4 +129,12 @@ public class HoaDon {
     @Column(name = "updated_by")
     private Integer updatedBy;
 
+    @OneToMany(mappedBy = "hoaDon")
+    private List<LichSuHoaDon> lichSuHoaDon;
+
+    @OneToMany(mappedBy = "hoaDon", fetch = FetchType.LAZY)
+    private Set<HoaDonChiTiet> chiTietHoaDon = new HashSet<>();
+
+    @OneToMany(mappedBy = "hoaDon", fetch = FetchType.LAZY)
+    private Set<HinhThucThanhToan> hinhThucThanhToan = new HashSet<>();
 }

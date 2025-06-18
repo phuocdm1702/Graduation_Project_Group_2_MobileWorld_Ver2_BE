@@ -21,12 +21,13 @@ import java.math.BigDecimal;
 public class HoaDonChiTiet {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_hoa_don", nullable = false)
-    private HoaDon idHoaDon;
+    private HoaDon hoaDon;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

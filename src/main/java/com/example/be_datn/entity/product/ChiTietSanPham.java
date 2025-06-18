@@ -19,37 +19,38 @@ import java.util.Date;
 @Table(name = "chi_tiet_san_pham")
 public class ChiTietSanPham {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_imel", nullable = false)
+    @JoinColumn(name = "id_imel", referencedColumnName = "id")
     private Imel idImel;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_san_pham", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "id_san_pham", referencedColumnName = "id")
     private SanPham idSanPham;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_anh_san_pham", nullable = false)
+    @JoinColumn(name = "id_anh_san_pham", referencedColumnName = "id")
     private AnhSanPham idAnhSanPham;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_mau_sac", nullable = false)
+    @JoinColumn(name = "id_mau_sac", referencedColumnName = "id")
     private MauSac idMauSac;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_ram", nullable = false)
+    @JoinColumn(name = "id_ram", referencedColumnName = "id")
     private Ram idRam;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_bo_nho_trong", nullable = false)
+    @JoinColumn(name = "id_bo_nho_trong", referencedColumnName = "id")
     private BoNhoTrong idBoNhoTrong;
 
     @Size(max = 255)
@@ -84,5 +85,4 @@ public class ChiTietSanPham {
 
     @Column(name = "updated_by")
     private Integer updatedBy;
-
 }

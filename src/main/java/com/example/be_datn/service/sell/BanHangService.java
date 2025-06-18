@@ -22,6 +22,8 @@ public interface BanHangService {
 
     GioHangDTO themVaoGH(Integer idHD, ChiTietGioHangDTO chiTietGioHangDTO);
 
+    GioHangDTO xoaSanPhamKhoiGioHang(Integer idHD, Integer spId, String maImel);
+
     GioHangDTO layGioHang(Integer idHD);
 
     HoaDonDTO layChiTietHoaDonCho(Integer idHD);
@@ -34,4 +36,6 @@ public interface BanHangService {
     Page<ChiTietSanPhamGroupDTO> getAllCTSP(int page, int size, String keyword);
 
     List<String> getIMEIsBySanPhamIdAndAttributes(Integer sanPhamId, String mauSac, String dungLuongRam, String dungLuongBoNhoTrong);
+
+    Integer getChiTietSanPhamId(Integer sanPhamId, String mauSac, String dungLuongRam, String dungLuongBoNhoTrong);
 }

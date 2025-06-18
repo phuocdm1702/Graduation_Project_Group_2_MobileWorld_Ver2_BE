@@ -154,7 +154,7 @@ public class BanHangServiceImpl implements BanHangService {
         ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTietGioHangDTO.getChiTietSanPhamId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm!"));
 
-        chiTietGioHangDTO.setMaImel(chiTietSanPham.getIdImel().getMa());
+        chiTietGioHangDTO.setMaImel(chiTietSanPham.getIdImel().getImel());
         chiTietGioHangDTO.setTenSanPham(chiTietSanPham.getIdSanPham().getTenSanPham());
         chiTietGioHangDTO.setMauSac(chiTietSanPham.getIdMauSac().getMauSac());
         chiTietGioHangDTO.setRam(chiTietSanPham.getIdRam().getDungLuongRam());

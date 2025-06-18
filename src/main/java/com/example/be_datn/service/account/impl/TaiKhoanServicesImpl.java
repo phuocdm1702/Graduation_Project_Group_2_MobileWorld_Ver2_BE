@@ -1,14 +1,5 @@
 package com.example.be_datn.service.account.impl;
 
-
-public class TaiKhoanServicesImpl {
-//    private final TaiKhoanRepository taiKhoanRepository;
-//
-////    @Autowired
-////    public TaiKhoanServicesImpl(TaiKhoanRepository taiKhoanRepository) {
-////        this.taiKhoanRepository = taiKhoanRepository;
-////    }
-
 import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.TaiKhoanService;

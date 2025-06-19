@@ -471,7 +471,11 @@ public class BanHangServiceImpl implements BanHangService {
         hoaDon.setPhiVanChuyen(phiVanChuyen);
         hoaDon.setTongTien(tienSanPham.add(phiVanChuyen));
         hoaDon.setTongTienSauGiam(tienSanPham.add(phiVanChuyen).subtract(giamGia));
-        hoaDon.setLoaiDon(hoaDonRequest.getLoaiDon());
+        String loaiDon = hoaDonRequest.getLoaiDon();
+        if (!"online".equals(loaiDon) && !"trực tiếp".equals(loaiDon)) {
+            throw new RuntimeException("Loại đơn không hợp lệ: " + loaiDon);
+        }
+        hoaDon.setLoaiDon(loaiDon);
         if (hoaDonRequest.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu giảm giá với ID: " + hoaDonRequest.getIdPhieuGiamGia()));

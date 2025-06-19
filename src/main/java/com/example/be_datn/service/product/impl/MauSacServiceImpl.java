@@ -73,6 +73,7 @@ public class MauSacServiceImpl implements MauSacService {
             MauSac entity = existingByCode.get();
             entity.setDeleted(false);
             entity.setMauSac(request.getMauSac());
+            entity.setMaMau(request.getMaMau()); // Cập nhật mã màu
             return convertToResponse(repository.save(entity));
         }
 
@@ -81,12 +82,14 @@ public class MauSacServiceImpl implements MauSacService {
             MauSac entity = existingByName.get();
             entity.setDeleted(false);
             entity.setMa(request.getMa());
+            entity.setMaMau(request.getMaMau()); // Cập nhật mã màu
             return convertToResponse(repository.save(entity));
         }
 
         MauSac entity = MauSac.builder()
                 .ma(request.getMa())
                 .mauSac(request.getMauSac())
+                .maMau(request.getMaMau()) // Thêm mã màu
                 .deleted(false)
                 .build();
 
@@ -120,6 +123,7 @@ public class MauSacServiceImpl implements MauSacService {
 
         entity.setMa(request.getMa());
         entity.setMauSac(request.getMauSac());
+        entity.setMaMau(request.getMaMau()); // Cập nhật mã màu
 
         MauSac updatedEntity = repository.save(entity);
         log.info("Updated color with id: {}", id);
@@ -188,6 +192,7 @@ public class MauSacServiceImpl implements MauSacService {
                 .id(entity.getId())
                 .ma(entity.getMa())
                 .mauSac(entity.getMauSac())
+                .maMau(entity.getMaMau()) // Thêm mã màu vào response
                 .deleted(entity.getDeleted())
                 .build();
     }

@@ -274,6 +274,11 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
         return phieuGiamGiaRepository.findAll();
     }
 
+    @Override
+    public List<PhieuGiamGia> getallPGG() {
+        return phieuGiamGiaRepository.findAll();
+    }
+
     private void logResult(Page<PhieuGiamGia> result) {
         System.out.println("Filter result size: " + result.getContent().size());
         result.getContent().forEach(voucher ->

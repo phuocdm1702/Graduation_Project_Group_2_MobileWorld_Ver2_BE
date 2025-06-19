@@ -7,6 +7,7 @@ import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.dto.sell.response.ChiTietSanPhamGroupDTO;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
+import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.order.HoaDonChiTiet;
 import com.example.be_datn.entity.order.LichSuHoaDon;
@@ -16,6 +17,7 @@ import com.example.be_datn.entity.product.ChiTietSanPham;
 
 import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
+import com.example.be_datn.repository.discount.PhieuGiamGiaCaNhanRepository;
 import com.example.be_datn.repository.order.HoaDonChiTietRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
 import com.example.be_datn.repository.order.LichSuHoaDonRepository;
@@ -65,6 +67,9 @@ public class BanHangServiceImpl implements BanHangService {
 
     @Autowired
     private PhuongThucThanhToanRepository phuongThucThanhToanRepository;
+
+    @Autowired
+    private PhieuGiamGiaCaNhanRepository phieuGiamGiaCaNhanRepository;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -452,5 +457,9 @@ public class BanHangServiceImpl implements BanHangService {
                 hoaDon.getTrangThai(),
                 chiTietGioHangDTOS
         );
+    }
+    @Override
+    public List<PhieuGiamGiaCaNhan> findByKhachHangId(Integer idKhachHang) {
+        return phieuGiamGiaCaNhanRepository.findByIdKhachHangId(idKhachHang);
     }
 }

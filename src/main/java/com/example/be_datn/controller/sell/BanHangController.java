@@ -5,8 +5,12 @@ import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.dto.sell.response.ChiTietSanPhamGroupDTO;
+import com.example.be_datn.entity.discount.PhieuGiamGia;
+import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.order.HoaDon;
+import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
+import com.example.be_datn.service.discount.PhieuGiamGiaService;
 import com.example.be_datn.service.sell.BanHangService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -22,6 +27,13 @@ import java.util.List;
 public class BanHangController {
     @Autowired
     private BanHangService banHangService;
+    private final PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService;
+    private final PhieuGiamGiaService phieuGiamGiaService;
+
+    public BanHangController(PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService, PhieuGiamGiaService phieuGiamGiaService) {
+        this.phieuGiamGiaCaNhanService = phieuGiamGiaCaNhanService;
+        this.phieuGiamGiaService = phieuGiamGiaService;
+    }
 
     @GetMapping("/hoa-don-cho")
     public ResponseEntity<List<HoaDon>> getHD() {
@@ -93,6 +105,29 @@ public class BanHangController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+    @GetMapping("/PGG-canhan")
+    public List<PhieuGiamGiaCaNhan> getall(){
+        return phieuGiamGiaCaNhanService.getall();
+    }
+
+    @GetMapping("/PGG-all")
+    public List<PhieuGiamGia> getallPGG(){
+        return
+                phieuGiamGiaService.getallPGG();
+    }
+
+    @GetMapping("/by-khach-hang/{idKhachHang}")
+    public ResponseEntity<List<PhieuGiamGiaCaNhan>> getByKhachHang(@PathVariable Integer idKhachHang) {
+        List<PhieuGiamGiaCaNhan> phieuGiamGias = banHangService.findByKhachHangId(idKhachHang);
+        return ResponseEntity.ok(phieuGiamGias);
+    }
+    @GetMapping("/pgg/check")
+    public ResponseEntity<PhieuGiamGiaCaNhan> checkDiscountCode(@RequestParam("ma") String ma) {
+        Optional<PhieuGiamGiaCaNhan> optional = phieuGiamGiaCaNhanService.checkDiscountCode(ma);
+        return optional.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
 
     @GetMapping("/chi-tiet-san-pham/id")
     public ResponseEntity<Integer> getChiTietSanPhamId(

@@ -44,4 +44,6 @@ public interface PhieuGiamGiaService {
     PhieuGiamGia updatePGG(PhieuGiamGia editPGG);
 
     List<PhieuGiamGia> getall();
+
+    List<PhieuGiamGia> getallPGG();
 }

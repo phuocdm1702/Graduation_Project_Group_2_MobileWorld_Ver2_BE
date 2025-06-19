@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
-import java.time.Instant;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -23,7 +23,7 @@ public class SanPham {
 
     @NotNull
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private Date createdAt;
 
     @Column(name = "created_by")
     private Integer createdBy;
@@ -44,7 +44,7 @@ public class SanPham {
     private String tenSanPham;
 
     @Column(name = "updated_at")
-    private Instant updatedAt;
+    private Date updatedAt;
 
     @Column(name = "updated_by")
     private Integer updatedBy;

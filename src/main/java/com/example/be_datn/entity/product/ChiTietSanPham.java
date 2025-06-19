@@ -85,4 +85,12 @@ public class ChiTietSanPham {
 
     @Column(name = "updated_by")
     private Integer updatedBy;
+
+    // Thêm kiểm tra trước khi set giá bán
+    public void setGiaBan(BigDecimal giaBan) {
+        if (giaBan == null || giaBan.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Giá bán phải lớn hơn 0");
+        }
+        this.giaBan = giaBan;
+    }
 }

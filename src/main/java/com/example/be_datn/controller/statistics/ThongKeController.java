@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.statistics;
 
+import com.example.be_datn.dto.statistics.respone.HangBanChayDTO;
 import com.example.be_datn.dto.statistics.respone.SanPhamHetHangDTO;
 import com.example.be_datn.dto.statistics.respone.SoLieuDTO;
 import com.example.be_datn.dto.statistics.respone.TopSellingProductDTO;
@@ -20,7 +21,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -40,37 +43,61 @@ public class ThongKeController {
             @RequestParam(defaultValue = "8") int sanPhamHetHangSize) {
         Map<String, Object> response = new HashMap<>();
 
+        // Validate filterType
+        if (!Arrays.asList("day", "week", "month", "year", "custom").contains(filterType)) {
+            throw new IllegalArgumentException("Invalid filterType: " + filterType);
+        }
+
         // Dữ liệu thống kê hiện tại
         Map<String, Object> ngay = sr.getThongKeTheoNgay();
         Map<String, Object> tuan = sr.getThongKeTheoTuan();
         Map<String, Object> thang = sr.getThongKeTheoThang();
         Map<String, Object> nam = sr.getThongKeTheoNam();
 
+        // Chuyển đổi số an toàn
         SoLieuDTO ngayDTO = new SoLieuDTO(
                 (BigDecimal) ngay.get("doanhThu"),
-                (Long) ngay.get("sanPhamDaBan"),
-                ((Long) ngay.get("tongSoDonHang")).intValue()
+                convertToLong(ngay.get("sanPhamDaBan")),
+                convertToInt(ngay.get("tongSoDonHang"))
         );
         SoLieuDTO tuanDTO = new SoLieuDTO(
                 (BigDecimal) tuan.get("doanhThu"),
-                (Long) tuan.get("sanPhamDaBan"),
-                ((Long) tuan.get("tongSoDonHang")).intValue()
+                convertToLong(tuan.get("sanPhamDaBan")),
+                convertToInt(tuan.get("tongSoDonHang"))
         );
         SoLieuDTO thangDTO = new SoLieuDTO(
                 (BigDecimal) thang.get("doanhThu"),
-                (Long) thang.get("sanPhamDaBan"),
-                ((Long) thang.get("tongSoDonHang")).intValue()
+                convertToLong(thang.get("sanPhamDaBan")),
+                convertToInt(thang.get("tongSoDonHang"))
         );
         SoLieuDTO namDTO = new SoLieuDTO(
                 (BigDecimal) nam.get("doanhThu"),
-                (Long) nam.get("sanPhamDaBan"),
-                ((Long) nam.get("tongSoDonHang")).intValue()
+                convertToLong(nam.get("sanPhamDaBan")),
+                convertToInt(nam.get("tongSoDonHang"))
         );
 
         response.put("ngay", Collections.singletonList(ngayDTO));
         response.put("tuan", Collections.singletonList(tuanDTO));
         response.put("thang", Collections.singletonList(thangDTO));
         response.put("nam", Collections.singletonList(namDTO));
+
+        // Dữ liệu thống kê theo khoảng thời gian tùy chọn
+        if ("custom".equals(filterType) && startDate != null && endDate != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            try {
+                Date start = sdf.parse(startDate);
+                Date end = sdf.parse(endDate);
+                BigDecimal customRevenue = sr.doanhThuTheoKhoangThoiGian(start, end);
+                SoLieuDTO customDTO = new SoLieuDTO(
+                        customRevenue,
+                        0L, // Không có dữ liệu sản phẩm đã bán
+                        0 // Không có dữ liệu tổng số đơn hàng
+                );
+                response.put("custom", Collections.singletonList(customDTO));
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid date format for startDate or endDate", e);
+            }
+        }
 
         // Dữ liệu thống kê hàng bán chạy
         response.put("hangBanChay", sr.thongKeHangBanChay());
@@ -98,16 +125,165 @@ public class ThongKeController {
         return ResponseEntity.ok(response);
     }
 
+    // Hàm hỗ trợ chuyển đổi sang Long
+    private Long convertToLong(Object value) {
+        if (value == null) return 0L;
+        if (value instanceof Long) return (Long) value;
+        if (value instanceof Integer) return ((Integer) value).longValue();
+        throw new IllegalArgumentException("Unsupported type for conversion to Long: " + value.getClass());
+    }
+
+    // Hàm hỗ trợ chuyển đổi sang Integer
+    private Integer convertToInt(Object value) {
+        if (value == null) return 0;
+        if (value instanceof Long) return ((Long) value).intValue();
+        if (value instanceof Integer) return (Integer) value;
+        throw new IllegalArgumentException("Unsupported type for conversion to Integer: " + value.getClass());
+    }
+
+
+    @GetMapping("/revenue-chart")
+    public ResponseEntity<Map<String, Object>> getRevenueChartData(
+            @RequestParam(defaultValue = "month") String filterType,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        Map<String, Object> response = new HashMap<>();
+        List<BigDecimal> data = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        Calendar cal = Calendar.getInstance();
+        switch (filterType) {
+            case "day":
+                List<Map<String, Object>> dailyData = sr.thongKeDoanhThuTheoKhungGio(new Date());
+                labels = Arrays.asList("0-6h", "6-9h", "9-12h", "12-15h", "15-18h", "18-24h");
+                data = labels.stream().map(label -> {
+                    Optional<Map<String, Object>> matchingData = dailyData.stream()
+                            .filter(d -> label.equals(d.get("khungGio")))
+                            .findFirst();
+                    return matchingData.map(d -> (BigDecimal) d.get("doanhThu")).orElse(BigDecimal.ZERO);
+                }).collect(Collectors.toList());
+                break;
+            case "week":
+                cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+                Date startOfWeek = cal.getTime();
+                cal.add(Calendar.DAY_OF_WEEK, 6);
+                Date endOfWeek = cal.getTime();
+                List<Map<String, Object>> weeklyData = sr.thongKeDoanhThuTheoNgayTrongTuan(startOfWeek, endOfWeek);
+                labels = Arrays.asList("T2", "T3", "T4", "T5", "T6");
+                data = labels.stream().map(label -> {
+                    Optional<Map<String, Object>> matchingData = weeklyData.stream()
+                            .filter(d -> label.equals(d.get("ngayTrongTuan")))
+                            .findFirst();
+                    return matchingData.map(d -> (BigDecimal) d.get("doanhThu")).orElse(BigDecimal.ZERO);
+                }).collect(Collectors.toList());
+                break;
+            case "month":
+                cal = Calendar.getInstance();
+                List<Map<String, Object>> monthlyData = sr.thongKeDoanhThuTheoTuanTrongThang(cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR));
+                labels = Arrays.asList("Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4");
+                data = labels.stream().map(label -> {
+                    Optional<Map<String, Object>> matchingData = monthlyData.stream()
+                            .filter(d -> ("Tuần " + d.get("tuan")).equals(label))
+                            .findFirst();
+                    return matchingData.map(d -> (BigDecimal) d.get("doanhThu")).orElse(BigDecimal.ZERO);
+                }).collect(Collectors.toList());
+                break;
+            case "year":
+                List<Map<String, Object>> yearlyData = sr.thongKeDoanhThuTheoQuy(cal.get(Calendar.YEAR));
+                labels = Arrays.asList("Q1", "Q2", "Q3", "Q4");
+                data = labels.stream().map(label -> {
+                    Optional<Map<String, Object>> matchingData = yearlyData.stream()
+                            .filter(d -> ("Q" + d.get("quy")).equals(label))
+                            .findFirst();
+                    return matchingData.map(d -> (BigDecimal) d.get("doanhThu")).orElse(BigDecimal.ZERO);
+                }).collect(Collectors.toList());
+                break;
+            case "custom":
+                if (startDate == null || endDate == null) {
+                    throw new IllegalArgumentException("Start date and end date are required for custom filter");
+                }
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                try {
+                    Date start = sdf.parse(startDate);
+                    Date end = sdf.parse(endDate);
+                    List<Map<String, Object>> customData = sr.thongKeDoanhThuTheoThangTrongKhoangThoiGian(start, end);
+                    labels = customData.stream().map(d -> (String) d.get("thangNam")).collect(Collectors.toList());
+                    data = customData.stream().map(d -> (BigDecimal) d.get("doanhThu")).collect(Collectors.toList());
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Invalid date format for startDate or endDate", e);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid filterType: " + filterType);
+        }
+
+        response.put("labels", labels);
+        response.put("data", data);
+        return ResponseEntity.ok(response);
+    }
+
+    // Helper method to generate daily labels
+    private List<String> generateDailyLabels(Date start, Date end) {
+        List<String> labels = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(start);
+        while (!cal.getTime().after(end)) {
+            labels.add(sdf.format(cal.getTime()));
+            cal.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        return labels;
+    }
+
+    // Helper method to generate weekly labels
+    private List<String> generateWeeklyLabels(Date start, Date end) {
+        List<String> labels = new ArrayList<>();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(start);
+        int week = 1;
+        while (!cal.getTime().after(end)) {
+            labels.add("Tuần " + week);
+            cal.add(Calendar.WEEK_OF_YEAR, 1);
+            week++;
+        }
+        return labels;
+    }
+
+    // Helper method to generate monthly labels
+    private List<String> generateMonthlyLabels(Date start, Date end) {
+        List<String> labels = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/yyyy");
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(start);
+        while (!cal.getTime().after(end)) {
+            labels.add(sdf.format(cal.getTime()));
+            cal.add(Calendar.MONTH, 1);
+        }
+        return labels;
+    }
+
+    // Helper method to safely handle null revenue values
+    private BigDecimal safeRevenue(BigDecimal revenue) {
+        return revenue != null ? revenue : BigDecimal.ZERO;
+    }
+
+
     @GetMapping("/order-status-stats")
     public ResponseEntity<Map<String, Long>> getOrderStatusStats(
             @RequestParam(defaultValue = "month") String filterType,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.util.Date date
     ) {
         if (date == null) {
-            date = new Date(); //ngày hiện tại
+            date = new java.util.Date();
         }
         Map<String, Long> statusStats = sr.getOrderStatusStats(filterType, date);
+        System.out.println("Order status stats: " + statusStats);
         return ResponseEntity.ok(statusStats);
+    }
+
+    @GetMapping("/top-brands")
+    public ResponseEntity<List<HangBanChayDTO>> getTopBrands() {
+        List<HangBanChayDTO> topBrands = sr.thongKeHangBanChay();
+        return ResponseEntity.ok(topBrands);
     }
 
     @GetMapping("/export-excel")
@@ -116,74 +292,57 @@ public class ThongKeController {
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate
     ) {
+        // Lấy dữ liệu từ service với bộ lọc
         Map<String, Object> ngay = sr.getThongKeTheoNgay();
         Map<String, Object> tuan = sr.getThongKeTheoTuan();
         Map<String, Object> thang = sr.getThongKeTheoThang();
         Map<String, Object> nam = sr.getThongKeTheoNam();
+        Map<String, Object> custom = new HashMap<>();
+        if ("custom".equals(filterType) && startDate != null && endDate != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            try {
+                Date start = sdf.parse(startDate);
+                Date end = sdf.parse(endDate);
+                custom.put("doanhThu", sr.doanhThuTheoKhoangThoiGian(start, end));
+                custom.put("sanPhamDaBan", 0L);
+                custom.put("tongSoDonHang", 0);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid date format for startDate or endDate", e);
+            }
+        }
         List<Map<String, Object>> topProducts = sr.getAllTopSellingProducts(filterType, startDate, endDate);
         Map<String, Long> orderStatusStats = sr.getOrderStatusStats(filterType, new Date());
         List<Map<String, Object>> loaiHoaDon = sr.getAllLoaiHoaDon();
         List<Map<String, Object>> sanPhamHetHang = sr.getAllSanPhamHetHang();
 
+        // Tạo workbook Excel
         Workbook workbook = new XSSFWorkbook();
-        CellStyle headerStyle = workbook.createCellStyle();
-        Font headerFont = workbook.createFont();
-        headerFont.setBold(true);
-        headerStyle.setFont(headerFont);
-        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        CellStyle headerStyle = createHeaderStyle(workbook);
 
         // Sheet 1: Thống Kê Tổng Quan
         Sheet sheetTongQuan = workbook.createSheet("Thống Kê Tổng Quan");
-        Row headerRowTongQuan = sheetTongQuan.createRow(0);
-        String[] headersTongQuan = {"Khoảng Thời Gian", "Doanh Thu (VND)", "Số Sản Phẩm Bán", "Tổng Số Đơn Hàng"};
-        for (int i = 0; i < headersTongQuan.length; i++) {
-            Cell cell = headerRowTongQuan.createCell(i);
-            cell.setCellValue(headersTongQuan[i]);
-            cell.setCellStyle(headerStyle);
+        createHeaderRow(sheetTongQuan, new String[]{"Khoảng Thời Gian", "Doanh Thu (VND)", "Số Sản Phẩm Bán", "Tổng Số Đơn Hàng"}, headerStyle);
+        addTongQuanRow(sheetTongQuan, 1, "Hôm Nay", ngay);
+        addTongQuanRow(sheetTongQuan, 2, "Tuần Này", tuan);
+        addTongQuanRow(sheetTongQuan, 3, "Tháng Này", thang);
+        addTongQuanRow(sheetTongQuan, 4, "Năm Nay", nam);
+        if ("custom".equals(filterType)) {
+            addTongQuanRow(sheetTongQuan, 5, "Tùy Chọn", custom);
         }
-        Row row1 = sheetTongQuan.createRow(1);
-        row1.createCell(0).setCellValue("Hôm Nay");
-        row1.createCell(1).setCellValue(((BigDecimal) ngay.get("doanhThu") != null ? (BigDecimal) ngay.get("doanhThu") : BigDecimal.ZERO).doubleValue());
-        row1.createCell(2).setCellValue(((Long) ngay.get("sanPhamDaBan") != null ? (Long) ngay.get("sanPhamDaBan") : 0L));
-        row1.createCell(3).setCellValue(((Long) ngay.get("tongSoDonHang") != null ? ((Long) ngay.get("tongSoDonHang")).intValue() : 0));
 
-        Row row2 = sheetTongQuan.createRow(2);
-        row2.createCell(0).setCellValue("Tuần Này");
-        row2.createCell(1).setCellValue(((BigDecimal) tuan.get("doanhThu") != null ? (BigDecimal) tuan.get("doanhThu") : BigDecimal.ZERO).doubleValue());
-        row2.createCell(2).setCellValue(((Long) tuan.get("sanPhamDaBan") != null ? (Long) tuan.get("sanPhamDaBan") : 0L));
-        row2.createCell(3).setCellValue(((Long) tuan.get("tongSoDonHang") != null ? ((Long) tuan.get("tongSoDonHang")).intValue() : 0));
-
-        Row row3 = sheetTongQuan.createRow(3);
-        row3.createCell(0).setCellValue("Tháng Này");
-        row3.createCell(1).setCellValue(((BigDecimal) thang.get("doanhThu") != null ? (BigDecimal) thang.get("doanhThu") : BigDecimal.ZERO).doubleValue());
-        row3.createCell(2).setCellValue(((Long) thang.get("sanPhamDaBan") != null ? (Long) thang.get("sanPhamDaBan") : 0L));
-        row3.createCell(3).setCellValue(((Long) thang.get("tongSoDonHang") != null ? ((Long) thang.get("tongSoDonHang")).intValue() : 0));
-
-        Row row4 = sheetTongQuan.createRow(4);
-        row4.createCell(0).setCellValue("Năm Nay");
-        row4.createCell(1).setCellValue(((BigDecimal) nam.get("doanhThu") != null ? (BigDecimal) nam.get("doanhThu") : BigDecimal.ZERO).doubleValue());
-        row4.createCell(2).setCellValue(((Long) nam.get("sanPhamDaBan") != null ? (Long) nam.get("sanPhamDaBan") : 0L));
-        row4.createCell(3).setCellValue(((Long) nam.get("tongSoDonHang") != null ? ((Long) nam.get("tongSoDonHang")).intValue() : 0));
-
-        // Sheet: Sản Phẩm Bán Chạy
+        // Sheet 2: Sản Phẩm Bán Chạy
         Sheet sheetTopProducts = workbook.createSheet("Sản Phẩm Bán Chạy");
-        Row headerRowTopProducts = sheetTopProducts.createRow(0);
-        String[] headersTopProducts = {"STT", "Tên Sản Phẩm", "Giá Bán (VND)", "Số Lượng Đã Bán"};
-        for (int i = 0; i < headersTopProducts.length; i++) {
-            Cell cell = headerRowTopProducts.createCell(i);
-            cell.setCellValue(headersTopProducts[i]);
-            cell.setCellStyle(headerStyle);
-        }
+        createHeaderRow(sheetTopProducts, new String[]{"STT", "Tên Sản Phẩm", "Giá Bán (VND)", "Số Lượng Đã Bán"}, headerStyle);
         for (int i = 0; i < topProducts.size(); i++) {
             Map<String, Object> product = topProducts.get(i);
             Row row = sheetTopProducts.createRow(i + 1);
             row.createCell(0).setCellValue(i + 1);
-            row.createCell(1).setCellValue((String) product.get("productName"));
-            row.createCell(2).setCellValue(((BigDecimal) product.get("price")).doubleValue());
-            row.createCell(3).setCellValue(((Number) product.get("soldQuantity")).longValue());
+            row.createCell(1).setCellValue(getStringValue(product.get("productName")));
+            row.createCell(2).setCellValue(getBigDecimalValue(product.get("price")).doubleValue());
+            row.createCell(3).setCellValue(getLongValue(product.get("soldQuantity")));
         }
 
-        // Sheet: Trạng Thái Đơn Hàng
+        // Sheet 3: Trạng Thái Đơn Hàng
         Sheet sheetOrderStatus = workbook.createSheet("Trạng Thái Đơn Hàng");
         Row headerRowOrderStatus = sheetOrderStatus.createRow(0);
         String[] headersOrderStatus = {"Trạng Thái", "Số Lượng"};
@@ -199,45 +358,36 @@ public class ThongKeController {
             row.createCell(1).setCellValue(orderStatusStats.getOrDefault(statuses[i], 0L));
         }
 
-        // Sheet: Phân Phối Đa Kênh
+        // Sheet 4: Phân Phối Đa Kênh
         Sheet sheetLoaiHoaDon = workbook.createSheet("Phân Phối Đa Kênh");
-        Row headerRowLoaiHoaDon = sheetLoaiHoaDon.createRow(0);
-        String[] headersLoaiHoaDon = {"Loại Hóa Đơn", "Số Lượng"};
-        for (int i = 0; i < headersLoaiHoaDon.length; i++) {
-            Cell cell = headerRowLoaiHoaDon.createCell(i);
-            cell.setCellValue(headersLoaiHoaDon[i]);
-            cell.setCellStyle(headerStyle);
-        }
+        createHeaderRow(sheetLoaiHoaDon, new String[]{"Loại Hóa Đơn", "Số Lượng"}, headerStyle);
         for (int i = 0; i < loaiHoaDon.size(); i++) {
             Map<String, Object> loaiDon = loaiHoaDon.get(i);
             Row row = sheetLoaiHoaDon.createRow(i + 1);
-            row.createCell(0).setCellValue((String) loaiDon.get("loaiDon"));
-            row.createCell(1).setCellValue(((Number) loaiDon.get("soLuong")).longValue());
+            row.createCell(0).setCellValue(getStringValue(loaiDon.get("loaiDon")));
+            row.createCell(1).setCellValue(getLongValue(loaiDon.get("soLuong")));
         }
 
-        // Sheet: Sản Phẩm Sắp Hết Hàng
+        // Sheet 5: Sản Phẩm Sắp Hết Hàng
         Sheet sheetSanPhamHetHang = workbook.createSheet("Sản Phẩm Sắp Hết Hàng");
-        Row headerRowSanPhamHetHang = sheetSanPhamHetHang.createRow(0);
-        String[] headersSanPhamHetHang = {"STT", "Tên Sản Phẩm", "Số Lượng"};
-        for (int i = 0; i < headersSanPhamHetHang.length; i++) {
-            Cell cell = headerRowSanPhamHetHang.createCell(i);
-            cell.setCellValue(headersSanPhamHetHang[i]);
-            cell.setCellStyle(headerStyle);
-        }
+        createHeaderRow(sheetSanPhamHetHang, new String[]{"STT", "Tên Sản Phẩm", "Số Lượng"}, headerStyle);
         for (int i = 0; i < sanPhamHetHang.size(); i++) {
             Map<String, Object> product = sanPhamHetHang.get(i);
             Row row = sheetSanPhamHetHang.createRow(i + 1);
             row.createCell(0).setCellValue(i + 1);
-            row.createCell(1).setCellValue((String) product.get("tenSanPham"));
-            row.createCell(2).setCellValue(((Number) product.get("soLuong")).longValue());
+            row.createCell(1).setCellValue(getStringValue(product.get("tenSanPham")));
+            row.createCell(2).setCellValue(getLongValue(product.get("soLuong")));
         }
 
+        // Tự động điều chỉnh kích thước cột
         for (Sheet sheet : workbook) {
-            for (int i = 0; i < 10; i++) {
+            int columnCount = sheet.getRow(0) != null ? sheet.getRow(0).getPhysicalNumberOfCells() : 0;
+            for (int i = 0; i < columnCount; i++) {
                 sheet.autoSizeColumn(i);
             }
         }
 
+        // Xuất file Excel
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
             workbook.write(outputStream);
@@ -256,4 +406,50 @@ public class ThongKeController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
     }
+
+    // Helper methods
+    private CellStyle createHeaderStyle(Workbook workbook) {
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        return headerStyle;
+    }
+
+    private void createHeaderRow(Sheet sheet, String[] headers, CellStyle headerStyle) {
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+    }
+
+    private void addTongQuanRow(Sheet sheet, int rowNum, String period, Map<String, Object> data) {
+        Row row = sheet.createRow(rowNum);
+        row.createCell(0).setCellValue(period);
+        row.createCell(1).setCellValue(getBigDecimalValue(data.get("doanhThu")).doubleValue());
+        row.createCell(2).setCellValue(getLongValue(data.get("sanPhamDaBan")));
+        row.createCell(3).setCellValue(getLongValue(data.get("tongSoDonHang")));
+    }
+
+    private String getStringValue(Object value) {
+        return value != null ? value.toString() : "";
+    }
+
+    private BigDecimal getBigDecimalValue(Object value) {
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private long getLongValue(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return 0L;
+    }
+
 }

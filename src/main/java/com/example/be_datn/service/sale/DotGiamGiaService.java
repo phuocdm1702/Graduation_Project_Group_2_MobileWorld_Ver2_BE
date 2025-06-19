@@ -73,6 +73,14 @@ public class DotGiamGiaService {
         return repository.getAllSanPham(timKiem, idHeDieuHanh, idNhaSanXuat);
     }
 
+    public BigDecimal maxGiaTriGiamGia(){
+        return repository.maxGiaTriGiamGia();
+    }
+
+    public BigDecimal maxSoTienGiamToiDa(){
+        return repository.maxSoTienGiamToiDa();
+    }
+
     public List<HeDieuHanh> getAllHeDieuHanh() {
         try {
             System.out.println("Calling findAllHeDieuHanh, repository: " + repository.getClass().getName());

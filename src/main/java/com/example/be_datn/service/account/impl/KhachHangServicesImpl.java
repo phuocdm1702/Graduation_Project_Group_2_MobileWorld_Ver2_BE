@@ -11,6 +11,9 @@ import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.KhachHangServices;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
@@ -69,6 +72,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         return Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "");
     }
+
 
     @Override
     public List<KhachHang> searchFormAddPgg(String keyword) {
@@ -129,7 +133,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         taiKhoan.setSoDienThoai(khachHangResponse.getSoDienThoai());
         taiKhoan.setTenDangNhap(khachHangResponse.getUserName());
         taiKhoan.setIdQuyenHan(quyenHan);
-        taiKhoan.setDeleted(khachHangResponse.getGioiTinh());
+        taiKhoan.setDeleted(true);
 
         String randomPassword = emailServices.generateRandomPassword(8);
         taiKhoan.setMatKhau(randomPassword);
@@ -147,7 +151,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         kh.setCccd(khachHangResponse.getCccd());
         kh.setDeleted(false);
         kh.setAnhKhachHang(khachHangResponse.getAnhKhachHang());
-        kh.setGioiTinh(khachHangResponse.getGioiTinh() != null && khachHangResponse.getGioiTinh() ? (short) 1 : (short) 0);
+        kh.setGioiTinh(khachHangResponse.getGioiTinh());
         kh = khachHangRepository.save(kh); // Lưu trước để có ID
 
         DiaChiKhachHang dchi = new DiaChiKhachHang();
@@ -254,10 +258,10 @@ public class KhachHangServicesImpl implements KhachHangServices {
                     existingNhanVien.setCccd(khachHangResponse.getCccd());
                     existingNhanVien.setNgaySinh(khachHangResponse.getNgaySinh());
                     existingNhanVien.setTen(khachHangResponse.getTenKH());
+                    existingNhanVien.setGioiTinh(khachHangResponse.getGioiTinh());
 
                     taiKhoan.setEmail(khachHangResponse.getEmail());
                     taiKhoan.setSoDienThoai(khachHangResponse.getSoDienThoai());
-                    taiKhoan.setDeleted(khachHangResponse.getGioiTinh());
 
                     taiKhoanRepository.save(taiKhoan);
 
@@ -397,6 +401,44 @@ public class KhachHangServicesImpl implements KhachHangServices {
                     System.err.println("Lỗi gửi email: " + e.getMessage());
                 }
             }
+        }
+    }
+    @Override
+    public List<DiaChiKhachHang> getAllAddressesByKhachHangId(Integer idKhachHang) {
+        return diaChiKhachHangRepository.findAllByIdKhachHangId(idKhachHang);
+    }
+
+    //thay doi default
+    public void setMacDinh(Integer id, Boolean macDinh) {
+        DiaChiKhachHang address = diaChiKhachHangRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Địa chỉ không tồn tại với ID: " + id));
+
+        if (macDinh) {
+            // Tìm tất cả địa chỉ của khách hàng dựa trên idKhachHang của địa chỉ hiện tại
+            List<DiaChiKhachHang> allAddresses = diaChiKhachHangRepository.findByIdKhachHang(address.getIdKhachHang());
+            for (DiaChiKhachHang addr : allAddresses) {
+                if (!addr.getId().equals(id)) {
+                    addr.setMacDinh(false);
+                }
+            }
+            diaChiKhachHangRepository.saveAll(allAddresses); // Lưu thay đổi
+        }
+
+        // Cập nhật địa chỉ được chọn thành mặc định
+        address.setMacDinh(macDinh);
+        diaChiKhachHangRepository.save(address);
+    }
+
+    //xoa dckh
+    @Override
+    public void deleteDiaChi(Integer id)  {
+        Optional<DiaChiKhachHang> diaChiOptional = diaChiKhachHangRepository.findById(id);
+        if (diaChiOptional.isPresent()) {
+            DiaChiKhachHang diaChiKhachHang = diaChiOptional.get();
+            diaChiKhachHang.setDeleted(false);
+            diaChiKhachHangRepository.save(diaChiKhachHang); // Xóa hoàn toàn
+        } else {
+            throw new RuntimeException("Không tìm thấy địa chỉ với id: " + id);
         }
     }
 }

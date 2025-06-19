@@ -2,7 +2,9 @@ package com.example.be_datn.controller.account;
 
 import com.example.be_datn.dto.account.response.NhanVienResponse;
 import com.example.be_datn.entity.account.NhanVien;
+import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.service.account.NhanVienServices;
+import com.example.be_datn.service.account.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +21,13 @@ public class NhanVienController {
 
     private final NhanVienServices nhanVienServices;
 
+    private final TaiKhoanService taiKhoanService;
+
+
     @Autowired
-    public NhanVienController(NhanVienServices nhanVienServices) {
+    public NhanVienController(NhanVienServices nhanVienServices, TaiKhoanService taiKhoanService) {
         this.nhanVienServices = nhanVienServices;
+        this.taiKhoanService = taiKhoanService;
     }
 
     //Lay du lieu
@@ -86,7 +92,7 @@ public class NhanVienController {
     @PutMapping("/trang-thai/{id}")
     public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
         try {
-            NhanVien updateNhanVien = nhanVienServices.trangthai(id);
+            TaiKhoan updateNhanVien = taiKhoanService.trangthaiNV(id);
             String message = updateNhanVien.getDeleted() ? "Đã cho nghỉ làm!" : "Đã cho đi làm lại!";
             return ResponseEntity.ok(message);
         } catch (RuntimeException e) {

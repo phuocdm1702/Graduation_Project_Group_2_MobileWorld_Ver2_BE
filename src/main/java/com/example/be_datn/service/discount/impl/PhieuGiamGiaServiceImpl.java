@@ -68,21 +68,77 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
     public Page<PhieuGiamGia> searchData(String keyword, Pageable pageable) {
         Date now = new Date();
         if (keyword == null || keyword.trim().isEmpty()) {
-            return (Page<PhieuGiamGia>) phieuGiamGiaRepository.findAll(); // Trả về tất cả nếu không có điều kiện lọc
+            return (Page<PhieuGiamGia>) phieuGiamGiaRepository.findAll();
         }
         return phieuGiamGiaRepository.search(keyword, now, pageable);
     }
 
     @Override
-    public Page<PhieuGiamGia> filterPhieuGiamGia(
-            String loaiPhieuGiamGia,
-            String trangThai,
-            Date ngayBatDau,
-            Date ngayKetThuc,
-            Double minOrder,
-            Double valueFilter,
-            Pageable pageable) {
+    public Page<PhieuGiamGia> filterByLoaiPhieu(String loaiPhieu, Pageable pageable) {
+        Date now = new Date();
+        String loai = loaiPhieu != null && loaiPhieu.trim().isEmpty() ? null : loaiPhieu;
+        System.out.println("Filter by loaiPhieu: " + loai);
+        Page<PhieuGiamGia> result = phieuGiamGiaRepository.filterByLoaiPhieu(loai, now, pageable);
+        logResult(result);
+        return result;
+    }
 
+    @Override
+    public Page<PhieuGiamGia> filterByTrangThai(String trangThai, Pageable pageable) {
+        Date now = new Date();
+        Boolean trangThaiBoolean = null;
+        if (trangThai != null && !trangThai.trim().isEmpty()) {
+            if ("Hoạt động".equals(trangThai)) {
+                trangThaiBoolean = true;
+            } else if ("Không hoạt động".equals(trangThai)) {
+                trangThaiBoolean = false;
+            }
+        }
+        System.out.println("Filter by trangThai: " + trangThaiBoolean);
+        Page<PhieuGiamGia> result = phieuGiamGiaRepository.filterByTrangThai(trangThaiBoolean, now, pageable);
+        logResult(result);
+        return result;
+    }
+
+    @Override
+    public Page<PhieuGiamGia> filterByDateRange(Date ngayBatDau, Date ngayKetThuc, Pageable pageable) {
+        if (ngayBatDau != null && ngayKetThuc != null && ngayBatDau.after(ngayKetThuc)) {
+            throw new IllegalArgumentException("Ngày bắt đầu không thể lớn hơn ngày kết thúc");
+        }
+        Date now = new Date();
+        System.out.println("Filter by date range - ngayBatDau: " + ngayBatDau + ", ngayKetThuc: " + ngayKetThuc);
+        Page<PhieuGiamGia> result = phieuGiamGiaRepository.filterByDateRange(ngayBatDau, ngayKetThuc, now, pageable);
+        logResult(result);
+        return result;
+    }
+
+    @Override
+    public Page<PhieuGiamGia> filterByMinOrder(Double minOrder, Pageable pageable) {
+        Date now = new Date();
+        if (minOrder != null && minOrder < 0) {
+            throw new IllegalArgumentException("Hóa đơn tối thiểu không thể nhỏ hơn 0");
+        }
+        System.out.println("Filter by minOrder: " + minOrder);
+        Page<PhieuGiamGia> result = phieuGiamGiaRepository.filterByMinOrder(minOrder, now, pageable);
+        logResult(result);
+        return result;
+    }
+
+    @Override
+    public Page<PhieuGiamGia> filterByValue(Double valueFilter, Pageable pageable) {
+        Date now = new Date();
+        if (valueFilter != null && valueFilter < 0) {
+            throw new IllegalArgumentException("Giá trị phiếu không thể nhỏ hơn 0");
+        }
+        System.out.println("Filter by valueFilter: " + valueFilter);
+        Page<PhieuGiamGia> result = phieuGiamGiaRepository.filterByValue(valueFilter, now, pageable);
+        logResult(result);
+        return result;
+    }
+
+    @Override
+    public Page<PhieuGiamGia> filterPhieuGiamGia(String loaiPhieuGiamGia, String trangThai, Date ngayBatDau,
+                                                 Date ngayKetThuc, Double minOrder, Double valueFilter, Pageable pageable) {
         String loaiPhieu = loaiPhieuGiamGia != null && loaiPhieuGiamGia.trim().isEmpty() ? null : loaiPhieuGiamGia;
 
         Boolean trangThaiBoolean = null;
@@ -94,7 +150,6 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
             }
         }
 
-        Date now = new Date();
         if (ngayBatDau != null && ngayKetThuc != null && ngayBatDau.after(ngayKetThuc)) {
             throw new IllegalArgumentException("Ngày bắt đầu không thể lớn hơn ngày kết thúc");
         }
@@ -109,23 +164,12 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
                 ", ngayBatDau: " + ngayBatDau + ", ngayKetThuc: " + ngayKetThuc +
                 ", minOrder: " + minOrder + ", valueFilter: " + valueFilter);
 
+        Date now = new Date();
         Page<PhieuGiamGia> result = phieuGiamGiaRepository.filterPhieuGiamGia(
-                loaiPhieu,
-                trangThaiBoolean,
-                ngayBatDau,
-                ngayKetThuc,
-                minOrder,
-                valueFilter,
-                now,
-                pageable
+                loaiPhieu, trangThaiBoolean, ngayBatDau, ngayKetThuc, minOrder, valueFilter, now, pageable
         );
 
-        System.out.println("Filter result size: " + result.getContent().size());
-        result.getContent().forEach(voucher ->
-                System.out.println("Voucher: " + voucher.getMa() + ", TrangThai: " + (voucher.getTrangThai() ? "Hoạt động" : "Không hoạt động") +
-                        ", NgayBatDau: " + voucher.getNgayBatDau() + ", NgayKetThuc: " + voucher.getNgayKetThuc())
-        );
-
+        logResult(result);
         return result;
     }
 
@@ -182,7 +226,7 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
         PhieuGiamGia pgg = detailPGG.get();
 
         List<PhieuGiamGiaCaNhan> pggCNList = phieuGiamGiaCaNhanRepository.findByIdPhieuGiamGia(pgg);
-//        List<KhachHang> allCustomers = khachHangRepository.findAll();
+        List<KhachHang> allCustomers = khachHangRepository.findAll();
 
         PhieuGiamGiaRequest pggDTO = new PhieuGiamGiaRequest();
         pggDTO.setId(pgg.getId());
@@ -212,10 +256,10 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
                 .collect(Collectors.toList());
         pggDTO.setCustomerIds(customerIds);
 
-//        List<PhieuGiamGiaCaNhanRequest> allCustomersDTO = allCustomers.stream()
-//                .map(kh -> new PhieuGiamGiaCaNhanRequest(kh.getId(), kh.getMa(), kh.getTen(), kh.getNgaySinh()))
-//                .collect(Collectors.toList());
-//        pggDTO.setAllCustomers(allCustomersDTO);
+        List<PhieuGiamGiaCaNhanRequest> allCustomersDTO = allCustomers.stream()
+                .map(kh -> new PhieuGiamGiaCaNhanRequest(kh.getId(), kh.getMa(), kh.getTen(), kh.getNgaySinh()))
+                .collect(Collectors.toList());
+        pggDTO.setAllCustomers(allCustomersDTO);
 
         return pggDTO;
     }
@@ -228,5 +272,19 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
     @Override
     public List<PhieuGiamGia> getall() {
         return phieuGiamGiaRepository.findAll();
+    }
+
+    @Override
+    public List<PhieuGiamGia> getallPGG() {
+        return phieuGiamGiaRepository.findAll();
+    }
+
+    private void logResult(Page<PhieuGiamGia> result) {
+        System.out.println("Filter result size: " + result.getContent().size());
+        result.getContent().forEach(voucher ->
+                System.out.println("Voucher: " + voucher.getMa() + ", TrangThai: " +
+                        (voucher.getTrangThai() ? "Đang diễn ra" : "Không hoạt động") +
+                        ", NgayBatDau: " + voucher.getNgayBatDau() + ", NgayKetThuc: " + voucher.getNgayKetThuc())
+        );
     }
 }

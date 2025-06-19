@@ -141,18 +141,6 @@ public class DotGiamGiaController {
     }
 
 
-//
-//    @GetMapping("/he-dieu-hanh")
-//    public ResponseEntity<List<HeDieuHanh>> getAllHeDieuHanh() {
-//        List<HeDieuHanh> heDieuHanhList = sr.getAllHeDieuHanh();
-//        return ResponseEntity.ok(heDieuHanhList);
-//    }
-//
-//    @GetMapping("/nha-san-xuat")
-//    public ResponseEntity<List<NhaSanXuat>> getAllNhaSanXuat() {
-//        List<NhaSanXuat> nhaSanXuatList = sr.getAllNhaSanXuat();
-//        return ResponseEntity.ok(nhaSanXuatList);
-//    }
 
     @PostMapping("/AddDotGiamGia")
     public ResponseEntity<?> addData(@RequestBody AddDotGiamGiaDTO request) {
@@ -207,5 +195,15 @@ public class DotGiamGiaController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/maxGiaTriGiamGia")
+    public ResponseEntity<BigDecimal> getMaxGiaTriGiamGia() {
+        return ResponseEntity.ok(sr.maxGiaTriGiamGia());
+    }
+
+    @GetMapping("/maxSoTienGiamToiDa")
+    public ResponseEntity<BigDecimal> getMaxSoTienGiamToiDa() {
+        return ResponseEntity.ok(sr.maxSoTienGiamToiDa());
     }
 }

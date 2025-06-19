@@ -1,7 +1,9 @@
 package com.example.be_datn.repository.account.TaiKhoan;
 
 import com.example.be_datn.entity.account.TaiKhoan;
+
 import io.lettuce.core.dynamic.annotation.Param;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -17,6 +19,7 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Integer>,TaiK
     String findMaxMaTK();
 
     boolean existsByMa(String ma);
+
 
     // Filter for login
     @Query("SELECT tk FROM TaiKhoan tk WHERE tk.tenDangNhap = :tenDangNhap")

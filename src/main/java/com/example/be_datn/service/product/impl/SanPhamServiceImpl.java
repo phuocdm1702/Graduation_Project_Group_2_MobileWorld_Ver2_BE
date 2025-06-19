@@ -20,6 +20,7 @@ import jakarta.persistence.criteria.Subquery;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -40,6 +41,14 @@ public class SanPhamServiceImpl implements SanPhamService {
         Pageable pageable = PageRequest.of(page, size);
         Page<SanPham> sanPhamPage = sanPhamRepository.findByDeletedFalse(pageable);
         return mapToDTOPage(sanPhamPage, pageable);
+    }
+
+    @Override
+    public List<SanPhamResponse> getAllSanPhamList() {
+        List<SanPham> sanPhams = sanPhamRepository.findAllByDeletedFalse();
+        return sanPhams.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -218,9 +227,9 @@ public class SanPhamServiceImpl implements SanPhamService {
                 sanPham.getCongNgheManHinh() != null ? sanPham.getCongNgheManHinh().getTanSoQuet() : "N/A",
                 sanPham.getCongNgheManHinh() != null ? sanPham.getCongNgheManHinh().getKieuManHinh() : "N/A",
                 sanPham.getDeleted(),
-                sanPham.getCreatedAt(),
+                sanPham.getCreatedAt().toInstant(),
                 sanPham.getCreatedBy(),
-                sanPham.getUpdatedAt(),
+                sanPham.getUpdatedAt().toInstant(),
                 sanPham.getUpdatedBy(),
                 chiTietSanPhamRepository.countByIdSanPhamIdAndDeletedFalse(sanPham.getId(), false),
                 chiTietSanPhamRepository.findByIdSanPhamIdAndDeletedFalse(sanPham.getId(), false)
@@ -262,7 +271,7 @@ public class SanPhamServiceImpl implements SanPhamService {
                 .idThietKe(ThietKe.builder().id(requestDto.idThietKe()).build())
                 .hoTroCongNgheSac(requestDto.hoTroCongNgheSacId() != null ? HoTroCongNgheSac.builder().id(requestDto.hoTroCongNgheSacId()).build() : null)
                 .congNgheManHinh(requestDto.congNgheManHinhId() != null ? CongNgheManHinh.builder().id(requestDto.congNgheManHinhId()).build() : null)
-                .createdAt(Instant.now())
+                .createdAt(Date.from(Instant.now()))
                 .deleted(false)
                 .build();
         return sanPhamRepository.save(sanPham);
@@ -287,7 +296,7 @@ public class SanPhamServiceImpl implements SanPhamService {
         sanPham.setIdThietKe(ThietKe.builder().id(requestDto.idThietKe()).build());
         sanPham.setHoTroCongNgheSac(requestDto.hoTroCongNgheSacId() != null ? HoTroCongNgheSac.builder().id(requestDto.hoTroCongNgheSacId()).build() : null);
         sanPham.setCongNgheManHinh(requestDto.congNgheManHinhId() != null ? CongNgheManHinh.builder().id(requestDto.congNgheManHinhId()).build() : null);
-        sanPham.setUpdatedAt(Instant.now());
+        sanPham.setUpdatedAt(Date.from(Instant.now()));
         return sanPhamRepository.save(sanPham);
     }
 

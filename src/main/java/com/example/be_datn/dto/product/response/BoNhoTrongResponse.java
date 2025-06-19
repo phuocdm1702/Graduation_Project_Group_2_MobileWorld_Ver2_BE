@@ -7,10 +7,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MauSacResponse {
+public class BoNhoTrongResponse {
     private Integer id;
     private String ma;
-    private String mauSac;
-    private String maMau; // Thêm cột mã màu
+    private String dungLuongBoNhoTrong;
     private Boolean deleted;
 }

@@ -30,7 +30,10 @@ public class MauSac {
     @Column(name = "mau_sac")
     private String mauSac;
 
+    @Size(max = 20) // Giả sử mã màu là hex (7 ký tự: #RRGGBB)
+    @Column(name = "ma_mau")
+    private String maMau; // Thêm cột mã màu
+
     @Column(name = "deleted")
     private Boolean deleted;
-
 }

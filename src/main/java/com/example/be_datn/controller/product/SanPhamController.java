@@ -4,6 +4,7 @@ import com.example.be_datn.dto.product.response.SanPhamResponse;
 import com.example.be_datn.dto.product.request.SanPhamRequest;
 import com.example.be_datn.entity.product.SanPham;
 import com.example.be_datn.service.product.SanPhamService;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -11,10 +12,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @Controller
 @RequestMapping("/san-pham")
+@Slf4j
 public class SanPhamController {
     private final SanPhamService sanPhamService;
 
@@ -28,6 +31,12 @@ public class SanPhamController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
         Page<SanPhamResponse> sanPhams = sanPhamService.getAllSanPham(page, size);
+        return ResponseEntity.ok(sanPhams);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<SanPhamResponse>> getAllSanPhamList() {
+        List<SanPhamResponse> sanPhams = sanPhamService.getAllSanPhamList();
         return ResponseEntity.ok(sanPhams);
     }
 

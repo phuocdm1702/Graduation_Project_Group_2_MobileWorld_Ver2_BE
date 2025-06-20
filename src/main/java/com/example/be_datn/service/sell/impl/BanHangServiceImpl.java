@@ -17,8 +17,6 @@ import com.example.be_datn.entity.order.LichSuHoaDon;
 import com.example.be_datn.entity.pay.HinhThucThanhToan;
 import com.example.be_datn.entity.pay.PhuongThucThanhToan;
 import com.example.be_datn.entity.product.ChiTietSanPham;
-
-
 import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.entity.product.ImelDaBan;
 import com.example.be_datn.repository.account.DiaChiKH.DiaChiKhachHangRepository;
@@ -45,14 +43,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.thymeleaf.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 
 @Service
 public class BanHangServiceImpl implements BanHangService {
@@ -86,22 +82,25 @@ public class BanHangServiceImpl implements BanHangService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    private static final String GH_PREFIX = "gh:hd:";
     @Autowired
     private PhieuGiamGiaRepository phieuGiamGiaRepository;
+
     @Autowired
     private DiaChiKhachHangRepository diaChiKhachHangRepository;
 
     @Autowired
     private ImelRepository imelRepository;
+
     @Autowired
     private ImelDaBanRepository imelDaBanRepository;
+
+    private static final String GH_PREFIX = "gh:hd:";
 
     private String generatedRandomCode() {
         String character = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         Random random = new Random();
         StringBuilder code = new StringBuilder(6);
-        for(int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++) {
             code.append(character.charAt(random.nextInt(character.length())));
         }
         return "HD_" + code.toString();
@@ -115,7 +114,7 @@ public class BanHangServiceImpl implements BanHangService {
     @Override
     @Transactional
     public void huyHDCho(Integer idHD) {
-        if(!hoaDonRepository.existsById(idHD)) {
+        if (!hoaDonRepository.existsById(idHD)) {
             throw new RuntimeException("Không tìm thấy hoá đơn có id: " + idHD);
         }
         hoaDonRepository.deleteById(idHD);
@@ -127,21 +126,11 @@ public class BanHangServiceImpl implements BanHangService {
     public HoaDonDTO taoHD(Integer khachHangId) {
         Integer khachHangIdToUse = (khachHangId != null) ? khachHangId : 1;
         KhachHang khachHang = khachHangRepository.findById(khachHangIdToUse)
-                .orElseThrow(() -> new RuntimeException("Khách hàng với ID " + khachHangId + " không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("Khách hàng với ID " + khachHangIdToUse + " không tồn tại"));
 
         Integer nhanVienId = 1;
         NhanVien nhanVien = nhanVienRepository.findById(nhanVienId)
                 .orElseThrow(() -> new RuntimeException("Nhân viên với ID 1 không tồn tại"));
-
-//        List<ChiTietGioHang> chiTietGioHangs = chiTietGioHangRepository.findByIdGioHangIdAndDeletedFalse(gioHang.getId());
-//        if (chiTietGioHangs.isEmpty()) {
-//            throw new RuntimeException("Giỏ hàng trống, không thể tạo hóa đơn");
-//        }
-
-        // Tính tổng tiền sản phẩm
-//        BigDecimal tienSanPham = chiTietGioHangs.stream()
-//                .map(ChiTietGioHang::getTongTien)
-//                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         HoaDon hoaDon = HoaDon.builder()
                 .idKhachHang(khachHang)
@@ -208,7 +197,7 @@ public class BanHangServiceImpl implements BanHangService {
             Imel imelEntity = imelRepository.findByImelAndDeleted(imei.trim(), false)
                     .orElseThrow(() -> new RuntimeException("IMEI " + imei + " không khả dụng!"));
 
-            // Đánh dấu đã dùng (deleted = 1)
+            // Đánh dấu đã dùng (deleted = true)
             imelEntity.setDeleted(true);
             imelRepository.save(imelEntity);
         }
@@ -232,6 +221,8 @@ public class BanHangServiceImpl implements BanHangService {
             newItem.setRam(chiTietSanPham.getIdRam().getDungLuongRam());
             newItem.setBoNhoTrong(chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong());
             newItem.setGiaBan(chiTietSanPham.getGiaBan());
+            newItem.setGiaBanGoc(chiTietSanPham.getGiaBan()); //Lưu giá gốc ban đầu
+            newItem.setGhiChuGia("");
             newItem.setSoLuong(1); // Each IMEI is one item
             newItem.setTongTien(chiTietSanPham.getGiaBan());
 
@@ -245,6 +236,14 @@ public class BanHangServiceImpl implements BanHangService {
             }
 
             if (!imeiExists) {
+                // Kiểm tra thay đổi giá
+                for (ChiTietGioHangDTO existingItem : gh.getChiTietGioHangDTOS()) {
+                    if (existingItem.getChiTietSanPhamId().equals(newItem.getChiTietSanPhamId()) &&
+                            existingItem.getGiaBan().compareTo(newItem.getGiaBan()) != 0) {
+                        newItem.setGhiChuGia(String.format("Tăng từ %s lên %s", existingItem.getGiaBan(), newItem.getGiaBan()));
+                        break;
+                    }
+                }
                 gh.getChiTietGioHangDTOS().add(newItem);
             }
         }
@@ -322,6 +321,22 @@ public class BanHangServiceImpl implements BanHangService {
             gh.setChiTietGioHangDTOS(new ArrayList<>());
             gh.setTongTien(BigDecimal.ZERO);
             redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
+        } else {
+            // Kiểm tra và cập nhật ghi chú giá cho các mục trong giỏ hàng
+            for (ChiTietGioHangDTO item : gh.getChiTietGioHangDTOS()) {
+                ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm!"));
+                if (item.getGiaBan().compareTo(chiTietSanPham.getGiaBan()) != 0) {
+                    item.setGhiChuGia(String.format("Tăng từ %s lên %s", item.getGiaBan(), chiTietSanPham.getGiaBan()));
+                    item.setGiaBan(chiTietSanPham.getGiaBan()); // Cập nhật giá mới
+                    item.setTongTien(chiTietSanPham.getGiaBan()); // Cập nhật tổng tiền
+                }
+            }
+            // Cập nhật tổng tiền giỏ hàng
+            gh.setTongTien(gh.getChiTietGioHangDTOS().stream()
+                    .map(ChiTietGioHangDTO::getTongTien)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+            redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
         }
         return gh;
     }
@@ -360,6 +375,19 @@ public class BanHangServiceImpl implements BanHangService {
         GioHangDTO gioHangDTO = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
         if (gioHangDTO == null || gioHangDTO.getChiTietGioHangDTOS().isEmpty()) {
             throw new RuntimeException("Giỏ hàng trống, không thể thanh toán!");
+        }
+
+        // Cập nhật giá và ghi chú giá trước khi thanh toán
+        StringBuilder ghiChuGia = new StringBuilder();
+        for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm!"));
+            if (item.getGiaBan().compareTo(chiTietSanPham.getGiaBan()) != 0) {
+                item.setGhiChuGia(String.format("Tăng từ %s lên %s", item.getGiaBan(), chiTietSanPham.getGiaBan()));
+                item.setGiaBan(chiTietSanPham.getGiaBan()); // Cập nhật giá mới
+                item.setTongTien(chiTietSanPham.getGiaBan()); // Cập nhật tổng tiền
+                ghiChuGia.append(String.format("Sản phẩm %s (IMEI: %s): %s\n", item.getTenSanPham(), item.getMaImel(), item.getGhiChuGia()));
+            }
         }
 
         // Tính tổng tiền sản phẩm
@@ -419,7 +447,7 @@ public class BanHangServiceImpl implements BanHangService {
             HoaDonChiTiet chiTiet = new HoaDonChiTiet();
             chiTiet.setHoaDon(hoaDon);
             chiTiet.setIdChiTietSanPham(chiTietSanPham);
-            chiTiet.setGia(chiTietSanPham.getGiaBan());
+            chiTiet.setGia(item.getGiaBan()); // Sử dụng giá từ giỏ hàng (đã cập nhật)
             chiTiet.setTrangThai((short) 1);
             chiTiet.setDeleted(false);
             String ma = String.format("HDCT-%d-%d", idHD, index++);
@@ -432,7 +460,7 @@ public class BanHangServiceImpl implements BanHangService {
                     .ngayBan(new Date())
                     .deleted(false)
                     .ma("IMELDB-" + item.getMaImel())
-                    .ghiChu("Đã bán qua hóa đơn " + hoaDon.getMa())
+                    .ghiChu("Đã bán qua hóa đơn " + hoaDon.getMa() + (item.getGhiChuGia().isEmpty() ? "" : "; " + item.getGhiChuGia()))
                     .build();
             imelDaBanList.add(imelDaBan);
         }
@@ -458,8 +486,8 @@ public class BanHangServiceImpl implements BanHangService {
             hinhThuc.setIdPhuongThucThanhToan(phuongThuc);
             hinhThuc.setTienMat(dto.getTienMat() != null ? dto.getTienMat() : BigDecimal.ZERO);
             hinhThuc.setTienChuyenKhoan(dto.getTienChuyenKhoan() != null ? dto.getTienChuyenKhoan() : BigDecimal.ZERO);
-            hinhThuc.setMa(generateUniqueMaHinhThucThanhToan()); // Set mã duy nhất
-            hinhThuc.setDeleted(false); // Set deleted
+            hinhThuc.setMa(generateUniqueMaHinhThucThanhToan());
+            hinhThuc.setDeleted(false);
             hinhThucThanhToanRepository.save(hinhThuc);
             hinhThucThanhToans.add(hinhThuc);
             tongThanhToan = tongThanhToan.add(hinhThuc.getTienMat().add(hinhThuc.getTienChuyenKhoan()));
@@ -500,17 +528,19 @@ public class BanHangServiceImpl implements BanHangService {
         // Xóa giỏ hàng
         xoaGioHang(idHD);
 
-        return mapToHoaDonDto(hoaDon);
+        // Cập nhật ghi chú giá trong HoaDonDTO
+        HoaDonDTO hoaDonDTO = mapToHoaDonDto(hoaDon);
+        hoaDonDTO.setGhiChuGia(ghiChuGia.toString());
+        return hoaDonDTO;
     }
 
     @Override
     @Cacheable(value = "sanPhamCache", key = "#page + '-' + #size + '-' + #keyword")
     public Page<ChiTietSanPhamGroupDTO> getAllCTSP(int page, int size, String keyword) {
         Pageable pageable = PageRequest.of(page, size);
-        List<Object[]> results = chiTietSanPhamRepository.findGroupedProductsBySanPhamId(null); // Lấy tất cả sản phẩm
+        List<Object[]> results = chiTietSanPhamRepository.findGroupedProductsBySanPhamId(null);
         List<ChiTietSanPhamGroupDTO> dtos = results.stream().map(this::convertToChiTietSanPhamGroupDTO).collect(Collectors.toList());
 
-        // Lọc theo từ khóa nếu có
         if (keyword != null && !keyword.trim().isEmpty()) {
             String lowerKeyword = keyword.toLowerCase();
             dtos = dtos.stream()
@@ -519,7 +549,6 @@ public class BanHangServiceImpl implements BanHangService {
                     .collect(Collectors.toList());
         }
 
-        // Phân trang thủ công
         int start = Math.min((page * size), dtos.size());
         int end = Math.min(((page + 1) * size), dtos.size());
         List<ChiTietSanPhamGroupDTO> pagedDtos = dtos.subList(start, end);
@@ -560,6 +589,13 @@ public class BanHangServiceImpl implements BanHangService {
         GioHangDTO gh = layGioHang(hoaDon.getId());
         List<ChiTietGioHangDTO> chiTietGioHangDTOS = gh.getChiTietGioHangDTOS();
 
+        StringBuilder ghiChuGia = new StringBuilder();
+        for (ChiTietGioHangDTO item : chiTietGioHangDTOS) {
+            if (!item.getGhiChuGia().isEmpty()) {
+                ghiChuGia.append(String.format("Sản phẩm %s (IMEI: %s): %s\n", item.getTenSanPham(), item.getMaImel(), item.getGhiChuGia()));
+            }
+        }
+
         return new HoaDonDTO(
                 hoaDon.getId(),
                 hoaDon.getIdKhachHang().getId(),
@@ -578,9 +614,11 @@ public class BanHangServiceImpl implements BanHangService {
                 hoaDon.getEmail(),
                 hoaDon.getNgayTao(),
                 hoaDon.getTrangThai(),
-                chiTietGioHangDTOS
+                chiTietGioHangDTOS,
+                ghiChuGia.toString()
         );
     }
+
     @Override
     public List<PhieuGiamGiaCaNhan> findByKhachHangId(Integer idKhachHang) {
         return phieuGiamGiaCaNhanRepository.findByIdKhachHangId(idKhachHang);

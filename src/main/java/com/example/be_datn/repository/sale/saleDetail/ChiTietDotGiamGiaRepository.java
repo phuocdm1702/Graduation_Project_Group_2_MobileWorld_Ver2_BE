@@ -7,12 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.List;
+import java.util.Optional;
 
+@Repository
 public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGiamGia, Integer> {
     @Query("Select ctdgg From ChiTietDotGiamGia ctdgg")
     List<ChiTietDotGiamGia> xuatExcel();
@@ -80,4 +83,6 @@ public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGia
             @Param("dotGiamGia") DotGiamGia dotGiamGia,
             @Param("chiTietSanPham") ChiTietSanPham chiTietSanPham,
             @Param("deleted") boolean deleted);
+
+    Optional<ChiTietDotGiamGia> findByIdChiTietSanPham_IdAndDeletedFalse(Integer chiTietSanPhamId);
 }

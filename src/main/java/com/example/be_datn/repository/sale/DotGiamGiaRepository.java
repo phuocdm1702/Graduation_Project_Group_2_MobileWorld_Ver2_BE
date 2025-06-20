@@ -2,6 +2,7 @@ package com.example.be_datn.repository.sale;
 
 import com.example.be_datn.dto.sale.respone.ViewCTSPDTO;
 import com.example.be_datn.dto.sale.respone.ViewSanPhamDTO;
+import com.example.be_datn.entity.discount.ChiTietDotGiamGia;
 import com.example.be_datn.entity.discount.DotGiamGia;
 import com.example.be_datn.entity.product.SanPham;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer> {
     @Query("SELECT dgg FROM DotGiamGia dgg WHERE dgg.deleted = false")
@@ -151,4 +153,6 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
                 WHERE e.ngayKetThuc <= :today AND e.deleted = false
             """)
     int updateDeletedIfEndDatePassed(@Param("today") Date today);
+
+
 }

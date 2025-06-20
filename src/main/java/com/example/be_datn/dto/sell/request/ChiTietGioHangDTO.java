@@ -7,6 +7,8 @@ public class ChiTietGioHangDTO {
     private String maImel;
     private String tenSanPham;
     private String mauSac;
+
+
     private String ram;
 
     private String boNhoTrong;
@@ -20,10 +22,13 @@ public class ChiTietGioHangDTO {
 
     private BigDecimal tongTien;
 
+    private Integer idPhieuGiamGia; // Thêm trường để lưu idPhieuGiamGia
+
+
     public ChiTietGioHangDTO() {
     }
 
-    public ChiTietGioHangDTO(Integer chiTietSanPhamId, String maImel, String tenSanPham, String mauSac, String ram, String boNhoTrong, Integer soLuong, BigDecimal giaBan, BigDecimal giaBanGoc, String ghiChuGia, BigDecimal tongTien) {
+    public ChiTietGioHangDTO(Integer chiTietSanPhamId, String maImel, String tenSanPham, String mauSac, String ram, String boNhoTrong, Integer soLuong, BigDecimal giaBan, BigDecimal giaBanGoc, String ghiChuGia, BigDecimal tongTien, Integer idPhieuGiamGia) {
         this.chiTietSanPhamId = chiTietSanPhamId;
         this.maImel = maImel;
         this.tenSanPham = tenSanPham;
@@ -35,6 +40,7 @@ public class ChiTietGioHangDTO {
         this.giaBanGoc = giaBanGoc;
         this.ghiChuGia = ghiChuGia;
         this.tongTien = tongTien;
+        this.idPhieuGiamGia = idPhieuGiamGia;
     }
 
     public Integer getChiTietSanPhamId() {
@@ -123,5 +129,13 @@ public class ChiTietGioHangDTO {
 
     public void setGhiChuGia(String ghiChuGia) {
         this.ghiChuGia = ghiChuGia;
+    }
+
+    public Integer getIdPhieuGiamGia() {
+        return idPhieuGiamGia;
+    }
+
+    public void setIdPhieuGiamGia(Integer idPhieuGiamGia) {
+        this.idPhieuGiamGia = idPhieuGiamGia;
     }
 }

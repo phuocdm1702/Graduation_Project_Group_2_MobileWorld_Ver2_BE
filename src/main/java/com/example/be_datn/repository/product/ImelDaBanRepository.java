@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface ImelDaBanRepository extends JpaRepository<ImelDaBan, Integer> {
     boolean existsByMa(String maImel);
     Page<ImelDaBan> findByDeletedFalse(Pageable pageable);

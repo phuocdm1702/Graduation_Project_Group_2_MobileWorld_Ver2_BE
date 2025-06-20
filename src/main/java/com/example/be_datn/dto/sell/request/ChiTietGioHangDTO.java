@@ -13,12 +13,17 @@ public class ChiTietGioHangDTO {
 
     private Integer soLuong;
     private BigDecimal giaBan;
+
+    private BigDecimal giaBanGoc;
+
+    private String ghiChuGia;
+
     private BigDecimal tongTien;
 
     public ChiTietGioHangDTO() {
     }
 
-    public ChiTietGioHangDTO(Integer chiTietSanPhamId, String maImel, String tenSanPham, String mauSac, String ram, String boNhoTrong, Integer soLuong, BigDecimal giaBan, BigDecimal tongTien) {
+    public ChiTietGioHangDTO(Integer chiTietSanPhamId, String maImel, String tenSanPham, String mauSac, String ram, String boNhoTrong, Integer soLuong, BigDecimal giaBan, BigDecimal giaBanGoc, String ghiChuGia, BigDecimal tongTien) {
         this.chiTietSanPhamId = chiTietSanPhamId;
         this.maImel = maImel;
         this.tenSanPham = tenSanPham;
@@ -27,6 +32,8 @@ public class ChiTietGioHangDTO {
         this.boNhoTrong = boNhoTrong;
         this.soLuong = soLuong;
         this.giaBan = giaBan;
+        this.giaBanGoc = giaBanGoc;
+        this.ghiChuGia = ghiChuGia;
         this.tongTien = tongTien;
     }
 
@@ -100,5 +107,21 @@ public class ChiTietGioHangDTO {
 
     public void setTongTien(BigDecimal tongTien) {
         this.tongTien = tongTien;
+    }
+
+    public BigDecimal getGiaBanGoc() {
+        return giaBanGoc;
+    }
+
+    public void setGiaBanGoc(BigDecimal giaBanGoc) {
+        this.giaBanGoc = giaBanGoc;
+    }
+
+    public String getGhiChuGia() {
+        return ghiChuGia;
+    }
+
+    public void setGhiChuGia(String ghiChuGia) {
+        this.ghiChuGia = ghiChuGia;
     }
 }

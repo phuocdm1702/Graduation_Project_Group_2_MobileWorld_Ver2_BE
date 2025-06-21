@@ -260,13 +260,65 @@ public class BanHangServiceImpl implements BanHangService {
 
         // Giảm tạm thời soLuongDung của PhieuGiamGia nếu áp dụng
         if (chiTietGioHangDTO.getIdPhieuGiamGia() != null) {
-            PhieuGiamGia pgg = phieuGiamGiaRepository.findById(chiTietGioHangDTO.getIdPhieuGiamGia())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu giảm giá!"));
-            if (pgg.getSoLuongDung() > 0) {
+            Optional<PhieuGiamGia> optionalPGG = phieuGiamGiaRepository.findById(chiTietGioHangDTO.getIdPhieuGiamGia());
+            if (!optionalPGG.isPresent()) {
+                throw new IllegalArgumentException("Mã giảm giá không tồn tại.");
+            }
+            PhieuGiamGia pgg = optionalPGG.get();
+
+            // Kiểm tra các điều kiện chung
+            if (!pgg.getTrangThai() || pgg.getDeleted()) {
+                throw new IllegalArgumentException("Mã giảm giá không hợp lệ hoặc đã bị vô hiệu hóa.");
+            }
+            if (pgg.getNgayKetThuc() != null && pgg.getNgayKetThuc().before(new Date())) {
+                throw new IllegalArgumentException("Mã giảm giá đã hết hạn.");
+            }
+            if (pgg.getSoLuongDung() != null && pgg.getSoLuongDung() <= 0) {
+                throw new IllegalArgumentException("Mã giảm giá đã hết lượt sử dụng.");
+            }
+
+            // Kiểm tra giá trị đơn hàng tối thiểu
+            BigDecimal hoaDonToiThieu = pgg.getHoaDonToiThieu() != null ? new BigDecimal(pgg.getHoaDonToiThieu().toString()) : BigDecimal.ZERO;
+            ghKey = GH_PREFIX + idHD;
+            gh = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
+            if (gh == null) {
+                throw new IllegalStateException("Giỏ hàng chưa được khởi tạo.");
+            }
+            BigDecimal tongTien = gh.getTongTien();
+            if (tongTien.compareTo(hoaDonToiThieu) < 0) {
+                throw new IllegalArgumentException("Tổng tiền giỏ hàng không đủ để áp dụng mã giảm giá này.");
+            }
+
+            // Kiểm tra phiếu giảm giá riêng tư
+            if (pgg.getRiengTu()) {
+                Integer khachHangId = null;
+                if (hoaDon.getIdKhachHang() != null) {
+                    khachHangId = hoaDon.getIdKhachHang().getId();
+                }
+                if (khachHangId == null || khachHangId <= 0) {
+                    throw new IllegalArgumentException("Phiếu giảm giá riêng tư yêu cầu thông tin khách hàng.");
+                }
+                Optional<PhieuGiamGiaCaNhan> pggCaNhan = phieuGiamGiaCaNhanRepository.findValidPrivateVoucherByIdPhieuGiamGiaAndIdKhachHang(
+                        pgg.getId(), khachHangId, new Date());
+                if (!pggCaNhan.isPresent()) {
+                    throw new IllegalArgumentException("Phiếu giảm giá này không áp dụng cho khách hàng.");
+                }
+                PhieuGiamGiaCaNhan pggCaNhanEntity = pggCaNhan.get();
+                if (!pggCaNhanEntity.getTrangThai() || pggCaNhanEntity.getDeleted()) {
+                    throw new IllegalArgumentException("Phiếu giảm giá cá nhân không hợp lệ.");
+                }
+            } else {
+                // Kiểm tra phiếu giảm giá công khai
+                Optional<PhieuGiamGia> validPublicVoucher = phieuGiamGiaRepository.findValidPublicVoucherByMa(pgg.getMa(), new Date());
+                if (!validPublicVoucher.isPresent()) {
+                    throw new IllegalArgumentException("Phiếu giảm giá công khai không hợp lệ.");
+                }
+            }
+
+            // Giảm số lượt sử dụng tạm thời
+            if (pgg.getSoLuongDung() != null && pgg.getSoLuongDung() > 0) {
                 pgg.setSoLuongDung(pgg.getSoLuongDung() - 1);
                 phieuGiamGiaRepository.save(pgg);
-            } else {
-                throw new RuntimeException("Phiếu giảm giá đã hết lượt sử dụng!");
             }
         }
 
@@ -276,6 +328,27 @@ public class BanHangServiceImpl implements BanHangService {
 
         redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
         return gh;
+    }
+
+    public List<PhieuGiamGia> goiYPhieuGiamGia(Integer idKhachHang, BigDecimal tongTien) {
+        List<PhieuGiamGia> goiY = new ArrayList<>();
+        Date currentDate = new Date();
+        Double tongTienDouble = tongTien.doubleValue();
+
+        // Gợi ý phiếu giảm giá công khai
+        List<PhieuGiamGia> congKhai = phieuGiamGiaRepository.findValidPublicVouchers(tongTienDouble, currentDate);
+        goiY.addAll(congKhai);
+
+        // Gợi ý phiếu giảm giá riêng tư
+        if (idKhachHang != null && idKhachHang > 0) {
+            List<PhieuGiamGiaCaNhan> pggCaNhans = phieuGiamGiaCaNhanRepository.findValidPrivateVouchersByKhachHang(
+                    idKhachHang, tongTienDouble, currentDate);
+            for (PhieuGiamGiaCaNhan pggCaNhan : pggCaNhans) {
+                goiY.add(pggCaNhan.getIdPhieuGiamGia());
+            }
+        }
+
+        return goiY;
     }
 
     @Override
@@ -421,7 +494,6 @@ public class BanHangServiceImpl implements BanHangService {
         // Tìm hóa đơn
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
-
         // Kiểm tra giỏ hàng trong Redis
         String ghKey = GH_PREFIX + idHD;
         GioHangDTO gioHangDTO = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
@@ -453,15 +525,54 @@ public class BanHangServiceImpl implements BanHangService {
         // Xử lý mã giảm giá
         BigDecimal giamGia = BigDecimal.ZERO;
         if (hoaDonRequest.getIdPhieuGiamGia() != null) {
-            PhieuGiamGia pgg = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
-                    .orElseThrow(() -> new RuntimeException("Mã giảm giá không tồn tại!"));
-            if (pgg.getNgayKetThuc().before(Date.from(Instant.now()))) {
-                throw new RuntimeException("Mã giảm giá đã hết hạn!");
+            Optional<PhieuGiamGia> optionalPGG = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia());
+            if (!optionalPGG.isPresent()) {
+                throw new IllegalArgumentException("Mã giảm giá không tồn tại.");
             }
-            if (tienSanPham.compareTo(BigDecimal.valueOf(pgg.getHoaDonToiThieu())) < 0) {
-                throw new RuntimeException("Đơn hàng không đạt giá trị tối thiểu!");
+            PhieuGiamGia pgg = optionalPGG.get();
+            Date currentDate = new Date();
+
+            // Kiểm tra điều kiện chung
+            if (!pgg.getTrangThai() || pgg.getDeleted()) {
+                throw new IllegalArgumentException("Mã giảm giá không hợp lệ hoặc đã bị vô hiệu hóa.");
             }
+            if (pgg.getNgayKetThuc() != null && pgg.getNgayKetThuc().before(currentDate)) {
+                throw new IllegalArgumentException("Mã giảm giá đã hết hạn.");
+            }
+            if (pgg.getSoLuongDung() != null && pgg.getSoLuongDung() <= 0) {
+                throw new IllegalArgumentException("Mã giảm giá đã hết lượt sử dụng.");
+            }
+            BigDecimal hoaDonToiThieu = pgg.getHoaDonToiThieu() != null ? new BigDecimal(pgg.getHoaDonToiThieu().toString()) : BigDecimal.ZERO;
+            if (tienSanPham.compareTo(hoaDonToiThieu) < 0) {
+                throw new IllegalArgumentException("Tổng tiền hóa đơn không đủ để áp dụng mã giảm giá này.");
+            }
+
+            // Kiểm tra phiếu giảm giá riêng tư
+            if (pgg.getRiengTu()) {
+                if (hoaDonRequest.getIdKhachHang() == null || hoaDonRequest.getIdKhachHang() <= 0) {
+                    throw new IllegalArgumentException("Phiếu giảm giá riêng tư yêu cầu thông tin khách hàng.");
+                }
+                Optional<PhieuGiamGiaCaNhan> pggCaNhan = phieuGiamGiaCaNhanRepository.findValidPrivateVoucherByIdPhieuGiamGiaAndIdKhachHang(
+                        pgg.getId(), hoaDonRequest.getIdKhachHang(), currentDate);
+                if (!pggCaNhan.isPresent()) {
+                    throw new IllegalArgumentException("Phiếu giảm giá này không áp dụng cho khách hàng.");
+                }
+            } else {
+                // Kiểm tra phiếu giảm giá công khai
+                Optional<PhieuGiamGia> validPublicVoucher = phieuGiamGiaRepository.findByma(pgg.getMa());
+                if (!validPublicVoucher.isPresent()) {
+                    throw new IllegalArgumentException("Phiếu giảm giá công khai không hợp lệ.");
+                }
+            }
+
+            // Tính giá trị giảm giá
             giamGia = BigDecimal.valueOf(pgg.getSoTienGiamToiDa());
+
+            // Giảm số lượt sử dụng
+            if (pgg.getSoLuongDung() != null && pgg.getSoLuongDung() > 0) {
+                pgg.setSoLuongDung(pgg.getSoLuongDung() - 1);
+                phieuGiamGiaRepository.save(pgg);
+            }
         }
 
         // Xử lý khách hàng

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -62,4 +63,16 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     Optional<PhieuGiamGia> findByma(String ma);
 
+    @Query("SELECT p FROM PhieuGiamGia p WHERE p.riengTu = false " +
+            "AND p.trangThai = true AND p.deleted = false " +
+            "AND (p.ngayKetThuc IS NULL OR p.ngayKetThuc >= :currentDate) " +
+            "AND (p.soLuongDung IS NULL OR p.soLuongDung > 0) " +
+            "AND (p.hoaDonToiThieu IS NULL OR :tongTien >= p.hoaDonToiThieu)")
+    List<PhieuGiamGia> findValidPublicVouchers(@Param("tongTien") Double tongTien, @Param("currentDate") Date currentDate);
+
+    @Query("SELECT p FROM PhieuGiamGia p WHERE p.ma = :ma " +
+            "AND p.riengTu = false AND p.trangThai = true AND p.deleted = false " +
+            "AND (p.ngayKetThuc IS NULL OR p.ngayKetThuc >= :currentDate) " +
+            "AND (p.soLuongDung IS NULL OR p.soLuongDung > 0)")
+    Optional<PhieuGiamGia> findValidPublicVoucherByMa(@Param("ma") String ma, @Param("currentDate") Date currentDate);
 }

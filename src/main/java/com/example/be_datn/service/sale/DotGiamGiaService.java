@@ -83,12 +83,9 @@ public class DotGiamGiaService {
 
     public List<HeDieuHanh> getAllHeDieuHanh() {
         try {
-            System.out.println("Calling findAllHeDieuHanh, repository: " + repository.getClass().getName());
             List<HeDieuHanh> result = hdhForDGGRepo.findAllByDeletedFalse();
-            System.out.println("HeDieuHanh list: " + result);
             return result;
         } catch (Exception e) {
-            System.err.println("Error in getAllHeDieuHanh: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to fetch HeDieuHanh list", e);
         }
@@ -237,7 +234,6 @@ public class DotGiamGiaService {
         try {
             // 1. Đánh dấu DotGiamGia là deleted
             repository.updateDotGiamGiaDeleted(id);
-            System.out.println("Cập nhật trạng thái deleted cho DotGiamGia với ID: " + id);
 
             // 2. Đánh dấu tất cả ChiTietDotGiamGia liên quan là deleted
             repo2.updateChiTietDotGiamGiaDeleted(id);
@@ -279,14 +275,14 @@ public class DotGiamGiaService {
                         // 9. Cập nhật bản ghi còn hiệu lực
                         activeRecord.setGiaSauKhiGiam(newGiaSauKhiGiam);
                         repo2.save(activeRecord);
-                        System.out.println("Cập nhật giá sau khi giảm cho idChiTietSanPham: " + chiTietSanPham.getId() +
-                                " theo DotGiamGia còn lại: " + activeDotGiamGia.getId());
+//                        System.out.println("Cập nhật giá sau khi giảm cho idChiTietSanPham: " + chiTietSanPham.getId() +
+//                                " theo DotGiamGia còn lại: " + activeDotGiamGia.getId());
                     }
                 } else {
-                    System.out.println("Không còn DotGiamGia hiệu lực cho idChiTietSanPham: " + chiTietSanPham.getId());
+//                    System.out.println("Không còn DotGiamGia hiệu lực cho idChiTietSanPham: " + chiTietSanPham.getId());
                 }
             }
-            System.out.println("Xóa và cập nhật (nếu cần) thành công cho DotGiamGia với ID: " + id);
+//            System.out.println("Xóa và cập nhật (nếu cần) thành công cho DotGiamGia với ID: " + id);
         } catch (Exception e) {
             System.err.println("Lỗi khi xóa DotGiamGia: " + e.getMessage());
             throw e;
@@ -303,16 +299,14 @@ public class DotGiamGiaService {
     }
 
     public List<ChiTietSanPham> getChiTietSanPhamByDotGiamGia(Integer id) {
-        System.out.println("Thực thi getChiTietSanPhamByDotGiamGia với ID: " + id);
         List<ChiTietSanPham> ctspList = repo2.getChiTietSanPhamByDotGiamGia(id);
-        System.out.println("getChiTietSanPhamByDotGiamGia trả về: " + (ctspList != null ? ctspList.size() : 0) + " bản ghi");
+//        System.out.println("getChiTietSanPhamByDotGiamGia trả về: " + (ctspList != null ? ctspList.size() : 0) + " bản ghi");
         return ctspList;
     }
 
     public Map<String, Object> getDataForUpdate(Integer id) {
         Map<String, Object> response = new HashMap<>();
         try {
-            System.out.println("Bắt đầu getDataForUpdate với ID: " + id);
             List<SanPham> dspList = getThatDongSanPham(id);
             List<Integer> ctspIds = getChiTietSanPhamByDotGiamGia(id).stream()
                     .map(ChiTietSanPham::getId)
@@ -434,7 +428,6 @@ public class DotGiamGiaService {
                     addedCTSP.add(key);
                 }
             }
-            System.out.println("Cập nhật đợt giảm giá thành công!");
         } catch (Exception e) {
             System.err.println("Lỗi khi cập nhật đợt giảm giá: " + e.getMessage());
             throw e;
@@ -459,9 +452,9 @@ public class DotGiamGiaService {
         // Cập nhật trạng thái và xóa các DotGiamGia hết hạn
         int deletedCount = repository.updateDeletedIfEndDatePassed(today);
         if (deletedCount > 0) {
-            System.out.println("Đã đánh dấu " + deletedCount + " DotGiamGia là deleted.");
+//            System.out.println("Đã đánh dấu " + deletedCount + " DotGiamGia là deleted.");
             int deletedChiTietCount = repo2.updateDeletedChiTietDotGiamGia();
-            System.out.println("Đã đánh dấu " + deletedChiTietCount + " ChiTietDotGiamGia là deleted.");
+//            System.out.println("Đã đánh dấu " + deletedChiTietCount + " ChiTietDotGiamGia là deleted.");
         }
         repository.updateStatusIfStartDatePassed(today);
 
@@ -488,12 +481,12 @@ public class DotGiamGiaService {
                         .divide(BigDecimal.valueOf(activeCtggList.size()), 2, RoundingMode.HALF_UP);
 
                 newGiaSauKhiGiam = calculateGiaSauKhiGiam(giaBanDau, avgGiaTriGiamGia, avgSoTienGiamToiDa);
-                System.out.println("Cập nhật giá trung bình cho ChiTietSanPham " + ctsp.getId() + ": " + newGiaSauKhiGiam);
+//                System.out.println("Cập nhật giá trung bình cho ChiTietSanPham " + ctsp.getId() + ": " + newGiaSauKhiGiam);
             } else { // Chỉ có 1 đợt
                 ChiTietDotGiamGia activeCtgg = activeCtggList.get(0);
                 DotGiamGia activeDot = activeCtgg.getIdDotGiamGia();
                 newGiaSauKhiGiam = calculateGiaSauKhiGiam(giaBanDau, activeDot.getGiaTriGiamGia(), activeDot.getSoTienGiamToiDa());
-                System.out.println("Cập nhật giá cho ChiTietSanPham " + ctsp.getId() + " theo DotGiamGia " + activeDot.getId() + ": " + newGiaSauKhiGiam);
+//                System.out.println("Cập nhật giá cho ChiTietSanPham " + ctsp.getId() + " theo DotGiamGia " + activeDot.getId() + ": " + newGiaSauKhiGiam);
             }
 
             for (ChiTietDotGiamGia ctgg : activeCtggList) {

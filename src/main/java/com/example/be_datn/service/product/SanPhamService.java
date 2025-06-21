@@ -4,10 +4,14 @@ import com.example.be_datn.dto.product.response.SanPhamResponse;
 import com.example.be_datn.dto.product.request.SanPhamRequest;
 import com.example.be_datn.entity.product.SanPham;
 import org.springframework.data.domain.Page;
+
+import java.util.List;
 import java.util.Optional;
 
 public interface SanPhamService {
     Page<SanPhamResponse> getAllSanPham(int page, int size);
+
+    List<SanPhamResponse> getAllSanPhamList();
 
     Page<SanPhamResponse> searchSanPham(
             String keyword,

@@ -1,5 +1,6 @@
 package com.example.be_datn.entity.account;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -23,6 +24,7 @@ public class DiaChiKhachHang {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_khach_hang", nullable = false)
+    @JsonBackReference
     private KhachHang idKhachHang;
 
     @Size(max = 255)

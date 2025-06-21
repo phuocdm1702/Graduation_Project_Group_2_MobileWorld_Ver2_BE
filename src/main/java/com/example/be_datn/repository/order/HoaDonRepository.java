@@ -76,7 +76,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             Pageable pageable);
 
 
-    @Query("SELECT hd FROM HoaDon hd WHERE hd.trangThai = 0")
+    @Query("SELECT hd FROM HoaDon hd WHERE hd.deleted = true")
     List<HoaDon> findAllHDNotConfirm();
 
     @Query("SELECT COUNT(h) > 0 FROM HoaDon h WHERE h.id = :id")

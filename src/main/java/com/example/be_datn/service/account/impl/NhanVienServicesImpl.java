@@ -96,7 +96,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
         taiKhoan.setSoDienThoai(nhanVienResponse.getSoDienThoai());
         taiKhoan.setTenDangNhap(nhanVienResponse.getTenDangNhap());
         taiKhoan.setIdQuyenHan(quyenHan);
-        taiKhoan.setDeleted(nhanVienResponse.getGioiTinh());
+        taiKhoan.setDeleted(true);
         taiKhoan.setTenDangNhap(nhanVienResponse.getTenDangNhap());
 
         String randomPassword = emailServices.generateRandomPassword(8);
@@ -118,6 +118,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
         nhanVien.setDiaChiCuThe(nhanVienResponse.getDiaChiCuThe());
         nhanVien.setCccd(nhanVienResponse.getCccd());
         nhanVien.setAnhNhanVien(nhanVienResponse.getAnhNhanVien());
+        nhanVien.setDeleted(nhanVienResponse.getGioiTinh());
         nhanVien.setDeleted(false);
 
         try {
@@ -166,7 +167,6 @@ public class NhanVienServicesImpl implements NhanVienServices {
                     //tk
                     taiKhoan.setEmail(nhanVienResponse.getEmail());
                     taiKhoan.setSoDienThoai(nhanVienResponse.getSoDienThoai());
-                    taiKhoan.setDeleted(nhanVienResponse.getGioiTinh());
                     taiKhoanRepository.save(taiKhoan);
                     //khachhang
                     existingNhanVien.setTenNhanVien(nhanVienResponse.getTenNhanVien());
@@ -178,6 +178,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
                     existingNhanVien.setDiaChiCuThe(nhanVienResponse.getDiaChiCuThe());
                     existingNhanVien.setCccd(nhanVienResponse.getCccd());
                     existingNhanVien.setUpdatedAt(new Date().toInstant());
+                    existingNhanVien.setDeleted(nhanVienResponse.getGioiTinh());
                     existingNhanVien.setUpdatedBy(1);
 
                     return nhanVienRepository.save(existingNhanVien);

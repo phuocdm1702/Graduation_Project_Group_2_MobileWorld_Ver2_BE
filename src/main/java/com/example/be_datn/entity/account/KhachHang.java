@@ -1,5 +1,6 @@
 package com.example.be_datn.entity.account;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -36,7 +37,7 @@ public class KhachHang {
     private String ten;
 
     @Column(name = "gioi_tinh", columnDefinition = "tinyint")
-    private Short gioiTinh;
+    private Boolean gioiTinh;
 
     @Column(name = "ngay_sinh")
     private Date ngaySinh;
@@ -63,6 +64,7 @@ public class KhachHang {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_dia_chi_khach_hang")
+    @JsonManagedReference
     private DiaChiKhachHang idDiaChiKhachHang;
 
     @Size(max = 255)

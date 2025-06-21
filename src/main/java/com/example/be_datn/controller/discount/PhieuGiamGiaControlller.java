@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -401,36 +402,107 @@ public class PhieuGiamGiaControlller {
     public List<PhieuGiamGia> getall(){
         return phieuGiamGiaService.getall();
     }
+
     @GetMapping("/check-public")
     public ResponseEntity<?> checkPublicDiscountCode(@RequestParam("ma") String ma) {
-        Optional<PhieuGiamGia> optionalPGG = phieuGiamGiaRepository.findByma(ma);
-
+        Optional<PhieuGiamGia> optionalPGG = phieuGiamGiaRepository.findValidPublicVoucherByMa(ma, new Date());
         if (!optionalPGG.isPresent()) {
-            return ResponseEntity.status(404).body("Mã giảm giá không tồn tại.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mã giảm giá công khai không tồn tại hoặc không hợp lệ.");
+        }
+        return ResponseEntity.ok(optionalPGG.get());
+    }
+
+    @GetMapping("/validate-at-checkout")
+    public ResponseEntity<?> validateDiscountAtCheckout(
+            @RequestParam("ma") String ma,
+            @RequestParam("totalPrice") BigDecimal totalPrice,
+            @RequestParam(value = "khachHangId", required = false) Integer khachHangId) {
+        Optional<PhieuGiamGia> optionalPGG = phieuGiamGiaRepository.findByma(ma);
+        if (!optionalPGG.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mã giảm giá không tồn tại.");
         }
 
         PhieuGiamGia pgg = optionalPGG.get();
+        Date currentDate = new Date();
 
-        // Kiểm tra trạng thái
+        // Kiểm tra điều kiện chung
         if (!pgg.getTrangThai() || pgg.getDeleted()) {
-            return ResponseEntity.status(400).body("Mã giảm giá không hợp lệ hoặc đã bị vô hiệu hóa.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mã giảm giá không hợp lệ hoặc đã bị vô hiệu hóa.");
         }
-
-        // Kiểm tra ngày hết hạn
-        if (pgg.getNgayKetThuc() != null && pgg.getNgayKetThuc().before(new Date())) {
-            return ResponseEntity.status(400).body("Mã giảm giá đã hết hạn.");
+        if (pgg.getNgayKetThuc() != null && pgg.getNgayKetThuc().before(currentDate)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mã giảm giá đã hết hạn.");
         }
-
-        // Kiểm tra số lượng sử dụng
         if (pgg.getSoLuongDung() != null && pgg.getSoLuongDung() <= 0) {
-            return ResponseEntity.status(400).body("Mã giảm giá đã hết lượt sử dụng.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mã giảm giá đã hết lượt sử dụng.");
+        }
+        BigDecimal hoaDonToiThieu = pgg.getHoaDonToiThieu() != null ? new BigDecimal(pgg.getHoaDonToiThieu().toString()) : BigDecimal.ZERO;
+        if (totalPrice.compareTo(hoaDonToiThieu) < 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Tổng tiền hóa đơn không đủ để áp dụng mã giảm giá này.");
         }
 
-        // Kiểm tra mã công khai (riengTu = false)
+        // Kiểm tra phiếu giảm giá riêng tư
         if (pgg.getRiengTu()) {
-            return ResponseEntity.status(400).body("Đây không phải mã giảm giá công khai.");
+            if (khachHangId == null || khachHangId <= 0) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Phiếu giảm giá riêng tư yêu cầu thông tin khách hàng.");
+            }
+            Optional<PhieuGiamGiaCaNhan> pggCaNhan = phieuGiamGiaCaNhanRepository.findValidPrivateVoucherByIdPhieuGiamGiaAndIdKhachHang(
+                    pgg.getId(), khachHangId, currentDate);
+            if (!pggCaNhan.isPresent()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Phiếu giảm giá này không áp dụng cho khách hàng.");
+            }
+        } else {
+            // Kiểm tra phiếu giảm giá công khai
+            Optional<PhieuGiamGia> validPublicVoucher = phieuGiamGiaRepository.findValidPublicVoucherByMa(ma, currentDate);
+            if (!validPublicVoucher.isPresent()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mã giảm giá công khai không hợp lệ.");
+            }
         }
 
         return ResponseEntity.ok(pgg);
     }
+
+    @GetMapping("/find-better-discount")
+    public ResponseEntity<?> findBetterDiscount(
+            @RequestParam("currentDiscountMa") String currentDiscountMa,
+            @RequestParam("totalPrice") BigDecimal totalPrice,
+            @RequestParam(value = "khachHangId", required = false) Integer khachHangId) {
+        Optional<PhieuGiamGia> currentPGG = phieuGiamGiaRepository.findByma(currentDiscountMa);
+        Double currentDiscountValue = currentPGG.map(PhieuGiamGia::getSoTienGiamToiDa).orElse(0.0);
+        Date currentDate = new Date();
+        Double tongTienDouble = totalPrice.doubleValue();
+
+        // Lấy tất cả phiếu giảm giá công khai hợp lệ
+        List<PhieuGiamGia> validPublicDiscounts = phieuGiamGiaRepository.findValidPublicVouchers(tongTienDouble, currentDate)
+                .stream()
+                .filter(pgg -> pgg.getSoTienGiamToiDa() > currentDiscountValue)
+                .collect(Collectors.toList());
+
+        // Lấy tất cả phiếu giảm giá riêng tư hợp lệ (nếu có khachHangId)
+        List<PhieuGiamGia> validPrivateDiscounts = new ArrayList<>();
+        if (khachHangId != null && khachHangId > 0) {
+            List<PhieuGiamGiaCaNhan> privateVouchers = phieuGiamGiaCaNhanRepository.findValidPrivateVouchersByKhachHang(
+                    khachHangId, tongTienDouble, currentDate);
+            validPrivateDiscounts = privateVouchers.stream()
+                    .map(PhieuGiamGiaCaNhan::getIdPhieuGiamGia)
+                    .filter(pgg -> pgg.getSoTienGiamToiDa() > currentDiscountValue)
+                    .collect(Collectors.toList());
+        }
+
+        // Kết hợp danh sách phiếu giảm giá hợp lệ
+        List<PhieuGiamGia> allValidDiscounts = new ArrayList<>();
+        allValidDiscounts.addAll(validPublicDiscounts);
+        allValidDiscounts.addAll(validPrivateDiscounts);
+
+        if (allValidDiscounts.isEmpty()) {
+            return ResponseEntity.ok().body(null); // Không có phiếu nào tốt hơn
+        }
+
+        // Chọn phiếu có giá trị giảm lớn nhất
+        PhieuGiamGia bestDiscount = allValidDiscounts.stream()
+                .max(Comparator.comparingDouble(PhieuGiamGia::getSoTienGiamToiDa))
+                .orElse(null);
+
+        return ResponseEntity.ok(bestDiscount);
+    }
+
 }

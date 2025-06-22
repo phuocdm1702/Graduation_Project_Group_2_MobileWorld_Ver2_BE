@@ -169,7 +169,9 @@ public class BanHangServiceImpl implements BanHangService {
     }
 
     @Override
+    @Transactional
     public GioHangDTO themVaoGH(Integer idHD, ChiTietGioHangDTO chiTietGioHangDTO) {
+        // Kiểm tra và lấy hóa đơn
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
 
@@ -177,6 +179,7 @@ public class BanHangServiceImpl implements BanHangService {
             throw new RuntimeException("Hóa đơn này không phải hóa đơn chờ!");
         }
 
+        // Kiểm tra chi tiết sản phẩm
         ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTietGioHangDTO.getChiTietSanPhamId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm!"));
 
@@ -184,6 +187,7 @@ public class BanHangServiceImpl implements BanHangService {
             throw new RuntimeException("IMEI không được để trống!");
         }
 
+        // Kiểm tra tính khả dụng của IMEI
         List<String> availableIMEIs = chiTietSanPhamRepository.findAvailableIMEIsBySanPhamIdAndAttributes(
                 chiTietSanPham.getIdSanPham().getId(),
                 chiTietSanPham.getIdMauSac().getMauSac(),
@@ -207,6 +211,7 @@ public class BanHangServiceImpl implements BanHangService {
             imelRepository.save(imelEntity);
         }
 
+        // Tạo hoặc lấy giỏ hàng từ Redis
         String ghKey = GH_PREFIX + idHD;
         GioHangDTO gh = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
         if (gh == null) {
@@ -217,6 +222,7 @@ public class BanHangServiceImpl implements BanHangService {
             gh.setTongTien(BigDecimal.ZERO);
         }
 
+        // Thêm các mục mới vào giỏ hàng
         for (String imei : requestedIMEIs) {
             ChiTietGioHangDTO newItem = new ChiTietGioHangDTO();
             newItem.setChiTietSanPhamId(chiTietGioHangDTO.getChiTietSanPhamId());
@@ -231,31 +237,35 @@ public class BanHangServiceImpl implements BanHangService {
             newItem.setSoLuong(1);
             newItem.setTongTien(chiTietSanPham.getGiaBan());
 
+            // Kiểm tra giá thay đổi so với các mục hiện có
+            boolean priceChanged = false;
+            for (ChiTietGioHangDTO existingItem : gh.getChiTietGioHangDTOS()) {
+                if (existingItem.getTenSanPham().equals(newItem.getTenSanPham()) &&
+                        existingItem.getMauSac().equals(newItem.getMauSac()) &&
+                        existingItem.getBoNhoTrong().equals(newItem.getBoNhoTrong()) &&
+                        existingItem.getGiaBan().compareTo(newItem.getGiaBan()) != 0) {
+                    newItem.setGhiChuGia(String.format("Có sự thay đổi từ giá hiện tại: %s (Giá gốc: %s) trên hệ thống",
+                            newItem.getGiaBan(), existingItem.getGiaBan()));
+                    priceChanged = true;
+                    break;
+                }
+            }
+
+            // Kiểm tra giá thay đổi so với dữ liệu mới nhất từ database
+            if (!priceChanged) {
+                Optional<ChiTietSanPham> latestChiTietSanPham = chiTietSanPhamRepository.findByImel(imei.trim());
+                if (latestChiTietSanPham.isPresent() && latestChiTietSanPham.get().getGiaBan().compareTo(chiTietGioHangDTO.getGiaBan()) != 0) {
+                    newItem.setGhiChuGia(String.format("Giá hiện tại: %s (Giá gốc: %s)",
+                            latestChiTietSanPham.get().getGiaBan(), chiTietGioHangDTO.getGiaBan()));
+                    newItem.setGiaBan(latestChiTietSanPham.get().getGiaBan()); // Cập nhật giá mới
+                    newItem.setTongTien(latestChiTietSanPham.get().getGiaBan()); // Cập nhật tổng tiền
+                }
+            }
+
+            // Kiểm tra trùng lặp IMEI
             boolean imeiExists = gh.getChiTietGioHangDTOS().stream()
                     .anyMatch(item -> item.getMaImel().equals(imei.trim()));
             if (!imeiExists) {
-                // Kiểm tra giá thay đổi so với giá trong cơ sở dữ liệu
-                BigDecimal currentPrice = chiTietSanPham.getGiaBan();
-                for (ChiTietGioHangDTO existingItem : gh.getChiTietGioHangDTOS()) {
-                    if (existingItem.getTenSanPham().equals(newItem.getTenSanPham()) &&
-                            existingItem.getMauSac().equals(newItem.getMauSac()) &&
-                            existingItem.getBoNhoTrong().equals(newItem.getBoNhoTrong()) &&
-                            existingItem.getGiaBan().compareTo(currentPrice) != 0) {
-                        newItem.setGhiChuGia(String.format("Giá hiện tại: %s (Giá gốc: %s)",
-                                currentPrice, existingItem.getGiaBan()));
-                        break;
-                    }
-                }
-
-                // Nếu không có sản phẩm tương tự trong giỏ hàng, kiểm tra giá thay đổi so với giá cũ
-                if (newItem.getGhiChuGia().isEmpty()) {
-                    Optional<ChiTietSanPham> latestChiTietSanPham = chiTietSanPhamRepository.findByImel(imei.trim());
-                    if (latestChiTietSanPham.isPresent() && latestChiTietSanPham.get().getGiaBan().compareTo(chiTietGioHangDTO.getGiaBan()) != 0) {
-                        newItem.setGhiChuGia(String.format("Giá hiện tại: %s (Giá gốc: %s)",
-                                latestChiTietSanPham.get().getGiaBan(), chiTietGioHangDTO.getGiaBan()));
-                    }
-                }
-
                 gh.getChiTietGioHangDTOS().add(newItem);
 
                 GioHangTam gioHangTam = GioHangTam.builder()
@@ -270,6 +280,7 @@ public class BanHangServiceImpl implements BanHangService {
             }
         }
 
+        // Xử lý mã giảm giá
         if (chiTietGioHangDTO.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(chiTietGioHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy mã giảm giá!"));
@@ -283,11 +294,18 @@ public class BanHangServiceImpl implements BanHangService {
             phieuGiamGiaRepository.save(phieuGiamGia);
         }
 
+        // Cập nhật tổng tiền
         gh.setTongTien(gh.getChiTietGioHangDTOS().stream()
                 .map(ChiTietGioHangDTO::getTongTien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
+        // Cập nhật HoaDon trong database với tổng tiền mới
+        hoaDon.setTongTien(gh.getTongTien());
+        hoaDonRepository.save(hoaDon);
+
+        // Lưu vào Redis
         redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
+
         return gh;
     }
     public List<PhieuGiamGia> goiYPhieuGiamGia(Integer idKhachHang, BigDecimal tongTien) {

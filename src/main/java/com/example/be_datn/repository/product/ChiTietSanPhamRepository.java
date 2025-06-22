@@ -44,8 +44,26 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imei AND c.deleted = false")
     Optional<ChiTietSanPham> findByIdImelImelAndDeletedFalse(@Param("imei") String imei);
 
-    @Query("SELECT c FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId AND c.idMauSac.mauSac = :mauSac AND c.idRam.dungLuongRam = :dungLuongRam AND c.idBoNhoTrong.dungLuongBoNhoTrong = :dungLuongBoNhoTrong AND c.deleted = false")
-    Optional<ChiTietSanPham> findByIdSanPhamIdAndAttributes(
+    @Query("SELECT c FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId " +
+            "AND c.idMauSac.mauSac = :mauSac " +
+            "AND c.idRam.dungLuongRam = :dungLuongRam " +
+            "AND c.idBoNhoTrong.dungLuongBoNhoTrong = :dungLuongBoNhoTrong " +
+            "AND c.deleted = false")
+    List<ChiTietSanPham> findByIdSanPhamIdAndAttributes(
+            @Param("sanPhamId") Integer sanPhamId,
+            @Param("mauSac") String mauSac,
+            @Param("dungLuongRam") String dungLuongRam,
+            @Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong);
+
+    @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imel AND c.deleted = false")
+    Optional<ChiTietSanPham> findByImel(@Param("imel") String imel);
+
+    @Query("SELECT c.idImel.imel FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId " +
+            "AND c.idMauSac.mauSac = :mauSac " +
+            "AND c.idRam.dungLuongRam = :dungLuongRam " +
+            "AND c.idBoNhoTrong.dungLuongBoNhoTrong = :dungLuongBoNhoTrong " +
+            "AND c.deleted = false AND c.idImel.deleted = false")
+    List<String> findAvailableIMEIsBySanPhamIdAndAttributes(
             @Param("sanPhamId") Integer sanPhamId,
             @Param("mauSac") String mauSac,
             @Param("dungLuongRam") String dungLuongRam,

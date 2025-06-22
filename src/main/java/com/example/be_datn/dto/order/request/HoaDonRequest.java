@@ -36,6 +36,8 @@ public class HoaDonRequest {
     private Date updatedAt;
     private Integer updatedBy;
 
+    private boolean bypassPriceCheck;
+
     private List<ChiTietGioHangDTO> chiTietGioHangDTOS;
     private Set<HinhThucThanhToanDTO> hinhThucThanhToan;
 
@@ -268,5 +270,13 @@ public class HoaDonRequest {
 
     public void setHinhThucThanhToan(Set<HinhThucThanhToanDTO> hinhThucThanhToan) {
         this.hinhThucThanhToan = hinhThucThanhToan;
+    }
+
+    public boolean isBypassPriceCheck() {
+        return bypassPriceCheck;
+    }
+
+    public void setBypassPriceCheck(boolean bypassPriceCheck) {
+        this.bypassPriceCheck = bypassPriceCheck;
     }
 }

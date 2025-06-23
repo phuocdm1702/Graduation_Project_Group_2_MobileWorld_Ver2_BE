@@ -1,6 +1,8 @@
 package com.example.be_datn.dto.order.request;
 
+import com.example.be_datn.dto.pay.request.HinhThucThanhToanDTO;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
+import com.example.be_datn.entity.account.DiaChiKhachHang;
 import com.example.be_datn.entity.pay.HinhThucThanhToan;
 
 import java.math.BigDecimal;
@@ -22,7 +24,7 @@ public class HoaDonRequest {
     private BigDecimal tongTienSauGiam;
     private String ghiChu;
     private String tenKhachHang;
-    private String diaChiKhachHang;
+    private DiaChiKhachHang diaChiKhachHang;
     private String soDienThoaiKhachHang;
     private String email;
     private Date ngayTao;
@@ -34,13 +36,15 @@ public class HoaDonRequest {
     private Date updatedAt;
     private Integer updatedBy;
 
+    private boolean bypassPriceCheck;
+
     private List<ChiTietGioHangDTO> chiTietGioHangDTOS;
-    private Set<HinhThucThanhToan> hinhThucThanhToan;
+    private Set<HinhThucThanhToanDTO> hinhThucThanhToan;
 
     public HoaDonRequest() {
     }
 
-    public HoaDonRequest(Integer id, Integer idKhachHang, Integer idPhieuGiamGia, Integer idNhanVien, String ma, BigDecimal tienSanPham, String loaiDon, BigDecimal phiVanChuyen, BigDecimal tongTien, BigDecimal tongTienSauGiam, String ghiChu, String tenKhachHang, String diaChiKhachHang, String soDienThoaiKhachHang, String email, Date ngayTao, LocalDate ngayThanhToan, Short trangThai, Boolean deleted, Date createdAt, Integer createdBy, Date updatedAt, Integer updatedBy, List<ChiTietGioHangDTO> chiTietGioHangDTOS, Set<HinhThucThanhToan> hinhThucThanhToan) {
+    public HoaDonRequest(Integer id, Integer idKhachHang, Integer idPhieuGiamGia, Integer idNhanVien, String ma, BigDecimal tienSanPham, String loaiDon, BigDecimal phiVanChuyen, BigDecimal tongTien, BigDecimal tongTienSauGiam, String ghiChu, String tenKhachHang, DiaChiKhachHang diaChiKhachHang, String soDienThoaiKhachHang, String email, Date ngayTao, LocalDate ngayThanhToan, Short trangThai, Boolean deleted, Date createdAt, Integer createdBy, Date updatedAt, Integer updatedBy, List<ChiTietGioHangDTO> chiTietGioHangDTOS, Set<HinhThucThanhToanDTO> hinhThucThanhToan) {
         this.id = id;
         this.idKhachHang = idKhachHang;
         this.idPhieuGiamGia = idPhieuGiamGia;
@@ -164,11 +168,11 @@ public class HoaDonRequest {
         this.tenKhachHang = tenKhachHang;
     }
 
-    public String getDiaChiKhachHang() {
+    public DiaChiKhachHang getDiaChiKhachHang() {
         return diaChiKhachHang;
     }
 
-    public void setDiaChiKhachHang(String diaChiKhachHang) {
+    public void setDiaChiKhachHang(DiaChiKhachHang diaChiKhachHang) {
         this.diaChiKhachHang = diaChiKhachHang;
     }
 
@@ -260,11 +264,19 @@ public class HoaDonRequest {
         this.chiTietGioHangDTOS = chiTietGioHangDTOS;
     }
 
-    public Set<HinhThucThanhToan> getHinhThucThanhToan() {
+    public Set<HinhThucThanhToanDTO> getHinhThucThanhToan() {
         return hinhThucThanhToan;
     }
 
-    public void setHinhThucThanhToan(Set<HinhThucThanhToan> hinhThucThanhToan) {
+    public void setHinhThucThanhToan(Set<HinhThucThanhToanDTO> hinhThucThanhToan) {
         this.hinhThucThanhToan = hinhThucThanhToan;
+    }
+
+    public boolean isBypassPriceCheck() {
+        return bypassPriceCheck;
+    }
+
+    public void setBypassPriceCheck(boolean bypassPriceCheck) {
+        this.bypassPriceCheck = bypassPriceCheck;
     }
 }

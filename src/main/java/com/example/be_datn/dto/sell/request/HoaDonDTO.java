@@ -25,10 +25,12 @@ public class HoaDonDTO {
 
     private List<ChiTietGioHangDTO> chiTietGioHangDTOS;
 
+    private String ghiChuGia;
+
     public HoaDonDTO() {
     }
 
-    public HoaDonDTO(Integer id, Integer idKhachHang, Integer idPhieuGiamGia, Integer idNhanVien, String ma, BigDecimal tienSanPham, String loaiDon, BigDecimal phiVanChuyen, BigDecimal tongTien, BigDecimal tongTienSauGiam, String ghiChu, String tenKhachHang, String diaChiKhachHang, String soDienThoaiKhachHang, String email, Date ngayTao, Short trangThai, List<ChiTietGioHangDTO> chiTietGioHangDTOS) {
+    public HoaDonDTO(Integer id, Integer idKhachHang, Integer idPhieuGiamGia, Integer idNhanVien, String ma, BigDecimal tienSanPham, String loaiDon, BigDecimal phiVanChuyen, BigDecimal tongTien, BigDecimal tongTienSauGiam, String ghiChu, String tenKhachHang, String diaChiKhachHang, String soDienThoaiKhachHang, String email, Date ngayTao, Short trangThai, List<ChiTietGioHangDTO> chiTietGioHangDTOS, String ghiChuGia) {
         this.id = id;
         this.idKhachHang = idKhachHang;
         this.idPhieuGiamGia = idPhieuGiamGia;
@@ -47,6 +49,7 @@ public class HoaDonDTO {
         this.ngayTao = ngayTao;
         this.trangThai = trangThai;
         this.chiTietGioHangDTOS = chiTietGioHangDTOS;
+        this.ghiChuGia = ghiChuGia;
     }
 
     public Integer getId() {
@@ -191,5 +194,13 @@ public class HoaDonDTO {
 
     public void setChiTietGioHangDTOS(List<ChiTietGioHangDTO> chiTietGioHangDTOS) {
         this.chiTietGioHangDTOS = chiTietGioHangDTOS;
+    }
+
+    public String getGhiChuGia() {
+        return ghiChuGia;
+    }
+
+    public void setGhiChuGia(String ghiChuGia) {
+        this.ghiChuGia = ghiChuGia;
     }
 }

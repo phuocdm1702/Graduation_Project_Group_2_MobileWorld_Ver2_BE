@@ -131,12 +131,16 @@ public class BanHangController {
 
     @GetMapping("/chi-tiet-san-pham/id")
     public ResponseEntity<Integer> getChiTietSanPhamId(
-            @RequestParam Integer sanPhamId,
-            @RequestParam String mauSac,
-            @RequestParam String dungLuongRam,
-            @RequestParam String dungLuongBoNhoTrong) {
-        Integer chiTietSanPhamId = banHangService.getChiTietSanPhamId(sanPhamId, mauSac, dungLuongRam, dungLuongBoNhoTrong);
-        return ResponseEntity.ok(chiTietSanPhamId);
+            @RequestParam("sanPhamId") Integer sanPhamId,
+            @RequestParam("mauSac") String mauSac,
+            @RequestParam("dungLuongRam") String dungLuongRam,
+            @RequestParam("dungLuongBoNhoTrong") String dungLuongBoNhoTrong) {
+        try {
+            Integer chiTietSanPhamId = banHangService.getChiTietSanPhamId(sanPhamId, mauSac, dungLuongRam, dungLuongBoNhoTrong);
+            return ResponseEntity.ok(chiTietSanPhamId);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
 }

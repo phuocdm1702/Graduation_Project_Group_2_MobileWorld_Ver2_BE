@@ -72,10 +72,10 @@ public class DotGiamGiaController {
             @RequestParam(required = false) Boolean trangThai,
             @RequestParam(required = false) Boolean deleted
     ) {
-        System.out.println("Search params: maDGG=" + maDGG + ", tenDGG=" + tenDGG +
-                ", loaiGiamGiaApDung=" + loaiGiamGiaApDung + ", giaTriGiamGia=" + giaTriGiamGia +
-                ", soTienGiamToiDa=" + soTienGiamToiDa + ", ngayBatDau=" + ngayBatDau +
-                ", ngayKetThuc=" + ngayKetThuc + ", trangThai=" + trangThai + ", deleted=" + deleted);
+//        System.out.println("Search params: maDGG=" + maDGG + ", tenDGG=" + tenDGG +
+//                ", loaiGiamGiaApDung=" + loaiGiamGiaApDung + ", giaTriGiamGia=" + giaTriGiamGia +
+//                ", soTienGiamToiDa=" + soTienGiamToiDa + ", ngayBatDau=" + ngayBatDau +
+//                ", ngayKetThuc=" + ngayKetThuc + ", trangThai=" + trangThai + ", deleted=" + deleted);
         Pageable pageable = PageRequest.of(page, size);
         Date sqlNgayBatDau = ngayBatDau != null ? Date.valueOf(ngayBatDau) : null;
         Date sqlNgayKetThuc = ngayKetThuc != null ? Date.valueOf(ngayKetThuc) : null;
@@ -100,13 +100,6 @@ public class DotGiamGiaController {
             @RequestParam(defaultValue = "5") int sizeDSP,
             @RequestParam(defaultValue = "0") int pageCTSP,
             @RequestParam(defaultValue = "5") int sizeCTSP) {
-
-        System.out.println("Nhận được RequestDTO: " + request);
-        System.out.println("idDSPs: " + request.getIdDSPs());
-        System.out.println("mauSac: " + request.getMauSac());
-        System.out.println("idBoNhoTrongs: " + request.getIdBoNhoTrongs());
-        System.out.println("idHeDieuHanh: " + request.getIdHeDieuHanh());
-        System.out.println("idNhaSanXuat: " + request.getIdNhaSanXuat());
 
         String keyword = request.getKeyword();
         List<Integer> idDSPs = request.getIdDSPs();
@@ -148,8 +141,6 @@ public class DotGiamGiaController {
             return ResponseEntity.badRequest().body("Dữ liệu không hợp lệ");
         }
         try {
-            System.out.println("Dữ liệu nhận được: " + request.toString());
-            System.out.println("ctspList nhận được: " + request.getCtspList());
             sr.addDotGiamGia(request.getDotGiamGia(), request.getIdDSPs(), request.getCtspList());
             return ResponseEntity.ok("Thêm thành công");
         } catch (Exception e) {
@@ -159,7 +150,7 @@ public class DotGiamGiaController {
 
     @GetMapping("/ViewAddDotGiamGia/exists/ma")
     public ResponseEntity<Boolean> checkMa(@RequestParam String ma) {
-        System.out.println(ma);
+//        System.out.println(ma);
         return ResponseEntity.ok(sr.existByMa(ma));
     }
 
@@ -189,7 +180,7 @@ public class DotGiamGiaController {
             return ResponseEntity.badRequest().body("Dữ liệu không hợp lệ");
         }
         try {
-            System.out.println("Dữ liệu nhận được: " + request.toString());
+//            System.out.println("Dữ liệu nhận được: " + request.toString());
             sr.updateDotGiamGia(id, request.getDotGiamGia(), request.getIdDSPs(), request.getCtspList());
             return ResponseEntity.ok("Thêm thành công");
         } catch (Exception e) {

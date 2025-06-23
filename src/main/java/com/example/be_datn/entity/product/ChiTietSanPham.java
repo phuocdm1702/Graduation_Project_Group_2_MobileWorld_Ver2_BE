@@ -33,7 +33,6 @@ public class ChiTietSanPham {
     @JoinColumn(name = "id_san_pham", referencedColumnName = "id")
     private SanPham idSanPham;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_anh_san_pham", referencedColumnName = "id")
     private AnhSanPham idAnhSanPham;
@@ -53,8 +52,6 @@ public class ChiTietSanPham {
     @JoinColumn(name = "id_bo_nho_trong", referencedColumnName = "id")
     private BoNhoTrong idBoNhoTrong;
 
-    @Size(max = 255)
-    @Nationalized
     @Column(name = "ma")
     private String ma;
 

@@ -1,3 +1,4 @@
+// SanPhamService.java
 package com.example.be_datn.service.product;
 
 import com.example.be_datn.dto.product.response.SanPhamResponse;
@@ -43,6 +44,4 @@ public interface SanPhamService {
     SanPham updateSanPham(Integer id, SanPhamRequest requestDto);
 
     SanPhamResponse mapToDTO(SanPham sanPham);
-
-    Long countChiTietSanPhamBySanPhamId(Integer sanPhamId);
 }

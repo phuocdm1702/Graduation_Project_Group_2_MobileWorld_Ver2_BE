@@ -17,10 +17,6 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
     @Query("SELECT COUNT(c) FROM ChiTietSanPham c WHERE c.idSanPham.id = :idSanPham AND c.deleted = :deleted")
     long countByIdSanPhamIdAndDeletedFalse(@Param("idSanPham") Integer idSanPham, @Param("deleted") boolean deleted);
-
-    @Query("SELECT COUNT(c) FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId AND c.deleted = false AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false)")
-    Long countByIdSanPhamIdAndDeletedFalseAndNotSold(@Param("sanPhamId") Integer sanPhamId);
-
     @Query("SELECT MIN(sp.ma) AS ma, sp.tenSanPham AS tenSanPham , ms.mauSac AS mauSac, r.dungLuongRam AS dungLuongRam, bnt.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, COUNT(DISTINCT c.idImel.imel) AS soLuong, MIN(c.giaBan) AS giaBan, sp.id AS idSanPham " +
             "FROM ChiTietSanPham c " +
             "JOIN c.idSanPham sp " +
@@ -40,7 +36,8 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                                                    @Param("mauSac") String mauSac,
                                                    @Param("dungLuongRam") String dungLuongRam,
                                                    @Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong);
-
+    @Query("SELECT c FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId AND c.idMauSac.mauSac = :mauSac AND c.idRam.dungLuongRam = :dungLuongRam AND c.idBoNhoTrong.dungLuongBoNhoTrong = :dungLuongBoNhoTrong AND c.deleted = false")
+    Optional<ChiTietSanPham> findByIdSanPhamIdAndAttributes(
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imei AND c.deleted = false")
     Optional<ChiTietSanPham> findByIdImelImelAndDeletedFalse(@Param("imei") String imei);
 
@@ -55,6 +52,13 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             @Param("dungLuongRam") String dungLuongRam,
             @Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong);
 
+    @Query("SELECT c.idSanPham.tenSanPham AS tenSanPham, c.ma AS maSanPham, c.idImel.imel AS imei, " +
+            "c.idMauSac.mauSac AS mauSac, c.idRam.dungLuongRam AS dungLuongRam, " +
+            "c.idBoNhoTrong.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, c.giaBan AS donGia, c.deleted AS deleted " +
+            "FROM ChiTietSanPham c " +
+            "WHERE c.idSanPham.id = :idSanPham")
+    List<Object[]> findProductDetailsBySanPhamId(@Param("idSanPham") Integer idSanPham);
+      
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imel AND c.deleted = false")
     Optional<ChiTietSanPham> findByImel(@Param("imel") String imel);
 

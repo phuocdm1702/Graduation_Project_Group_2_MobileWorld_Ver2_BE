@@ -3,6 +3,7 @@ package com.example.be_datn.repository.product;
 import com.example.be_datn.entity.product.AnhSanPham;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -10,10 +11,9 @@ import java.util.Optional;
 
 @Repository
 public interface AnhSanPhamRepository extends JpaRepository<AnhSanPham, Integer> {
-    @Query("SELECT a FROM AnhSanPham a ORDER BY a.id DESC")
-    List<AnhSanPham> findTopNByOrderByIdDesc(int limit);
+    @Query("SELECT a FROM AnhSanPham a WHERE a.productGroupKey = :productGroupKey AND a.hash = :hash AND a.deleted = false")
+    Optional<AnhSanPham> findByProductGroupKeyAndHash(@Param("productGroupKey") String productGroupKey, @Param("hash") String hash);
 
-    Optional<AnhSanPham> findByHashAndProductGroupKey(String hash, String productGroupKey);
-
-    Optional<AnhSanPham> findByDuongDan(String duongDan); // Add this to check by URL
+    @Query("SELECT a FROM AnhSanPham a WHERE a.productGroupKey = :productGroupKey AND a.deleted = false")
+    List<AnhSanPham> findByProductGroupKeyAndDeletedFalse(@Param("productGroupKey") String productGroupKey);
 }

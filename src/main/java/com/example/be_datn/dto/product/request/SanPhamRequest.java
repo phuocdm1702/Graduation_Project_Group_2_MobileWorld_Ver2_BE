@@ -1,48 +1,46 @@
 package com.example.be_datn.dto.product.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 public record SanPhamRequest(
-        @Size(max = 255, message = "Ma must not exceed 255 characters")
+        @NotBlank(message = "Mã sản phẩm không được để trống")
         String ma,
 
-        @NotNull(message = "TenSanPham is required")
-        @Size(max = 255, message = "TenSanPham must not exceed 255 characters")
+        @NotBlank(message = "Tên sản phẩm không được để trống")
         String tenSanPham,
 
-        Integer idChiSoKhangBuiVaNuoc,
-
-        @NotNull(message = "ID CongNgheMang is required")
-        Integer idCongNgheMang,
-
-        @NotNull(message = "ID Cpu is required")
-        Integer idCpu,
-
-        @NotNull(message = "ID CumCamera is required")
-        Integer idCumCamera,
-
-        @NotNull(message = "ID Gpu is required")
-        Integer idGpu,
-
-        @NotNull(message = "ID HeDieuHanh is required")
-        Integer idHeDieuHanh,
-
-        Integer idHoTroBoNhoNgoai,
-
-        @NotNull(message = "ID NhaSanXuat is required")
+        @NotNull(message = "ID nhà sản xuất là bắt buộc")
         Integer idNhaSanXuat,
 
-        @NotNull(message = "ID Pin is required")
+        @NotNull(message = "ID hệ điều hành là bắt buộc")
+        Integer idHeDieuHanh,
+
+        @NotNull(message = "ID công nghệ màn hình là bắt buộc")
+        Integer congNgheManHinhId,
+
+        @NotNull(message = "ID pin là bắt buộc")
         Integer idPin,
 
-        @NotNull(message = "ID Sim is required")
-        Integer idSim,
+        @NotNull(message = "ID CPU là bắt buộc")
+        Integer idCpu,
 
-        @NotNull(message = "ID ThietKe is required")
+        @NotNull(message = "ID GPU là bắt buộc")
+        Integer idGpu,
+
+        @NotNull(message = "ID cụm camera là bắt buộc")
+        Integer idCumCamera,
+
+        @NotNull(message = "ID thiết kế là bắt buộc")
         Integer idThietKe,
 
-        Integer hoTroCongNgheSacId,
+        @NotNull(message = "ID SIM là bắt buộc")
+        Integer idSim,
 
-        Integer congNgheManHinhId
+        @NotNull(message = "ID công nghệ mạng là bắt buộc")
+        Integer idCongNgheMang,
+
+        Integer idChiSoKhangBuiVaNuoc, // Optional
+        Integer idHoTroBoNhoNgoai, // Optional
+        Integer hoTroCongNgheSacId // Optional
 ) {}

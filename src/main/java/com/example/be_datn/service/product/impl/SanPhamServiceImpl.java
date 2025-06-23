@@ -1,3 +1,4 @@
+// SanPhamServiceImpl.java
 package com.example.be_datn.service.product.impl;
 
 import com.example.be_datn.dto.product.request.SanPhamRequest;
@@ -82,80 +83,61 @@ public class SanPhamServiceImpl implements SanPhamService {
             predicates.add(cb.equal(root.get("deleted"), false));
 
             if (keyword != null && !keyword.isEmpty()) {
-                System.out.println("Filtering by keyword: " + keyword);
                 predicates.add(cb.like(cb.lower(root.get("tenSanPham")), "%" + keyword.toLowerCase() + "%"));
             }
             if (idNhaSanXuat != null) {
-                System.out.println("Filtering by idNhaSanXuat: " + idNhaSanXuat);
                 predicates.add(cb.equal(root.get("idNhaSanXuat").get("id"), idNhaSanXuat));
             }
             if (idHeDieuHanh != null) {
-                System.out.println("Filtering by idHeDieuHanh: " + idHeDieuHanh);
                 predicates.add(cb.equal(root.get("idHeDieuHanh").get("id"), idHeDieuHanh));
             }
             if (heDieuHanh != null && !heDieuHanh.isEmpty()) {
-                System.out.println("Filtering by heDieuHanh: " + heDieuHanh);
                 predicates.add(cb.equal(root.get("idHeDieuHanh").get("heDieuHanh"), heDieuHanh));
             }
             if (phienBan != null && !phienBan.isEmpty()) {
-                System.out.println("Filtering by phienBan: " + phienBan);
                 predicates.add(cb.equal(root.get("idHeDieuHanh").get("phienBan"), phienBan));
             }
             if (idCongNgheManHinh != null) {
-                System.out.println("Filtering by idCongNgheManHinh: " + idCongNgheManHinh);
                 predicates.add(cb.equal(root.get("congNgheManHinh").get("id"), idCongNgheManHinh));
             }
             if (congNgheManHinh != null && !congNgheManHinh.isEmpty()) {
-                System.out.println("Filtering by congNgheManHinh: " + congNgheManHinh);
                 predicates.add(cb.equal(root.get("congNgheManHinh").get("congNgheManHinh"), congNgheManHinh));
             }
             if (chuanManHinh != null && !chuanManHinh.isEmpty()) {
-                System.out.println("Filtering by chuanManHinh: " + chuanManHinh);
                 predicates.add(cb.equal(root.get("congNgheManHinh").get("chuanManHinh"), chuanManHinh));
             }
             if (idPin != null) {
-                System.out.println("Filtering by idPin: " + idPin);
                 predicates.add(cb.equal(root.get("idPin").get("id"), idPin));
             }
             if (loaiPin != null && !loaiPin.isEmpty()) {
-                System.out.println("Filtering by loaiPin: " + loaiPin);
                 predicates.add(cb.equal(root.get("idPin").get("loaiPin"), loaiPin));
             }
             if (dungLuongPin != null && !dungLuongPin.isEmpty()) {
-                System.out.println("Filtering by dungLuongPin: " + dungLuongPin);
                 predicates.add(cb.equal(root.get("idPin").get("dungLuongPin"), dungLuongPin));
             }
             if (idCpu != null) {
-                System.out.println("Filtering by idCpu: " + idCpu);
                 predicates.add(cb.equal(root.get("idCpu").get("id"), idCpu));
             }
             if (idGpu != null) {
-                System.out.println("Filtering by idGpu: " + idGpu);
                 predicates.add(cb.equal(root.get("idGpu").get("id"), idGpu));
             }
             if (idCumCamera != null) {
-                System.out.println("Filtering by idCumCamera: " + idCumCamera);
                 predicates.add(cb.equal(root.get("idCumCamera").get("id"), idCumCamera));
             }
             if (idThietKe != null) {
-                System.out.println("Filtering by idThietKe: " + idThietKe);
                 predicates.add(cb.equal(root.get("idThietKe").get("id"), idThietKe));
             }
             if (idSim != null) {
-                System.out.println("Filtering by idSim: " + idSim);
                 predicates.add(cb.equal(root.get("idSim").get("id"), idSim));
             }
             if (idHoTroCongNgheSac != null) {
-                System.out.println("Filtering by idHoTroCongNgheSac: " + idHoTroCongNgheSac);
                 predicates.add(cb.equal(root.get("hoTroCongNgheSac").get("id"), idHoTroCongNgheSac));
             }
             if (idCongNgheMang != null) {
-                System.out.println("Filtering by idCongNgheMang: " + idCongNgheMang);
                 predicates.add(cb.equal(root.get("idCongNgheMang").get("id"), idCongNgheMang));
             }
 
             if (inStock != null) {
-                System.out.println("Filtering by inStock: " + inStock);
                 Subquery<Long> subquery = query.subquery(Long.class);
                 var subRoot = subquery.from(ChiTietSanPham.class);
                 subquery.select(cb.count(subRoot));
@@ -171,12 +153,10 @@ public class SanPhamServiceImpl implements SanPhamService {
                 }
             }
 
-            System.out.println("Predicates: " + predicates);
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
         Page<SanPham> sanPhamPage = sanPhamRepository.findAll(spec, pageable);
-        System.out.println("SanPhamPage content: " + sanPhamPage.getContent());
         return mapToDTOPage(sanPhamPage, pageable);
     }
 
@@ -281,6 +261,9 @@ public class SanPhamServiceImpl implements SanPhamService {
     @Transactional
     public SanPham updateSanPham(Integer id, SanPhamRequest requestDto) {
         SanPham sanPham = sanPhamRepository.findByIdAndDeletedFalse(id);
+        if (sanPham == null) {
+            throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã bị xóa");
+        }
         sanPham.setMa(requestDto.ma());
         sanPham.setTenSanPham(requestDto.tenSanPham());
         sanPham.setIdChiSoKhangBuiVaNuoc(requestDto.idChiSoKhangBuiVaNuoc() != null ? ChiSoKhangBuiVaNuoc.builder().id(requestDto.idChiSoKhangBuiVaNuoc()).build() : null);
@@ -298,10 +281,5 @@ public class SanPhamServiceImpl implements SanPhamService {
         sanPham.setCongNgheManHinh(requestDto.congNgheManHinhId() != null ? CongNgheManHinh.builder().id(requestDto.congNgheManHinhId()).build() : null);
         sanPham.setUpdatedAt(Date.from(Instant.now()));
         return sanPhamRepository.save(sanPham);
-    }
-
-    @Override
-    public Long countChiTietSanPhamBySanPhamId(Integer sanPhamId) {
-        return chiTietSanPhamRepository.countByIdSanPhamIdAndDeletedFalse(sanPhamId, false);
     }
 }

@@ -1,3 +1,4 @@
+// SanPhamResponse.java
 package com.example.be_datn.dto.product.response;
 
 import java.math.BigDecimal;

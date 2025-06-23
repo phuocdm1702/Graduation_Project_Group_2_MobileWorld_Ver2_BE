@@ -526,12 +526,16 @@ public class BanHangServiceImpl implements BanHangService {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá với ID " + hoaDonRequest.getIdPhieuGiamGia() + " không tồn tại"));
             hoaDon.setIdPhieuGiamGia(phieuGiamGia);
-            BigDecimal giamGia = hoaDonRequest.getTongTienSauGiam() != null ? tienSanPham.subtract(hoaDonRequest.getTongTienSauGiam()) : BigDecimal.ZERO;
-            tongTienSauGiam = tongTienSauGiam.subtract(giamGia);
+            BigDecimal tongTienSauGiamFromRequest = hoaDonRequest.getTongTienSauGiam();
+            if (tongTienSauGiamFromRequest != null) {
+                tongTienSauGiam = tongTienSauGiamFromRequest;
+            } else {
+                BigDecimal giamGia = phieuGiamGia.getSoTienGiamToiDa() != null ? BigDecimal.valueOf(phieuGiamGia.getSoTienGiamToiDa()) : BigDecimal.ZERO;
+                tongTienSauGiam = tienSanPham.subtract(giamGia.compareTo(tienSanPham) > 0 ? tienSanPham : giamGia);
+            }
         }
 
         BigDecimal phiVanChuyen = hoaDonRequest.getPhiVanChuyen() != null ? hoaDonRequest.getPhiVanChuyen() : BigDecimal.ZERO;
-        hoaDon.setPhiVanChuyen(phiVanChuyen);
         tongTienSauGiam = tongTienSauGiam.add(phiVanChuyen);
 
         List<HoaDonChiTiet> chiTietList = new ArrayList<>();
@@ -553,6 +557,7 @@ public class BanHangServiceImpl implements BanHangService {
             HoaDonChiTiet chiTiet = new HoaDonChiTiet();
             chiTiet.setHoaDon(hoaDon);
             chiTiet.setIdChiTietSanPham(chiTietSanPham);
+            chiTiet.setTrangThai((short) 1);
             chiTiet.setGia(item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO);
             chiTiet.setDeleted(false);
             chiTietList.add(chiTiet);
@@ -590,8 +595,10 @@ public class BanHangServiceImpl implements BanHangService {
             throw new RuntimeException("Tổng tiền thanh toán (" + tongThanhToan + ") không khớp với tổng tiền hóa đơn (" + tongTienSauGiam + ")!");
         }
 
+        BigDecimal tongTien = tienSanPham.add(phiVanChuyen);
         hoaDon.setTienSanPham(tienSanPham);
-        hoaDon.setTongTien(tongTienSauGiam);
+        hoaDon.setTongTien(tongTien);
+        hoaDon.setPhiVanChuyen(phiVanChuyen);
         hoaDon.setLoaiDon(hoaDonRequest.getLoaiDon() != null ? hoaDonRequest.getLoaiDon() : "trực tiếp");
         hoaDon.setTongTienSauGiam(tongTienSauGiam);
         hoaDon.setTrangThai((short) 1);

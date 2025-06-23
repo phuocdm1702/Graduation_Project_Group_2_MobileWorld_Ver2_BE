@@ -183,7 +183,9 @@ public class KhachHangServicesImpl implements KhachHangServices {
     //add nhanh khach hang ban hang
     @Override
     public KhachHang addKhachHangBH(KhachHangResponse khachHangResponse) {
-
+        if (!taiKhoanRepository.findBySoDienThoai(khachHangResponse.getSoDienThoai()).isEmpty()) {
+            throw new RuntimeException("SDT đã được sử dụng!");
+        }
         QuyenHan quyenHan = new QuyenHan();
         quyenHan.setId(2); // Quyền khách hàng
 
@@ -202,18 +204,6 @@ public class KhachHangServicesImpl implements KhachHangServices {
         kh.setDeleted(false);
         kh = khachHangRepository.save(kh);
 
-        //them dia chi khach hang
-        DiaChiKhachHang dchi = new DiaChiKhachHang();
-        dchi.setMa(MaDiaChiKH());
-        dchi.setDiaChiCuThe(khachHangResponse.getDiaChiCuThe());
-        dchi.setQuan(khachHangResponse.getQuan());
-        dchi.setThanhPho(khachHangResponse.getThanhPho());
-        dchi.setPhuong(khachHangResponse.getPhuong());
-        dchi.setMacDinh(true);
-        dchi.setIdKhachHang(kh);
-        dchi = diaChiKhachHangRepository.save(dchi);
-
-        kh.setIdDiaChiKhachHang(dchi);
         return khachHangRepository.save(kh);
     }
 

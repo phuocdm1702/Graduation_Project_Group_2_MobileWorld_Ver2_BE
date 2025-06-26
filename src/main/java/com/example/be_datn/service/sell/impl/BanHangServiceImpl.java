@@ -476,6 +476,8 @@ public class BanHangServiceImpl implements BanHangService {
             khachHang = khachHangRepository.findById(hoaDonRequest.getIdKhachHang())
                     .orElseThrow(() -> new RuntimeException("Khách hàng với ID " + hoaDonRequest.getIdKhachHang() + " không tồn tại"));
             hoaDon.setIdKhachHang(khachHang);
+<<<<<<< phuc
+=======
         }
 
         StringBuilder ghiChuGia = new StringBuilder();
@@ -495,6 +497,7 @@ public class BanHangServiceImpl implements BanHangService {
                 ghiChuGia.append(String.format("Sản phẩm %s (IMEI: %s): %s\n",
                         item.getTenSanPham(), item.getMaImel(), item.getGhiChuGia()));
             }
+>>>>>>> main
         }
 
         hoaDon.setTenKhachHang(hoaDonRequest.getTenKhachHang() != null ? hoaDonRequest.getTenKhachHang() : (khachHang != null ? khachHang.getTen() : "Khách lẻ"));
@@ -521,11 +524,34 @@ public class BanHangServiceImpl implements BanHangService {
                 .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+<<<<<<< phuc
+// Gán phí vận chuyển
+        BigDecimal phiVanChuyen = hoaDonRequest.getPhiVanChuyen() != null
+                ? hoaDonRequest.getPhiVanChuyen()
+                : BigDecimal.ZERO;
+        hoaDon.setPhiVanChuyen(phiVanChuyen);
+
+// Sử dụng tongTienSauGiam từ hoaDonRequest
+        BigDecimal tongTienSauGiam = hoaDonRequest.getTongTienSauGiam() != null
+                ? hoaDonRequest.getTongTienSauGiam()
+                : tienSanPham.add(phiVanChuyen);
+
+// Xử lý phiếu giảm giá (chỉ để gán idPhieuGiamGia, không tính lại giamGia)
+=======
         BigDecimal tongTienSauGiam = tienSanPham;
+>>>>>>> main
         if (hoaDonRequest.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá với ID " + hoaDonRequest.getIdPhieuGiamGia() + " không tồn tại"));
             hoaDon.setIdPhieuGiamGia(phieuGiamGia);
+<<<<<<< phuc
+        }
+
+// Cập nhật thông tin hóa đơn
+        hoaDon.setTienSanPham(tienSanPham);
+        hoaDon.setTongTien(tongTienSauGiam);
+        hoaDon.setTongTienSauGiam(tongTienSauGiam);
+=======
             BigDecimal tongTienSauGiamFromRequest = hoaDonRequest.getTongTienSauGiam();
             if (tongTienSauGiamFromRequest != null) {
                 tongTienSauGiam = tongTienSauGiamFromRequest;
@@ -537,12 +563,20 @@ public class BanHangServiceImpl implements BanHangService {
 
         BigDecimal phiVanChuyen = hoaDonRequest.getPhiVanChuyen() != null ? hoaDonRequest.getPhiVanChuyen() : BigDecimal.ZERO;
         tongTienSauGiam = tongTienSauGiam.add(phiVanChuyen);
+>>>>>>> main
 
         List<HoaDonChiTiet> chiTietList = new ArrayList<>();
         for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
             ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
 
+<<<<<<< phuc
+            HoaDonChiTiet chiTiet = new HoaDonChiTiet();
+            chiTiet.setHoaDon(hoaDon);
+            chiTiet.setIdChiTietSanPham(chiTietSanPham);
+            chiTiet.setGia(chiTietSanPham.getGiaBan());
+//            chiTiet.set(item.getSoLuong()); // Thêm số lượng từ giỏ hàng
+=======
             Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(item.getMaImel());
             if (chiTietSanPhamOpt.isEmpty()) {
                 throw new RuntimeException("Chi tiết sản phẩm không tồn tại cho IMEI: " + item.getMaImel());
@@ -557,6 +591,7 @@ public class BanHangServiceImpl implements BanHangService {
             HoaDonChiTiet chiTiet = new HoaDonChiTiet();
             chiTiet.setHoaDon(hoaDon);
             chiTiet.setIdChiTietSanPham(chiTietSanPham);
+>>>>>>> main
             chiTiet.setTrangThai((short) 1);
             chiTiet.setGia(item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO);
             chiTiet.setDeleted(false);

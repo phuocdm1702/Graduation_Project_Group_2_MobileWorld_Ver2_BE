@@ -36,8 +36,11 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                                                    @Param("mauSac") String mauSac,
                                                    @Param("dungLuongRam") String dungLuongRam,
                                                    @Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong);
+<<<<<<< phuc
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId AND c.idMauSac.mauSac = :mauSac AND c.idRam.dungLuongRam = :dungLuongRam AND c.idBoNhoTrong.dungLuongBoNhoTrong = :dungLuongBoNhoTrong AND c.deleted = false")
     Optional<ChiTietSanPham> findByIdSanPhamIdAndAttributes();
+=======
+>>>>>>> main
 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imei AND c.deleted = false")
     Optional<ChiTietSanPham> findByIdImelImelAndDeletedFalse(@Param("imei") String imei);

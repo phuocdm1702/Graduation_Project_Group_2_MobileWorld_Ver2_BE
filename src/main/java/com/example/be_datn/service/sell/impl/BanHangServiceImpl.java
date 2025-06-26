@@ -463,47 +463,28 @@ public class BanHangServiceImpl implements BanHangService {
     @Transactional
     public HoaDonDTO thanhToan(Integer idHD, HoaDonRequest hoaDonRequest) {
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với id: " + idHD));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
 
-        String ghKey = GH_PREFIX + idHD;
-        GioHangDTO gioHangDTO = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
+        String ghKen = GH_PREFIX + idHD;
+        GioHangDTO gioHangDTO = (GioHangDTO) redisTemplate.opsForValue().get(ghKen);
         if (gioHangDTO == null || gioHangDTO.getChiTietGioHangDTOS().isEmpty()) {
             throw new RuntimeException("Giỏ hàng trống, không thể thanh toán!");
         }
 
+        // Xử lý thông tin khách hàng
         KhachHang khachHang = null;
         if (hoaDonRequest.getIdKhachHang() != null) {
             khachHang = khachHangRepository.findById(hoaDonRequest.getIdKhachHang())
                     .orElseThrow(() -> new RuntimeException("Khách hàng với ID " + hoaDonRequest.getIdKhachHang() + " không tồn tại"));
             hoaDon.setIdKhachHang(khachHang);
-<<<<<<< phuc
-=======
         }
 
-        StringBuilder ghiChuGia = new StringBuilder();
-        for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
-            Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(item.getMaImel());
-            if (chiTietSanPhamOpt.isEmpty()) {
-                throw new RuntimeException("Không tìm thấy chi tiết sản phẩm cho IMEI: " + item.getMaImel());
-            }
-            ChiTietSanPham chiTietSanPham = chiTietSanPhamOpt.get();
-
-            BigDecimal itemGiaBan = item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO;
-            BigDecimal chiTietGiaBan = chiTietSanPham.getGiaBan() != null ? chiTietSanPham.getGiaBan() : BigDecimal.ZERO;
-
-            if (itemGiaBan.compareTo(chiTietGiaBan) != 0) {
-                item.setGhiChuGia(String.format("Giá hiện tại: %s (Giá gốc: %s)",
-                        chiTietGiaBan, itemGiaBan));
-                ghiChuGia.append(String.format("Sản phẩm %s (IMEI: %s): %s\n",
-                        item.getTenSanPham(), item.getMaImel(), item.getGhiChuGia()));
-            }
->>>>>>> main
-        }
-
+        // Gán tenKhachHang và soDienThoaiKhachHang từ hoaDonRequest
         hoaDon.setTenKhachHang(hoaDonRequest.getTenKhachHang() != null ? hoaDonRequest.getTenKhachHang() : (khachHang != null ? khachHang.getTen() : "Khách lẻ"));
-        hoaDon.setSoDienThoaiKhachHang(hoaDonRequest.getSoDienThoaiKhachHang() != null ? hoaDonRequest.getSoDienThoaiKhachHang() : (khachHang != null && khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : null));
+        hoaDon.setSoDienThoaiKhachHang(hoaDonRequest.getSoDienThoaiKhachHang() != null ? hoaDonRequest.getSoDienThoaiKhachHang() : (khachHang != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : null));
 
-        if ("online".equalsIgnoreCase(hoaDonRequest.getLoaiDon()) && hoaDonRequest.getDiaChiKhachHang() != null) {
+        // Xử lý diaChiKhachHang
+        if ("online".equals(hoaDonRequest.getLoaiDon()) && hoaDonRequest.getDiaChiKhachHang() != null) {
             DiaChiKhachHang diaChi = hoaDonRequest.getDiaChiKhachHang();
             String diaChiChuoi = String.format("%s, %s, %s, %s",
                     diaChi.getDiaChiCuThe() != null ? diaChi.getDiaChiCuThe() : "",
@@ -520,11 +501,11 @@ public class BanHangServiceImpl implements BanHangService {
                             hoaDonRequest.getDiaChiKhachHang().getThanhPho() != null ? hoaDonRequest.getDiaChiKhachHang().getThanhPho() : "") : "Trực tiếp");
         }
 
+        // Tính tiền sản phẩm
         BigDecimal tienSanPham = gioHangDTO.getChiTietGioHangDTOS().stream()
-                .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)
+                .map(ChiTietGioHangDTO::getTongTien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-<<<<<<< phuc
 // Gán phí vận chuyển
         BigDecimal phiVanChuyen = hoaDonRequest.getPhiVanChuyen() != null
                 ? hoaDonRequest.getPhiVanChuyen()
@@ -537,68 +518,35 @@ public class BanHangServiceImpl implements BanHangService {
                 : tienSanPham.add(phiVanChuyen);
 
 // Xử lý phiếu giảm giá (chỉ để gán idPhieuGiamGia, không tính lại giamGia)
-=======
-        BigDecimal tongTienSauGiam = tienSanPham;
->>>>>>> main
         if (hoaDonRequest.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá với ID " + hoaDonRequest.getIdPhieuGiamGia() + " không tồn tại"));
             hoaDon.setIdPhieuGiamGia(phieuGiamGia);
-<<<<<<< phuc
         }
 
 // Cập nhật thông tin hóa đơn
         hoaDon.setTienSanPham(tienSanPham);
         hoaDon.setTongTien(tongTienSauGiam);
         hoaDon.setTongTienSauGiam(tongTienSauGiam);
-=======
-            BigDecimal tongTienSauGiamFromRequest = hoaDonRequest.getTongTienSauGiam();
-            if (tongTienSauGiamFromRequest != null) {
-                tongTienSauGiam = tongTienSauGiamFromRequest;
-            } else {
-                BigDecimal giamGia = phieuGiamGia.getSoTienGiamToiDa() != null ? BigDecimal.valueOf(phieuGiamGia.getSoTienGiamToiDa()) : BigDecimal.ZERO;
-                tongTienSauGiam = tienSanPham.subtract(giamGia.compareTo(tienSanPham) > 0 ? tienSanPham : giamGia);
-            }
-        }
 
-        BigDecimal phiVanChuyen = hoaDonRequest.getPhiVanChuyen() != null ? hoaDonRequest.getPhiVanChuyen() : BigDecimal.ZERO;
-        tongTienSauGiam = tongTienSauGiam.add(phiVanChuyen);
->>>>>>> main
-
+        // Xử lý chi tiết hóa đơn
         List<HoaDonChiTiet> chiTietList = new ArrayList<>();
         for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
             ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
 
-<<<<<<< phuc
             HoaDonChiTiet chiTiet = new HoaDonChiTiet();
             chiTiet.setHoaDon(hoaDon);
             chiTiet.setIdChiTietSanPham(chiTietSanPham);
             chiTiet.setGia(chiTietSanPham.getGiaBan());
 //            chiTiet.set(item.getSoLuong()); // Thêm số lượng từ giỏ hàng
-=======
-            Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(item.getMaImel());
-            if (chiTietSanPhamOpt.isEmpty()) {
-                throw new RuntimeException("Chi tiết sản phẩm không tồn tại cho IMEI: " + item.getMaImel());
-            }
-            chiTietSanPham = chiTietSanPhamOpt.get();
-
-            Imel imelEntity = chiTietSanPham.getIdImel();
-            if (!imelEntity.getDeleted()) {
-                throw new RuntimeException("IMEI " + item.getMaImel() + " không hợp lệ để thanh toán!");
-            }
-
-            HoaDonChiTiet chiTiet = new HoaDonChiTiet();
-            chiTiet.setHoaDon(hoaDon);
-            chiTiet.setIdChiTietSanPham(chiTietSanPham);
->>>>>>> main
             chiTiet.setTrangThai((short) 1);
-            chiTiet.setGia(item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO);
             chiTiet.setDeleted(false);
             chiTietList.add(chiTiet);
         }
         hoaDonChiTietRepository.saveAll(chiTietList);
 
+        // Xử lý hình thức thanh toán
         Set<HinhThucThanhToan> hinhThucThanhToans = new HashSet<>();
         Set<HinhThucThanhToanDTO> dtos = hoaDonRequest.getHinhThucThanhToan();
         if (dtos == null || dtos.isEmpty()) {
@@ -630,10 +578,9 @@ public class BanHangServiceImpl implements BanHangService {
             throw new RuntimeException("Tổng tiền thanh toán (" + tongThanhToan + ") không khớp với tổng tiền hóa đơn (" + tongTienSauGiam + ")!");
         }
 
-        BigDecimal tongTien = tienSanPham.add(phiVanChuyen);
+        // Cập nhật thông tin hóa đơn
         hoaDon.setTienSanPham(tienSanPham);
-        hoaDon.setTongTien(tongTien);
-        hoaDon.setPhiVanChuyen(phiVanChuyen);
+        hoaDon.setTongTien(tongTienSauGiam);
         hoaDon.setLoaiDon(hoaDonRequest.getLoaiDon() != null ? hoaDonRequest.getLoaiDon() : "trực tiếp");
         hoaDon.setTongTienSauGiam(tongTienSauGiam);
         hoaDon.setTrangThai((short) 1);
@@ -641,10 +588,11 @@ public class BanHangServiceImpl implements BanHangService {
         hoaDon.setDeleted(false);
         hoaDon = hoaDonRepository.save(hoaDon);
 
+        // Lưu lịch sử hóa đơn
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hoaDon);
         lichSu.setIdNhanVien(nhanVienRepository.findById(1)
-                .orElseThrow(() -> new RuntimeException("Nhân viên với ID 1 không tồn tại!")));
+                .orElseThrow(() -> new RuntimeException("Nhân viên với ID 1 không tồn tại")));
         lichSu.setMa(hoaDon.getMa());
         lichSu.setHanhDong("Thanh toán hóa đơn");
         lichSu.setThoiGian(Instant.now());

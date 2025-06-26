@@ -147,6 +147,7 @@
             <artifactId>javax.servlet-api</artifactId>
             <version>4.0.1</version>
             <scope>provided</scope>
+        </dependency>
         <!-- OkHttp for API calls -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>

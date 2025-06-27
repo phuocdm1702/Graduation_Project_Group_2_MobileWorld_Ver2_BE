@@ -711,4 +711,32 @@ public class BanHangServiceImpl implements BanHangService {
     public List<PhieuGiamGiaCaNhan> findByKhachHangId(Integer idKhachHang) {
         return phieuGiamGiaCaNhanRepository.findByIdKhachHangId(idKhachHang);
     }
+
+    @Override
+    public Map<String, Object> findProductByBarcodeOrImei(String code) {
+        if (code == null || code.trim().isEmpty()) {
+            throw new RuntimeException("Mã barcode/IMEI không được để trống!");
+        }
+
+        // Tìm chi tiết sản phẩm dựa trên IMEI
+        Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(code.trim());
+        if (chiTietSanPhamOpt.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy sản phẩm với mã barcode/IMEI: " + code);
+        }
+
+        ChiTietSanPham chiTietSanPham = chiTietSanPhamOpt.get();
+        Imel imel = chiTietSanPham.getIdImel();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("chiTietSanPhamId", chiTietSanPham.getId());
+        result.put("maImel", imel.getImel());
+        result.put("tenSanPham", chiTietSanPham.getIdSanPham().getTenSanPham());
+        result.put("mauSac", chiTietSanPham.getIdMauSac().getMauSac());
+        result.put("ram", chiTietSanPham.getIdRam().getDungLuongRam());
+        result.put("boNhoTrong", chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong());
+        result.put("giaBan", chiTietSanPham.getGiaBan() != null ? chiTietSanPham.getGiaBan() : BigDecimal.ZERO);
+        result.put("stock", 1); // Giả định stock là 1 vì IMEI là duy nhất
+
+        return result;
+    }
 }

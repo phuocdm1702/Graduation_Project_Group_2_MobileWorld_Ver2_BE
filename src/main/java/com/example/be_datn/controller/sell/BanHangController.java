@@ -9,6 +9,7 @@ import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.order.HoaDon;
+import com.example.be_datn.entity.product.ChiTietSanPham;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;
 import com.example.be_datn.service.sell.BanHangService;
@@ -47,8 +48,8 @@ public class BanHangController {
     }
 
     @DeleteMapping("/xoa-hd-cho/{idHD}")
-    public ResponseEntity<Void> huyHDCho(@PathVariable Integer idHD) throws Exception {
-        banHangService.huyHDCho(idHD);
+    public ResponseEntity<Void> huyHDCho(@PathVariable Integer idHD) {
+        banHangService.huyHD(idHD);
         return ResponseEntity.ok().build();
     }
 
@@ -138,6 +139,16 @@ public class BanHangController {
         try {
             Integer chiTietSanPhamId = banHangService.getChiTietSanPhamId(sanPhamId, mauSac, dungLuongRam, dungLuongBoNhoTrong);
             return ResponseEntity.ok(chiTietSanPhamId);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
+    @GetMapping("/chi-tiet-san-pham/by-imei")
+    public ResponseEntity<ChiTietSanPham> getChiTietSanPhamByIMEI(@RequestParam("imei") String imei) {
+        try {
+            ChiTietSanPham chiTietSanPham = banHangService.getChiTietSanPhamByIMEI(imei);
+            return ResponseEntity.ok(chiTietSanPham);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }

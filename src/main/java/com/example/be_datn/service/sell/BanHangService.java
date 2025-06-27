@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 public interface BanHangService {
     List<HoaDon> getHDCho();
@@ -43,4 +44,5 @@ public interface BanHangService {
 
     List<PhieuGiamGiaCaNhan> findByKhachHangId(Integer idKhachHang);
     Integer getChiTietSanPhamId(Integer sanPhamId, String mauSac, String dungLuongRam, String dungLuongBoNhoTrong);
+    Map<String, Object> findProductByBarcodeOrImei(String code);
 }

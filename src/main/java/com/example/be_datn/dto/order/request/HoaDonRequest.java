@@ -35,6 +35,7 @@ public class HoaDonRequest {
     private Integer createdBy;
     private Date updatedAt;
     private Integer updatedBy;
+    private BigDecimal giamGia;
 
     private boolean bypassPriceCheck;
 
@@ -44,7 +45,7 @@ public class HoaDonRequest {
     public HoaDonRequest() {
     }
 
-    public HoaDonRequest(Integer id, Integer idKhachHang, Integer idPhieuGiamGia, Integer idNhanVien, String ma, BigDecimal tienSanPham, String loaiDon, BigDecimal phiVanChuyen, BigDecimal tongTien, BigDecimal tongTienSauGiam, String ghiChu, String tenKhachHang, DiaChiKhachHang diaChiKhachHang, String soDienThoaiKhachHang, String email, Date ngayTao, LocalDate ngayThanhToan, Short trangThai, Boolean deleted, Date createdAt, Integer createdBy, Date updatedAt, Integer updatedBy, List<ChiTietGioHangDTO> chiTietGioHangDTOS, Set<HinhThucThanhToanDTO> hinhThucThanhToan) {
+    public HoaDonRequest(Integer id, Integer idKhachHang, Integer idPhieuGiamGia, Integer idNhanVien, String ma, BigDecimal tienSanPham, String loaiDon, BigDecimal phiVanChuyen, BigDecimal tongTien, BigDecimal tongTienSauGiam, String ghiChu, String tenKhachHang, DiaChiKhachHang diaChiKhachHang, String soDienThoaiKhachHang, String email, Date ngayTao, LocalDate ngayThanhToan, Short trangThai, Boolean deleted, Date createdAt, Integer createdBy, Date updatedAt, Integer updatedBy, BigDecimal giamGia, boolean bypassPriceCheck, List<ChiTietGioHangDTO> chiTietGioHangDTOS, Set<HinhThucThanhToanDTO> hinhThucThanhToan) {
         this.id = id;
         this.idKhachHang = idKhachHang;
         this.idPhieuGiamGia = idPhieuGiamGia;
@@ -68,8 +69,18 @@ public class HoaDonRequest {
         this.createdBy = createdBy;
         this.updatedAt = updatedAt;
         this.updatedBy = updatedBy;
+        this.giamGia = giamGia;
+        this.bypassPriceCheck = bypassPriceCheck;
         this.chiTietGioHangDTOS = chiTietGioHangDTOS;
         this.hinhThucThanhToan = hinhThucThanhToan;
+    }
+
+    public BigDecimal getGiamGia() {
+        return giamGia;
+    }
+
+    public void setGiamGia(BigDecimal giamGia) {
+        this.giamGia = giamGia;
     }
 
     public Integer getId() {

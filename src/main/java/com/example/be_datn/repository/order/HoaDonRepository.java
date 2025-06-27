@@ -104,4 +104,5 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     // Tìm hóa đơn theo mã
     @Query("SELECT hd FROM HoaDon hd WHERE hd.ma = :ma")
     Optional<HoaDonResponse> findByMa(@Param("ma") String ma);
+
 }

@@ -1,5 +1,6 @@
 package com.example.be_datn.service.sell.impl;
 
+import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.dto.sale.GioHangTam;
 import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.pay.request.HinhThucThanhToanDTO;
@@ -19,7 +20,6 @@ import com.example.be_datn.entity.pay.HinhThucThanhToan;
 import com.example.be_datn.entity.pay.PhuongThucThanhToan;
 import com.example.be_datn.entity.product.ChiTietSanPham;
 import com.example.be_datn.entity.product.Imel;
-import com.example.be_datn.entity.product.ImelDaBan;
 import com.example.be_datn.repository.account.DiaChiKH.DiaChiKhachHangRepository;
 import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
@@ -117,12 +117,12 @@ public class BanHangServiceImpl implements BanHangService {
 
     @Override
     @Transactional
-    public void huyHDCho(Integer idHD) {
+    public void huyHD(Integer idHD) {
         if (!hoaDonRepository.existsById(idHD)) {
             throw new RuntimeException("Không tìm thấy hoá đơn có id: " + idHD);
         }
         hoaDonRepository.deleteById(idHD);
-        xoaGioHang(idHD);
+
     }
 
     @Override
@@ -347,28 +347,44 @@ public class BanHangServiceImpl implements BanHangService {
                 })
                 .collect(Collectors.toList());
 
+        // Xử lý xóa IMEI
         if (maImel != null && !maImel.isEmpty()) {
             Imel imelEntity = imelRepository.findByImelAndDeleted(maImel.trim(), true)
                     .orElseThrow(() -> new RuntimeException("IMEI " + maImel + " không có trong giỏ hàng!"));
-
             if (!imelDaBanRepository.existsByMa(maImel.trim())) {
                 imelEntity.setDeleted(false);
                 imelRepository.save(imelEntity);
+                System.out.println("Đã đặt lại deleted = false cho IMEI: " + maImel);
             }
-
-            List<Integer> idPhieuGiamGias = gioHangTamRepository.findIdPhieuGiamGiaByIdHoaDonAndDeletedFalse(idHD);
-            for (Integer idPhieuGiamGia : idPhieuGiamGias) {
-                if (idPhieuGiamGia != null) {
-                    PhieuGiamGia pgg = phieuGiamGiaRepository.findById(idPhieuGiamGia).orElse(null);
-                    if (pgg != null) {
-                        pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
-                        phieuGiamGiaRepository.save(pgg);
-                    }
+        } else {
+            // Xử lý khi xóa toàn bộ sản phẩm (spId)
+            List<ChiTietGioHangDTO> removedItems = gh.getChiTietGioHangDTOS().stream()
+                    .filter(item -> item.getChiTietSanPhamId().equals(spId))
+                    .collect(Collectors.toList());
+            for (ChiTietGioHangDTO item : removedItems) {
+                Imel imelEntity = imelRepository.findByImelAndDeleted(item.getMaImel().trim(), true)
+                        .orElse(null);
+                if (imelEntity != null && !imelDaBanRepository.existsByMa(item.getMaImel().trim())) {
+                    imelEntity.setDeleted(false);
+                    imelRepository.save(imelEntity);
+                    System.out.println("Đã đặt lại deleted = false cho IMEI: " + item.getMaImel());
                 }
             }
-
-            gioHangTamRepository.markAsDeletedByIdHoaDon(idHD);
         }
+
+        // Cập nhật phiếu giảm giá
+        List<Integer> idPhieuGiamGias = gioHangTamRepository.findIdPhieuGiamGiaByIdHoaDonAndDeletedFalse(idHD);
+        for (Integer idPhieuGiamGia : idPhieuGiamGias) {
+            if (idPhieuGiamGia != null) {
+                PhieuGiamGia pgg = phieuGiamGiaRepository.findById(idPhieuGiamGia).orElse(null);
+                if (pgg != null) {
+                    pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
+                    phieuGiamGiaRepository.save(pgg);
+                }
+            }
+        }
+
+        gioHangTamRepository.markAsDeletedByIdHoaDon(idHD);
 
         gh.setChiTietGioHangDTOS(updatedItems);
         gh.setTongTien(updatedItems.stream()
@@ -734,6 +750,12 @@ public class BanHangServiceImpl implements BanHangService {
 
         ChiTietSanPham finalSelected = selected.orElse(chiTietSanPhams.get(0));
         return finalSelected.getId();
+    }
+
+    @Override
+    public ChiTietSanPham getChiTietSanPhamByIMEI(String imei) {
+        Optional<ChiTietSanPham> chiTietSanPham = chiTietSanPhamRepository.findByImel(imei);
+        return chiTietSanPham.orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm với IMEI: " + imei));
     }
 
     private ChiTietSanPhamGroupDTO convertToChiTietSanPhamGroupDTO(Object[] result) {

@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -141,6 +142,12 @@ public class BanHangController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
+    }
+
+    @GetMapping("/products/by-barcode-or-imei")
+    public ResponseEntity<Map<String, Object>> getProductByBarcodeOrImei(@RequestParam String code) {
+        Map<String, Object> product = banHangService.findProductByBarcodeOrImei(code);
+        return ResponseEntity.ok(product);
     }
 
 }

@@ -39,50 +39,38 @@ public class HoaDonServiceImpl implements HoaDonService {
     @Autowired
     private HinhThucThanhToanRepository hinhThucThanhToanRepository;
 
-//    @Override
-//    public Page<HoaDonResponse> getHoaDon(Pageable pageable) {
-//        Page<HoaDon> hoaDonPage = hoaDonRepository.getHoaDon(pageable);
-//        List<HoaDonResponse> filteredList = hoaDonPage.getContent()
-//                .stream()
-//                .filter(hoaDon -> "Tại quầy".equals(hoaDon.getLoaiDon()))
-//                .map(hoaDonMapper::mapToDto)
-//                .collect(Collectors.toList());
-//        return new PageImpl<>(filteredList, pageable, hoaDonPage.getTotalElements());
-//    }
-//
-//    @Override
-//    public Page<HoaDonResponse> getHoaDonAndFilters(String keyword, Long minAmount, Long maxAmount, Timestamp startDate, Timestamp endDate, Short trangThai, Pageable pageable) {
-//        return hoaDonRepository.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, pageable)
-//                .map(hoaDonMapper::mapToDto);
-//    }
-
     @Override
     @Cacheable(value = "hoaDonPage", key = "#loaiDon + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<HoaDonResponse> getHoaDon(Pageable pageable) {
         return hoaDonRepository.getHoaDon("Tại quầy", pageable);
     }
 
-    @Override
-    @Cacheable(value = "hoaDonFiltered", key = "#keyword + '-' + #minAmount + '-' + #maxAmount + '-' + #startDate + '-' + #endDate + '-' + #trangThai + '-' + #pageable")
-    public Page<HoaDonResponse> getHoaDonAndFilters(String keyword,
-                                                    Long minAmount,
-                                                    Long maxAmount,
-                                                    Timestamp startDate,
-                                                    Timestamp endDate,
-                                                    Short trangThai,
-                                                    String loaiDon,
-                                                    Pageable pageable) {
-        Page<HoaDonResponse> result = hoaDonRepository.getHoaDonAndFilters(
-                keyword,
-                minAmount,
-                maxAmount,
-                startDate,
-                endDate,
-                trangThai,
-                false,
-                loaiDon,
-                pageable);
-        return result;
+    //    @Override
+//    @Cacheable(value = "hoaDonFiltered", key = "#keyword + '-' + #minAmount + '-' + #maxAmount + '-' + #startDate + '-' + #endDate + '-' + #trangThai + '-' + #pageable")
+//    public Page<HoaDonResponse> getHoaDonAndFilters(String keyword,
+//                                                    Long minAmount,
+//                                                    Long maxAmount,
+//                                                    Timestamp startDate,
+//                                                    Timestamp endDate,
+//                                                    Short trangThai,
+//                                                    String loaiDon,
+//                                                    Pageable pageable) {
+//        Page<HoaDonResponse> result = hoaDonRepository.getHoaDonAndFilters(
+//                keyword,
+//                minAmount,
+//                maxAmount,
+//                startDate,
+//                endDate,
+//                trangThai,
+//                false,
+//                loaiDon,
+//                pageable);
+//        return result;
+//    }
+
+    @Cacheable(value = "hoaDonFiltered", key = "#keyword + '-' + #minAmount + '-' + #maxAmount + '-' + #startDate + '-' + #endDate + '-' + #trangThai + '-' + (#loaiDon != null ? #loaiDon : '') + '-' + #pageable")
+    public Page<HoaDonResponse> getHoaDonAndFilters(String keyword, Long minAmount, Long maxAmount, Timestamp startDate, Timestamp endDate, Short trangThai, String loaiDon, Pageable pageable) {
+        return hoaDonRepository.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, false, loaiDon, pageable);
     }
 
     @Override

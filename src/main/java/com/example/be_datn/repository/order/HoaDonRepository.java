@@ -63,6 +63,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             AND (:endDate IS NULL OR h.ngayTao <= :endDate)
             AND (:trangThai IS NULL OR h.trangThai = :trangThai)
             AND (:deleted IS NULL OR h.deleted = :deleted)
+            AND (:loaiDon IS NULL OR h.loaiDon = :loaiDon)
             ORDER BY h.id DESC
             """)
     Page<HoaDonResponse> getHoaDonAndFilters(
@@ -73,6 +74,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             @Param("endDate") Timestamp endDate,
             @Param("trangThai") Short trangThai,
             @Param("deleted") Boolean deleted,
+            @Param("loaiDon") String loaiDon,
             Pageable pageable);
 
 
@@ -104,4 +106,5 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     // Tìm hóa đơn theo mã
     @Query("SELECT hd FROM HoaDon hd WHERE hd.ma = :ma")
     Optional<HoaDonResponse> findByMa(@Param("ma") String ma);
+
 }

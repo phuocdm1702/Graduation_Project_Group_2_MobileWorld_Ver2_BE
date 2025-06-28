@@ -15,6 +15,7 @@ import java.util.List;
 @Repository
 public interface ImelDaBanRepository extends JpaRepository<ImelDaBan, Integer> {
     boolean existsByMa(String maImel);
+
     Page<ImelDaBan> findByDeletedFalse(Pageable pageable);
 
     @Query("SELECT MAX(i.ma) FROM ImelDaBan i WHERE i.ma LIKE 'IMDB%'")

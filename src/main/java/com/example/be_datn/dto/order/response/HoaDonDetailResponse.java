@@ -65,6 +65,7 @@ public class HoaDonDetailResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SanPhamChiTietInfo {
+        private Integer idHoaDon;
         private String maSanPham;
         private String tenSanPham;
         private String imel;
@@ -84,6 +85,7 @@ public class HoaDonDetailResponse {
         private String hanhDong;
         private Instant thoiGian;
         private String tenNhanVien;
+        private Integer idHoaDon;
     }
 
     // Builder Pattern

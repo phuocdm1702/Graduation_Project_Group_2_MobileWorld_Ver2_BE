@@ -12,6 +12,7 @@ import org.mapstruct.factory.Mappers;
 public interface HoaDonDetailMapper {
     HoaDonDetailMapper INSTANCE = Mappers.getMapper(HoaDonDetailMapper.class);
 
+    @Mapping(source = "hoaDon.id", target = "idHoaDon") // Ánh xạ idHoaDon
     @Mapping(source = "idChiTietSanPham.idSanPham.ma", target = "maSanPham")
     @Mapping(source = "idChiTietSanPham.idSanPham.tenSanPham", target = "tenSanPham")
     @Mapping(source = "idImelDaBan.imel", target = "imel")

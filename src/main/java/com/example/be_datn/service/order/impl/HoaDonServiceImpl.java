@@ -9,6 +9,10 @@ import com.example.be_datn.entity.pay.HinhThucThanhToan;
 import com.example.be_datn.repository.order.HoaDonRepository;
 import com.example.be_datn.repository.pay.HinhThucThanhToanRepository;
 import com.example.be_datn.service.order.HoaDonService;
+import com.example.be_datn.service.order.XuatDanhSachHoaDon;
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -16,6 +20,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
@@ -65,6 +70,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                                                     Timestamp startDate,
                                                     Timestamp endDate,
                                                     Short trangThai,
+                                                    String loaiDon,
                                                     Pageable pageable) {
         Page<HoaDonResponse> result = hoaDonRepository.getHoaDonAndFilters(
                 keyword,
@@ -74,6 +80,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                 endDate,
                 trangThai,
                 false,
+                loaiDon,
                 pageable);
         return result;
     }
@@ -116,5 +123,38 @@ public class HoaDonServiceImpl implements HoaDonService {
         HoaDonResponse hoaDon = hoaDonRepository.findByMa(maHD)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với mã: " + maHD));
         return hoaDon;
+    }
+
+    @Override
+    public void exportHoaDonToExcel(HttpServletResponse response) throws IOException {
+        // Lấy danh sách hóa đơn từ repository
+        List<HoaDon> hoaDonEntities = hoaDonRepository.findAll(); // Có thể thêm điều kiện lọc nếu cần
+        if (hoaDonEntities.isEmpty()) {
+            throw new RuntimeException("Không có hóa đơn nào để xuất.");
+        }
+
+        // Ánh xạ sang HoaDonResponse
+        List<HoaDonResponse> hoaDonList = hoaDonEntities.stream()
+                .map(hoaDonMapper::mapToDto)
+                .collect(Collectors.toList());
+
+        // Lấy chi tiết hóa đơn cho tất cả hóa đơn
+        List<HoaDonDetailResponse.SanPhamChiTietInfo> chiTietList = hoaDonEntities.stream()
+                .flatMap(hoaDon -> hoaDon.getChiTietHoaDon().stream()
+                        .map(hoaDonDetailMapper::mapToSanPhamChiTietInfo))
+                .collect(Collectors.toList());
+
+        // Lấy lịch sử hóa đơn cho tất cả hóa đơn
+        List<HoaDonDetailResponse.LichSuHoaDonInfo> lichSuList = hoaDonEntities.stream()
+                .flatMap(hoaDon -> hoaDon.getLichSuHoaDon().stream()
+                        .map(hoaDonDetailMapper::mapToLichSuHoaDonInfo))
+                .collect(Collectors.toList());
+
+        // Tạo workbook và sheet
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("DanhSachHoaDon");
+            XuatDanhSachHoaDon exporter = new XuatDanhSachHoaDon(workbook, sheet, hoaDonList, chiTietList, lichSuList);
+            exporter.export(response);
+        }
     }
 }

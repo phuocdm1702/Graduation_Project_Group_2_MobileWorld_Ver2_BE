@@ -153,6 +153,7 @@ public class BanHangController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
+    }
 
     @GetMapping("/products/by-barcode-or-imei")
     public ResponseEntity<Map<String, Object>> getProductByBarcodeOrImei(@RequestParam String code) {
@@ -161,3 +162,4 @@ public class BanHangController {
     }
 
 }
+

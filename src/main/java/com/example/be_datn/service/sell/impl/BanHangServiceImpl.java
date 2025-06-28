@@ -20,6 +20,7 @@ import com.example.be_datn.entity.pay.HinhThucThanhToan;
 import com.example.be_datn.entity.pay.PhuongThucThanhToan;
 import com.example.be_datn.entity.product.ChiTietSanPham;
 import com.example.be_datn.entity.product.Imel;
+import com.example.be_datn.entity.product.ImelDaBan;
 import com.example.be_datn.repository.account.DiaChiKH.DiaChiKhachHangRepository;
 import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;

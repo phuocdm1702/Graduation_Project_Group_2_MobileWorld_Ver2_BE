@@ -766,7 +766,7 @@ public class BanHangServiceImpl implements BanHangService {
         dto.setMauSac((String) result[2]);
         dto.setDungLuongRam((String) result[3]);
         dto.setDungLuongBoNhoTrong((String) result[4]);
-        dto.setSoLuong(((Number) result[5]).intValue());
+        dto.setSoLuong(((Number) result[5]).intValue()); // Số lượng từ truy vấn
         dto.setGiaBan(result[6] != null ? (BigDecimal) result[6] : BigDecimal.ZERO);
         dto.setIdSanPham(((Number) result[7]).intValue());
         return dto;

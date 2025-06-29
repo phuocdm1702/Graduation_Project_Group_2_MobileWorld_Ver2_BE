@@ -12,11 +12,17 @@ import java.util.Optional;
 
 @Repository
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, Integer> {
+
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idSanPham.id = :idSanPham AND c.deleted = :deleted")
     List<ChiTietSanPham> findByIdSanPhamIdAndDeletedFalse(@Param("idSanPham") Integer idSanPham, @Param("deleted") boolean deleted);
 
-    @Query("SELECT COUNT(c) FROM ChiTietSanPham c WHERE c.idSanPham.id = :idSanPham AND c.deleted = :deleted")
+    @Query("SELECT COUNT(c) " +
+            "FROM ChiTietSanPham c " +
+            "WHERE c.idSanPham.id = :idSanPham " +
+            "AND c.deleted = false " +
+            "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false)")
     long countByIdSanPhamIdAndDeletedFalse(@Param("idSanPham") Integer idSanPham, @Param("deleted") boolean deleted);
+
     @Query("SELECT MIN(sp.ma) AS ma, sp.tenSanPham AS tenSanPham , ms.mauSac AS mauSac, r.dungLuongRam AS dungLuongRam, bnt.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, COUNT(DISTINCT c.idImel.imel) AS soLuong, MIN(c.giaBan) AS giaBan, sp.id AS idSanPham " +
             "FROM ChiTietSanPham c " +
             "JOIN c.idSanPham sp " +
@@ -27,6 +33,19 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false) " +
             "GROUP BY sp.id, sp.tenSanPham, ms.mauSac, r.dungLuongRam, bnt.dungLuongBoNhoTrong")
     List<Object[]> findGroupedProductsBySanPhamId(@Param("sanPhamId") Integer sanPhamId);
+
+//    @Query("SELECT MIN(sp.ma) AS ma, sp.tenSanPham AS tenSanPham, ms.mauSac AS mauSac, r.dungLuongRam AS dungLuongRam, bnt.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, " +
+//            "(SELECT COUNT(c2) FROM ChiTietSanPham c2 WHERE c2.idSanPham.id = sp.id AND c2.deleted = false AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c2.idImel.imel AND i.deleted = false)) AS soLuong, " +
+//            "MIN(c.giaBan) AS giaBan, sp.id AS idSanPham " +
+//            "FROM ChiTietSanPham c " +
+//            "JOIN c.idSanPham sp " +
+//            "LEFT JOIN c.idMauSac ms " +
+//            "LEFT JOIN c.idRam r " +
+//            "LEFT JOIN c.idBoNhoTrong bnt " +
+//            "WHERE (:sanPhamId IS NULL OR c.idSanPham.id = :sanPhamId) AND c.deleted = false " +
+//            "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false) " +
+//            "GROUP BY sp.id, sp.tenSanPham, ms.mauSac, r.dungLuongRam, bnt.dungLuongBoNhoTrong")
+//    List<Object[]> findGroupedProductsBySanPhamId(@Param("sanPhamId") Integer sanPhamId);
 
     @Query("SELECT c.idImel.imel FROM ChiTietSanPham c " +
             "WHERE c.idSanPham.id = :sanPhamId AND c.deleted = false " +

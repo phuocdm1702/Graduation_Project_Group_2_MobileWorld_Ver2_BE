@@ -41,10 +41,11 @@ public class HoaDonController {
         return ResponseEntity.ok(hoaDonService.getHoaDon(pageable));
     }
 
+
     @GetMapping("/home")
-    public ResponseEntity<Page<HoaDonResponse>> getAllHoaDon(
+    public ResponseEntity<?> getAllHoaDon(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "0") int size,
+            @RequestParam(defaultValue = "5") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long minAmount,
             @RequestParam(required = false) Long maxAmount,
@@ -52,10 +53,40 @@ public class HoaDonController {
             @RequestParam(required = false) Timestamp endDate,
             @RequestParam(required = false) Short trangThai,
             @RequestParam(required = false) String loaiDon) {
+        // Chuẩn hóa loaiDon
+        if (loaiDon != null) {
+            loaiDon = loaiDon.toLowerCase();
+            if (!loaiDon.equals("trực tiếp") && !loaiDon.equals("online")) {
+                loaiDon = null;
+            }
+        }
+        // Kiểm tra giá trị lọc không hợp lệ
+        if (minAmount != null && maxAmount != null && minAmount > maxAmount) {
+            return ResponseEntity.badRequest().body("minAmount phải nhỏ hơn hoặc bằng maxAmount");
+        }
+        if (startDate != null && endDate != null && startDate.after(endDate)) {
+            return ResponseEntity.badRequest().body("startDate phải trước hoặc bằng endDate");
+        }
         Pageable pageable = PageRequest.of(page, size);
         Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
-        return ResponseEntity.ok(response); // Trả về Page trống nếu không có dữ liệu
+        return ResponseEntity.ok(response);
     }
+
+//    @GetMapping("/home")
+//    public ResponseEntity<Page<HoaDonResponse>> getAllHoaDon(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "0") int size,
+//            @RequestParam(required = false) String keyword,
+//            @RequestParam(required = false) Long minAmount,
+//            @RequestParam(required = false) Long maxAmount,
+//            @RequestParam(required = false) Timestamp startDate,
+//            @RequestParam(required = false) Timestamp endDate,
+//            @RequestParam(required = false) Short trangThai,
+//            @RequestParam(required = false) String loaiDon) {
+//        Pageable pageable = PageRequest.of(page, size);
+//        Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
+//        return ResponseEntity.ok(response); // Trả về Page trống nếu không có dữ liệu
+//    }
 
     @GetMapping("/{id}/detail")
     public ResponseEntity<HoaDonDetailResponse> getHoaDonDetail(@PathVariable Integer id) {

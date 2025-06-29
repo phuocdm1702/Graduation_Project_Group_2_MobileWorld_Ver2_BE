@@ -552,10 +552,18 @@ public class BanHangServiceImpl implements BanHangService {
             ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
 
+            ImelDaBan imelDaBan = new ImelDaBan();
+            imelDaBan.setMa("IMELDB-" + UUID.randomUUID().toString().substring(0, 8));
+            imelDaBan.setImel(item.getMaImel());
+            imelDaBan.setNgayBan(Date.from(Instant.now()));
+            imelDaBan.setGhiChu("Bán kèm hóa đơn " + hoaDon.getMa());
+            imelDaBan = imelDaBanRepository.save(imelDaBan);
+
             HoaDonChiTiet chiTiet = new HoaDonChiTiet();
             chiTiet.setHoaDon(hoaDon);
             chiTiet.setIdChiTietSanPham(chiTietSanPham);
             chiTiet.setGia(chiTietSanPham.getGiaBan());
+            chiTiet.setIdImelDaBan(imelDaBan);
 //            chiTiet.set(item.getSoLuong()); // Thêm số lượng từ giỏ hàng
             chiTiet.setTrangThai((short) 1);
             chiTiet.setDeleted(false);

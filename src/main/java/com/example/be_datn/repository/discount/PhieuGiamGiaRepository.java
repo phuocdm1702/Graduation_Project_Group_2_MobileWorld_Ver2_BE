@@ -75,4 +75,6 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
             "AND (p.ngayKetThuc IS NULL OR p.ngayKetThuc >= :currentDate) " +
             "AND (p.soLuongDung IS NULL OR p.soLuongDung > 0)")
     Optional<PhieuGiamGia> findValidPublicVoucherByMa(@Param("ma") String ma, @Param("currentDate") Date currentDate);
+
+    Optional<PhieuGiamGia> findByMa(String ma);
 }

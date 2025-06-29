@@ -817,6 +817,11 @@ public class BanHangServiceImpl implements BanHangService {
             throw new RuntimeException("Mã barcode/IMEI không được để trống!");
         }
 
+        String cleanedCode = code.trim().replaceAll("[^a-zA-Z0-9-]", ""); // Loại bỏ ký tự đặc biệt
+        if (cleanedCode.isEmpty()) {
+            throw new RuntimeException("Mã barcode/IMEI không hợp lệ sau khi làm sạch!");
+        }
+
         // Tìm chi tiết sản phẩm dựa trên IMEI
         Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(code.trim());
         if (chiTietSanPhamOpt.isEmpty()) {

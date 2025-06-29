@@ -10,6 +10,8 @@ import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.product.ChiTietSanPham;
+import com.example.be_datn.entity.product.Imel;
+import com.example.be_datn.repository.product.ImelRepository;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;
 import com.example.be_datn.service.sell.BanHangService;
@@ -31,6 +33,8 @@ public class BanHangController {
     private BanHangService banHangService;
     private final PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService;
     private final PhieuGiamGiaService phieuGiamGiaService;
+    @Autowired
+    private ImelRepository imelRepository;
 
     public BanHangController(PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService, PhieuGiamGiaService phieuGiamGiaService) {
         this.phieuGiamGiaCaNhanService = phieuGiamGiaCaNhanService;
@@ -153,6 +157,18 @@ public class BanHangController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
+    }
+
+    @PutMapping("/chi-tiet-san-pham/update-imei-status")
+    public ResponseEntity<Void> updateIMEIStatus(@RequestParam String imei, @RequestParam boolean deleted) {
+        Optional<Imel> imelOpt = imelRepository.findByImel(imei.trim());
+        if (imelOpt.isPresent()) {
+            Imel imelEntity = imelOpt.get();
+            imelEntity.setDeleted(deleted);
+            imelRepository.save(imelEntity);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/products/by-barcode-or-imei")

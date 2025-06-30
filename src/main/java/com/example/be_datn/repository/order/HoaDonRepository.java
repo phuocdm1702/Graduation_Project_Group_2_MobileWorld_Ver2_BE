@@ -88,17 +88,17 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     //Detail HDCT...
     @Query("""
             SELECT hd FROM HoaDon hd 
-            LEFT JOIN FETCH hd.idKhachHang
-            LEFT JOIN FETCH hd.idNhanVien
-            LEFT JOIN FETCH hd.idPhieuGiamGia
-            LEFT JOIN FETCH hd.chiTietHoaDon cthd
-            LEFT JOIN FETCH cthd.idChiTietSanPham ctsp
-            LEFT JOIN FETCH ctsp.idSanPham
-            LEFT JOIN FETCH cthd.idImelDaBan
-            LEFT JOIN FETCH hd.lichSuHoaDon lshd
-            LEFT JOIN FETCH lshd.idNhanVien
-            LEFT JOIN FETCH hd.hinhThucThanhToan httt
-            LEFT JOIN FETCH httt.idPhuongThucThanhToan
+            LEFT JOIN hd.idKhachHang
+            LEFT JOIN hd.idNhanVien
+            LEFT JOIN hd.idPhieuGiamGia
+            LEFT JOIN hd.chiTietHoaDon cthd
+            LEFT JOIN cthd.idChiTietSanPham ctsp
+            LEFT JOIN ctsp.idSanPham
+            LEFT JOIN cthd.idImelDaBan
+            LEFT JOIN hd.lichSuHoaDon lshd
+            LEFT JOIN lshd.idNhanVien
+            LEFT JOIN hd.hinhThucThanhToan httt
+            LEFT JOIN httt.idPhuongThucThanhToan
             WHERE hd.id = :id AND hd.deleted = false
             """)
     Optional<HoaDon> findHoaDonDetailById(@Param("id") Integer id);

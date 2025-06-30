@@ -43,7 +43,7 @@ public class HoaDon {
     private NhanVien idNhanVien;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_phieu_giam_gia")
+    @JoinColumn(name = "id_phieu_giam_gia", referencedColumnName = "id")
     private PhieuGiamGia idPhieuGiamGia;
 
     @Size(max = 255)

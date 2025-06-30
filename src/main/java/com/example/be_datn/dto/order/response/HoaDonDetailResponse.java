@@ -65,6 +65,7 @@ public class HoaDonDetailResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SanPhamChiTietInfo {
+        private String maHinhSanPhamChiTiet;
         private Integer idHoaDon;
         private String maSanPham;
         private String tenSanPham;
@@ -72,7 +73,9 @@ public class HoaDonDetailResponse {
         private BigDecimal giaBan;
         private String ghiChu;
         private String mauSac; // Thêm nếu cần
-        private String boNho; // Thêm nếu cần
+        private String dungLuongRam;
+        private String dungLuongBoNhoTrong;
+        private String duongDan;
     }
 
     // DTO con cho lịch sử hóa đơn

@@ -154,7 +154,7 @@ public class XuatDanhSachHoaDon {
                 row.createCell(3).setCellValue(dtoHDCT.getGiaBan() != null ? dtoHDCT.getGiaBan().doubleValue() : 0.0);
                 row.createCell(4).setCellValue(dtoHDCT.getGhiChu() != null ? dtoHDCT.getGhiChu() : "N/A");
                 row.createCell(5).setCellValue(dtoHDCT.getMauSac() != null ? dtoHDCT.getMauSac() : "N/A");
-                row.createCell(6).setCellValue(dtoHDCT.getBoNho() != null ? dtoHDCT.getBoNho() : "N/A");
+                row.createCell(6).setCellValue(dtoHDCT.getDungLuongBoNhoTrong() != null ? dtoHDCT.getDungLuongBoNhoTrong() : "N/A");
             }
         }
 

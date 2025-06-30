@@ -98,7 +98,7 @@ public class InHoaDonService {
                         chiTiet.setTenSanPham(sp.getTenSanPham() != null ? sp.getTenSanPham() : "N/A");
                         chiTiet.setImel(sp.getImel() != null ? sp.getImel() : "N/A");
                         chiTiet.setMauSac(sp.getMauSac() != null ? sp.getMauSac() : "N/A");
-                        chiTiet.setBoNho(sp.getBoNho() != null ? sp.getBoNho() : "N/A");
+                        chiTiet.setBoNho(sp.getDungLuongBoNhoTrong() != null ? sp.getDungLuongBoNhoTrong() : "N/A");
                         chiTiet.setGia(sp.getGiaBan() != null ? sp.getGiaBan() : BigDecimal.ZERO);
                         chiTietListWithStt.add(chiTiet);
                     }

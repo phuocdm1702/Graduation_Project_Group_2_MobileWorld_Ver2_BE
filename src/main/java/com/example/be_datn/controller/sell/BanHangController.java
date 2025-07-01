@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.sell;
 
+import com.example.be_datn.config.VNPAY.VNPayService;
 import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
@@ -15,12 +16,15 @@ import com.example.be_datn.repository.product.ImelRepository;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;
 import com.example.be_datn.service.sell.BanHangService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +39,9 @@ public class BanHangController {
     private final PhieuGiamGiaService phieuGiamGiaService;
     @Autowired
     private ImelRepository imelRepository;
+
+    @Autowired
+    private VNPayService vnPayService;
 
     public BanHangController(PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService, PhieuGiamGiaService phieuGiamGiaService) {
         this.phieuGiamGiaCaNhanService = phieuGiamGiaCaNhanService;
@@ -176,6 +183,7 @@ public class BanHangController {
         Map<String, Object> product = banHangService.findProductByBarcodeOrImei(code);
         return ResponseEntity.ok(product);
     }
+
 
 }
 

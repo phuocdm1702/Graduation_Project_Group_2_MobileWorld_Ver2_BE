@@ -19,7 +19,9 @@ public interface HoaDonDetailMapper {
     @Mapping(source = "gia", target = "giaBan")
     @Mapping(source = "ghiChu", target = "ghiChu")
     @Mapping(source = "idChiTietSanPham.idMauSac.mauSac", target = "mauSac") // Thêm ánh xạ cho màu sắc
-    @Mapping(source = "idChiTietSanPham.idBoNhoTrong.dungLuongBoNhoTrong", target = "boNho") // Thêm ánh xạ cho bộ nhớ
+    @Mapping(source = "idChiTietSanPham.idBoNhoTrong.dungLuongBoNhoTrong", target = "dungLuongBoNhoTrong") // Thêm ánh xạ cho bộ nhớ
+    @Mapping(source = "idChiTietSanPham.idRam.dungLuongRam", target = "dungLuongRam") // Thêm ánh xạ cho bộ nhớ
+    @Mapping(source = "idChiTietSanPham.idAnhSanPham.duongDan", target = "duongDan") // ánh xạ đường dẫn của ảnh SP
     HoaDonDetailResponse.SanPhamChiTietInfo mapToSanPhamChiTietInfo(HoaDonChiTiet hoaDonChiTiet);
 
     @Mapping(source = "idPhuongThucThanhToan.ma", target = "maHinhThucThanhToan")

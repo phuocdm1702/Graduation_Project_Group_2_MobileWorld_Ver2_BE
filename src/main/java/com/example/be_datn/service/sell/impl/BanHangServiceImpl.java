@@ -552,10 +552,18 @@ public class BanHangServiceImpl implements BanHangService {
             ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
 
+            ImelDaBan imelDaBan = new ImelDaBan();
+            imelDaBan.setMa("IMELDB-" + UUID.randomUUID().toString().substring(0, 8));
+            imelDaBan.setImel(item.getMaImel());
+            imelDaBan.setNgayBan(Date.from(Instant.now()));
+            imelDaBan.setGhiChu("Bán kèm hóa đơn " + hoaDon.getMa());
+            imelDaBan = imelDaBanRepository.save(imelDaBan);
+
             HoaDonChiTiet chiTiet = new HoaDonChiTiet();
             chiTiet.setHoaDon(hoaDon);
             chiTiet.setIdChiTietSanPham(chiTietSanPham);
             chiTiet.setGia(chiTietSanPham.getGiaBan());
+            chiTiet.setIdImelDaBan(imelDaBan);
 //            chiTiet.set(item.getSoLuong()); // Thêm số lượng từ giỏ hàng
             chiTiet.setTrangThai((short) 1);
             chiTiet.setDeleted(false);
@@ -739,6 +747,11 @@ public class BanHangServiceImpl implements BanHangService {
     public Map<String, Object> findProductByBarcodeOrImei(String code) {
         if (code == null || code.trim().isEmpty()) {
             throw new RuntimeException("Mã barcode/IMEI không được để trống!");
+        }
+
+        String cleanedCode = code.trim().replaceAll("[^a-zA-Z0-9-]", ""); // Loại bỏ ký tự đặc biệt
+        if (cleanedCode.isEmpty()) {
+            throw new RuntimeException("Mã barcode/IMEI không hợp lệ sau khi làm sạch!");
         }
 
         // Tìm chi tiết sản phẩm dựa trên IMEI

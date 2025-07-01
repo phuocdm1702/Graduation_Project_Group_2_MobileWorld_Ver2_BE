@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.sell;
 
+import com.example.be_datn.config.VNPAY.VNPayService;
 import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
@@ -10,15 +11,20 @@ import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.entity.inventory.ChiTietGioHang;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.product.ChiTietSanPham;
+import com.example.be_datn.entity.product.Imel;
+import com.example.be_datn.repository.product.ImelRepository;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;
 import com.example.be_datn.service.sell.BanHangService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +37,11 @@ public class BanHangController {
     private BanHangService banHangService;
     private final PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService;
     private final PhieuGiamGiaService phieuGiamGiaService;
+    @Autowired
+    private ImelRepository imelRepository;
+
+    @Autowired
+    private VNPayService vnPayService;
 
     public BanHangController(PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService, PhieuGiamGiaService phieuGiamGiaService) {
         this.phieuGiamGiaCaNhanService = phieuGiamGiaCaNhanService;
@@ -155,11 +166,24 @@ public class BanHangController {
         }
     }
 
+    @PutMapping("/chi-tiet-san-pham/update-imei-status")
+    public ResponseEntity<Void> updateIMEIStatus(@RequestParam String imei, @RequestParam boolean deleted) {
+        Optional<Imel> imelOpt = imelRepository.findByImel(imei.trim());
+        if (imelOpt.isPresent()) {
+            Imel imelEntity = imelOpt.get();
+            imelEntity.setDeleted(deleted);
+            imelRepository.save(imelEntity);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
     @GetMapping("/products/by-barcode-or-imei")
     public ResponseEntity<Map<String, Object>> getProductByBarcodeOrImei(@RequestParam String code) {
         Map<String, Object> product = banHangService.findProductByBarcodeOrImei(code);
         return ResponseEntity.ok(product);
     }
+
 
 }
 

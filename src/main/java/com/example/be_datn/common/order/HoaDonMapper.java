@@ -13,6 +13,7 @@ public interface HoaDonMapper {
 
     @Mapping(source = "id", target = "id")
     @Mapping(source = "ma", target = "ma")
+    @Mapping(source = "idNhanVien.ma", target = "maNhanVien")
     @Mapping(source = "tenKhachHang", target = "tenKhachHang")
     @Mapping(source = "soDienThoaiKhachHang", target = "soDienThoaiKhachHang")
     @Mapping(source = "tongTienSauGiam", target = "tongTienSauGiam")

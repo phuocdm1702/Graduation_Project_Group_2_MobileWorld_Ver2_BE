@@ -10,9 +10,13 @@ import java.util.Optional;
 public interface KhachHangRepository extends JpaRepository<KhachHang,Integer>,KhachHangCustomRepository {
     boolean existsByMa(String finalCode);
 
+    @Query("SELECT MAX(CAST(SUBSTRING(n.ma, 5, LEN(n.ma) - 4) AS int)) FROM DiaChiKhachHang n WHERE LEN(n.ma) >= 5")
+    Integer findMaxMa();
+
     Optional<KhachHang> findByMa(String ma);
 
 
     @Query("SELECT k FROM KhachHang k WHERE CONCAT(k.ma, k.ten) LIKE %?1% ")
     List<KhachHang> searchFormAdd(String keyword);
+
 }

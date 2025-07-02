@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.account;
 
+import com.example.be_datn.dto.account.response.DiaChiKhachHangResponse;
 import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.entity.account.DiaChiKhachHang;
 import com.example.be_datn.entity.account.KhachHang;
@@ -102,7 +103,6 @@ public class KhachHangController {
     }
 
     //thay doi trang thai khach hang
-    //thay doi trang thai khach hang
     @PutMapping("/trang-thai/{id}")
     public ResponseEntity<?> trangthai(@PathVariable Integer id) {
         try {
@@ -163,6 +163,17 @@ public class KhachHangController {
             return ResponseEntity.ok("Xóa địa chỉ thành công!");
         } catch (Exception e) {
             return ResponseEntity.status(404).body(e.getMessage());
+        }
+    }
+
+    //add dia Chi
+    @PostMapping("/addDchiKhachHang")
+    public ResponseEntity<DiaChiKhachHang> addDiaChi(@RequestBody DiaChiKhachHangResponse khachHangDTO) {
+        try {
+            DiaChiKhachHang diaChi = khachHangServices.addDiaChi(khachHangDTO);
+            return ResponseEntity.ok(diaChi);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null); // Trả về lỗi nếu có
         }
     }
 }

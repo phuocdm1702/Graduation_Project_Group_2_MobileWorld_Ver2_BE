@@ -1,5 +1,6 @@
 package com.example.be_datn.service.account;
 
+import com.example.be_datn.dto.account.response.DiaChiKhachHangResponse;
 import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.entity.account.DiaChiKhachHang;
 import com.example.be_datn.entity.account.KhachHang;
@@ -38,4 +39,6 @@ public interface KhachHangServices {
     void setMacDinh(Integer id, Boolean macDinh);
 
     void deleteDiaChi(Integer id);
+
+    DiaChiKhachHang addDiaChi(DiaChiKhachHangResponse khachHangDTO);
 }

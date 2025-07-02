@@ -22,8 +22,8 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
             "COUNT(DISTINCT hd.id) as tongSoDonHang " +
             "FROM hoa_don hd " +
             "LEFT JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
-            "WHERE CAST(hd.ngay_thanh_toan AS DATE) >= CAST(:ngayHienTai AS DATE) " +
-            "AND hd.deleted = 0 AND hd.trang_thai = 3",
+            "WHERE CAST(hd.created_at AS DATE) >= CAST(:ngayHienTai AS DATE) " +
+            "AND hd.deleted = 0 AND hd.trang_thai = 3", //bỏ nếu ko fix đc trạng thái hóa đơn kịp
             nativeQuery = true)
     Map<String, Object> thongKeTheoNgay(@Param("ngayHienTai") Date ngayHienTai);
 
@@ -34,9 +34,9 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
             "COUNT(DISTINCT hd.id) as tongSoDonHang " +
             "FROM hoa_don hd " +
             "LEFT JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
-            "WHERE CAST(hd.ngay_thanh_toan AS DATE) >= CAST(:startOfWeek AS DATE) " +
-            "AND CAST(hd.ngay_thanh_toan AS DATE) <= CAST(:endOfWeek AS DATE) " +
-            "AND hd.deleted = 0 AND hd.trang_thai = 3",
+            "WHERE CAST(hd.created_at AS DATE) >= CAST(:startOfWeek AS DATE) " +
+            "AND CAST(hd.created_at AS DATE) <= CAST(:endOfWeek AS DATE) " +
+            "AND hd.deleted = 0 AND hd.trang_thai = 3", //bỏ nếu ko fix đc trạng thái hóa đơn kịp
             nativeQuery = true)
     Map<String, Object> thongKeTheoTuan(
             @Param("startOfWeek") Date startOfWeek,
@@ -50,9 +50,9 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
             "COUNT(DISTINCT hd.id) as tongSoDonHang " +
             "FROM hoa_don hd " +
             "LEFT JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
-            "WHERE DATEPART(MONTH, hd.ngay_thanh_toan) = :thang " +
-            "AND DATEPART(YEAR, hd.ngay_thanh_toan) = :nam " +
-            "AND hd.deleted = 0 AND hd.trang_thai = 3",
+            "WHERE DATEPART(MONTH, hd.created_at) = :thang " +
+            "AND DATEPART(YEAR, hd.created_at) = :nam " +
+            "AND hd.deleted = 0 AND hd.trang_thai = 3", //bỏ nếu ko fix đc trạng thái hóa đơn kịp
             nativeQuery = true)
     Map<String, Object> thongKeTheoThang(
             @Param("thang") int thang,
@@ -65,63 +65,63 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
             "COUNT(DISTINCT hd.id) as tongSoDonHang " +
             "FROM hoa_don hd " +
             "LEFT JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
-            "WHERE DATEPART(YEAR, hd.ngay_thanh_toan) = :nam " +
-            "AND hd.deleted = 0 AND hd.trang_thai = 3",
+            "WHERE DATEPART(YEAR, hd.created_at) = :nam " +
+            "AND hd.deleted = 0 AND hd.trang_thai = 3", //bỏ nếu ko fix đc trạng thái hóa đơn kịp
             nativeQuery = true)
     Map<String, Object> thongKeTheoNam(@Param("nam") int nam);
 
     @Query(value = "SELECT " +
             "CASE " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 6 THEN '0-6h' " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 9 THEN '6-9h' " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 12 THEN '9-12h' " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 15 THEN '12-15h' " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 18 THEN '15-18h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 6 THEN '0-6h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 9 THEN '6-9h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 12 THEN '9-12h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 15 THEN '12-15h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 18 THEN '15-18h' " +
             "ELSE '18-24h' END as khungGio, " +
             "SUM(hd.tong_tien_sau_giam) as doanhThu " +
             "FROM hoa_don hd " +
-            "WHERE CAST(hd.ngay_thanh_toan AS DATE) = CAST(:ngayHienTai AS DATE) " +
+            "WHERE CAST(hd.created_at AS DATE) = CAST(:ngayHienTai AS DATE) " +
             "AND hd.deleted = 0 AND hd.trang_thai = 3" +
             "GROUP BY " +
             "CASE " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 6 THEN '0-6h' " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 9 THEN '6-9h' " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 12 THEN '9-12h' " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 15 THEN '12-15h' " +
-            "WHEN DATEPART(HOUR, hd.ngay_thanh_toan) < 18 THEN '15-18h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 6 THEN '0-6h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 9 THEN '6-9h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 12 THEN '9-12h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 15 THEN '12-15h' " +
+            "WHEN DATEPART(HOUR, hd.created_at) < 18 THEN '15-18h' " +
             "ELSE '18-24h' END " +
-            "ORDER BY MIN(hd.ngay_thanh_toan)",
+            "ORDER BY MIN(hd.created_at)",
             nativeQuery = true)
     List<Map<String, Object>> thongKeDoanhThuTheoKhungGio(@Param("ngayHienTai") Date ngayHienTai);
 
     @Query(value = "SELECT " +
             "CASE " +
-            "WHEN DATEPART(dw, hd.ngay_thanh_toan) = 2 THEN 'T2' " +
-            "WHEN DATEPART(dw, hd.ngay_thanh_toan) = 3 THEN 'T3' " +
-            "WHEN DATEPART(dw, hd.ngay_thanh_toan) = 4 THEN 'T4' " +
-            "WHEN DATEPART(dw, hd.ngay_thanh_toan) = 5 THEN 'T5' " +
-            "WHEN DATEPART(dw, hd.ngay_thanh_toan) = 6 THEN 'T6' " +
+            "WHEN DATEPART(dw, hd.created_at) = 2 THEN 'T2' " +
+            "WHEN DATEPART(dw, hd.created_at) = 3 THEN 'T3' " +
+            "WHEN DATEPART(dw, hd.created_at) = 4 THEN 'T4' " +
+            "WHEN DATEPART(dw, hd.created_at) = 5 THEN 'T5' " +
+            "WHEN DATEPART(dw, hd.created_at) = 6 THEN 'T6' " +
             "ELSE 'Khác' END as ngayTrongTuan, " +
             "SUM(hd.tong_tien_sau_giam) as doanhThu " +
             "FROM hoa_don hd " +
-            "WHERE CAST(hd.ngay_thanh_toan AS DATE) >= CAST(:startOfWeek AS DATE) " +
-            "AND CAST(hd.ngay_thanh_toan AS DATE) <= CAST(:endOfWeek AS DATE) " +
+            "WHERE CAST(hd.created_at AS DATE) >= CAST(:startOfWeek AS DATE) " +
+            "AND CAST(hd.created_at AS DATE) <= CAST(:endOfWeek AS DATE) " +
             "AND hd.deleted = 0 AND hd.trang_thai = 3" +
-            "GROUP BY DATEPART(dw, hd.ngay_thanh_toan) " +
-            "ORDER BY DATEPART(dw, hd.ngay_thanh_toan)",
+            "GROUP BY DATEPART(dw, hd.created_at) " +
+            "ORDER BY DATEPART(dw, hd.created_at)",
             nativeQuery = true)
     List<Map<String, Object>> thongKeDoanhThuTheoNgayTrongTuan(
             @Param("startOfWeek") Date startOfWeek,
             @Param("endOfWeek") Date endOfWeek);
 
     @Query(value = "SELECT " +
-            "DATEPART(WEEK, hd.ngay_thanh_toan) - DATEPART(WEEK, DATEADD(MONTH, DATEDIFF(MONTH, 0, hd.ngay_thanh_toan), 0)) + 1 as tuan, " +
+            "DATEPART(WEEK, hd.created_at) - DATEPART(WEEK, DATEADD(MONTH, DATEDIFF(MONTH, 0, hd.created_at), 0)) + 1 as tuan, " +
             "SUM(hd.tong_tien_sau_giam) as doanhThu " +
             "FROM hoa_don hd " +
-            "WHERE DATEPART(MONTH, hd.ngay_thanh_toan) = :thang " +
-            "AND DATEPART(YEAR, hd.ngay_thanh_toan) = :nam " +
+            "WHERE DATEPART(MONTH, hd.created_at) = :thang " +
+            "AND DATEPART(YEAR, hd.created_at) = :nam " +
             "AND hd.deleted = 0 AND hd.trang_thai = 3" +
-            "GROUP BY DATEPART(WEEK, hd.ngay_thanh_toan) - DATEPART(WEEK, DATEADD(MONTH, DATEDIFF(MONTH, 0, hd.ngay_thanh_toan), 0)) + 1 " +
+            "GROUP BY DATEPART(WEEK, hd.created_at) - DATEPART(WEEK, DATEADD(MONTH, DATEDIFF(MONTH, 0, hd.created_at), 0)) + 1 " +
             "ORDER BY tuan",
             nativeQuery = true)
     List<Map<String, Object>> thongKeDoanhThuTheoTuanTrongThang(
@@ -129,12 +129,12 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
             @Param("nam") int nam);
 
     @Query(value = "SELECT " +
-            "DATEPART(QUARTER, hd.ngay_thanh_toan) as quy, " +
+            "DATEPART(QUARTER, hd.created_at) as quy, " +
             "SUM(hd.tong_tien_sau_giam) as doanhThu " +
             "FROM hoa_don hd " +
-            "WHERE DATEPART(YEAR, hd.ngay_thanh_toan) = :nam " +
+            "WHERE DATEPART(YEAR, hd.created_at) = :nam " +
             "AND hd.deleted = 0 AND hd.trang_thai = 3" +
-            "GROUP BY DATEPART(QUARTER, hd.ngay_thanh_toan) " +
+            "GROUP BY DATEPART(QUARTER, hd.created_at) " +
             "ORDER BY quy",
             nativeQuery = true)
     List<Map<String, Object>> thongKeDoanhThuTheoQuy(
@@ -147,14 +147,14 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
                                            @Param("endDate") Date endDate);
 
     @Query(value = "SELECT " +
-            "CONCAT(DATEPART(MONTH, hd.ngay_thanh_toan), '/', DATEPART(YEAR, hd.ngay_thanh_toan)) as thangNam, " +
+            "CONCAT(DATEPART(MONTH, hd.created_at), '/', DATEPART(YEAR, hd.created_at)) as thangNam, " +
             "SUM(hd.tong_tien_sau_giam) as doanhThu " +
             "FROM hoa_don hd " +
-            "WHERE CAST(hd.ngay_thanh_toan AS DATE) >= CAST(:startDate AS DATE) " +
-            "AND CAST(hd.ngay_thanh_toan AS DATE) <= CAST(:endDate AS DATE) " +
+            "WHERE CAST(hd.created_at AS DATE) >= CAST(:startDate AS DATE) " +
+            "AND CAST(hd.created_at AS DATE) <= CAST(:endDate AS DATE) " +
             "AND hd.deleted = 0 AND hd.trang_thai = 3" +
-            "GROUP BY DATEPART(MONTH, hd.ngay_thanh_toan), DATEPART(YEAR, hd.ngay_thanh_toan) " +
-            "ORDER BY DATEPART(YEAR, hd.ngay_thanh_toan), DATEPART(MONTH, hd.ngay_thanh_toan)",
+            "GROUP BY DATEPART(MONTH, hd.created_at), DATEPART(YEAR, hd.created_at) " +
+            "ORDER BY DATEPART(YEAR, hd.created_at), DATEPART(MONTH, hd.created_at)",
             nativeQuery = true)
     List<Map<String, Object>> thongKeDoanhThuTheoThangTrongKhoangThoiGian(
             @Param("startDate") Date startDate,
@@ -189,26 +189,25 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
 
     // Tăng trưởng
     @Query(value = "SELECT " +
-            "SUM(hd.tong_tien) as doanhThu, " +
-            "COUNT(hdct.id) as sanPhamDaBan, " +
+            "SUM(hd.tong_tien_sau_giam) as doanhThu, " +
+            "COUNT(hdct.id_chi_tiet_san_pham) as sanPhamDaBan, " +
             "COUNT(DISTINCT hd.id) as tongSoDonHang " +
             "FROM hoa_don hd " +
-            "JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
+            "LEFT JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
             "WHERE DATEPART(DAY, hd.created_at) = DATEPART(DAY, :ngay) " +
             "AND DATEPART(MONTH, hd.created_at) = DATEPART(MONTH, :ngay) " +
-            "AND DATEPART(YEAR, hd.created_at) = DATEPART(YEAR, :ngay)",
+            "AND DATEPART(YEAR, hd.created_at) = DATEPART(YEAR, :ngay) ",
             nativeQuery = true)
     Map<String, Object> tangTruongTheoNgay(@Param("ngay") Date ngay);
 
     @Query(value = "SELECT " +
-            "SUM(hd.tong_tien) as doanhThu, " +
-            "COUNT(hdct.id) as sanPhamDaBan, " +
+            "SUM(hd.tong_tien_sau_giam) as doanhThu, " +
+            "COUNT(hdct.id_chi_tiet_san_pham) as sanPhamDaBan, " +
             "COUNT(DISTINCT hd.id) as tongSoDonHang " +
             "FROM hoa_don hd " +
-            "JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
+            "LEFT JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
             "WHERE DATEPART(MONTH, hd.created_at) = DATEPART(MONTH, :thang) " +
-            "AND DATEPART(YEAR, hd.created_at) = DATEPART(YEAR, :thang)",
-            nativeQuery = true)
+            "AND DATEPART(YEAR, hd.created_at) = DATEPART(YEAR, :thang) ",nativeQuery = true)
     Map<String, Object> tangTruongTheoThang(@Param("thang") Date thang);
 
     @Query(value = "SELECT " +

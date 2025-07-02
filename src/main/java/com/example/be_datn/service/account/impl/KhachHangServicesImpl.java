@@ -1,6 +1,7 @@
 package com.example.be_datn.service.account.impl;
 
 import com.example.be_datn.common.Email.EmailServices;
+import com.example.be_datn.dto.account.response.DiaChiKhachHangResponse;
 import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.entity.account.DiaChiKhachHang;
 import com.example.be_datn.entity.account.KhachHang;
@@ -425,10 +426,39 @@ public class KhachHangServicesImpl implements KhachHangServices {
         Optional<DiaChiKhachHang> diaChiOptional = diaChiKhachHangRepository.findById(id);
         if (diaChiOptional.isPresent()) {
             DiaChiKhachHang diaChiKhachHang = diaChiOptional.get();
-            diaChiKhachHang.setDeleted(false);
+            diaChiKhachHang.setDeleted(true);
             diaChiKhachHangRepository.save(diaChiKhachHang); // Xóa hoàn toàn
         } else {
             throw new RuntimeException("Không tìm thấy địa chỉ với id: " + id);
         }
+    }
+
+    public String MaDchi2() {
+        Integer maxMa = khachHangRepository.findMaxMa();
+        if (maxMa == null) {
+            return "DCKH00001";
+        }
+        int nextNumber = maxMa + 1;
+        return String.format("DCKH%05d", nextNumber);
+    }
+
+    public DiaChiKhachHang addDiaChi(DiaChiKhachHangResponse khachHangDTO) {
+
+
+        // Kiểm tra idKhachHang có tồn tại
+        KhachHang khachHang = khachHangRepository.findById(khachHangDTO.getIdKhachHang())
+                .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với ID: " + khachHangDTO.getIdKhachHang()));
+
+        // Tạo đối tượng địa chỉ mới
+        DiaChiKhachHang diaChiKhachHang = new DiaChiKhachHang();
+        diaChiKhachHang.setIdKhachHang(khachHang); // Gán đối tượng KhachHang
+        diaChiKhachHang.setMa(MaDchi2());
+        diaChiKhachHang.setThanhPho(khachHangDTO.getThanhPho());
+        diaChiKhachHang.setDiaChiCuThe(khachHangDTO.getDiaChiCuThe());
+        diaChiKhachHang.setQuan(khachHangDTO.getQuan());
+        diaChiKhachHang.setPhuong(khachHangDTO.getPhuong());
+
+        // Lưu vào database
+        return diaChiKhachHangRepository.save(diaChiKhachHang);
     }
 }

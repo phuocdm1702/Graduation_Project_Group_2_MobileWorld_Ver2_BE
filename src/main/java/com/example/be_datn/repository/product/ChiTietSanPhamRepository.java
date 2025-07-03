@@ -78,7 +78,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "c.idMauSac.mauSac AS mauSac, c.idRam.dungLuongRam AS dungLuongRam, " +
             "c.idBoNhoTrong.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, c.giaBan AS donGia, c.deleted AS deleted " +
             "FROM ChiTietSanPham c " +
-            "WHERE c.idSanPham.id = :idSanPham")
+            "WHERE c.idSanPham.id = :idSanPham AND c.deleted = false")
     List<Object[]> findProductDetailsBySanPhamId(@Param("idSanPham") Integer idSanPham);
 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imel AND c.deleted = false")

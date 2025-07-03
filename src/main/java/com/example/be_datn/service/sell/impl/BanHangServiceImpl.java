@@ -523,25 +523,25 @@ public class BanHangServiceImpl implements BanHangService {
                 .map(ChiTietGioHangDTO::getTongTien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-// Gán phí vận chuyển
+        // Gán phí vận chuyển
         BigDecimal phiVanChuyen = hoaDonRequest.getPhiVanChuyen() != null
                 ? hoaDonRequest.getPhiVanChuyen()
                 : BigDecimal.ZERO;
         hoaDon.setPhiVanChuyen(phiVanChuyen);
 
-// Sử dụng tongTienSauGiam từ hoaDonRequest
+        // Sử dụng tongTienSauGiam từ hoaDonRequest
         BigDecimal tongTienSauGiam = hoaDonRequest.getTongTienSauGiam() != null
                 ? hoaDonRequest.getTongTienSauGiam()
                 : tienSanPham.add(phiVanChuyen);
 
-// Xử lý phiếu giảm giá (chỉ để gán idPhieuGiamGia, không tính lại giamGia)
+        // Xử lý phiếu giảm giá (chỉ để gán idPhieuGiamGia, không tính lại giamGia)
         if (hoaDonRequest.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá với ID " + hoaDonRequest.getIdPhieuGiamGia() + " không tồn tại"));
             hoaDon.setIdPhieuGiamGia(phieuGiamGia);
         }
 
-// Cập nhật thông tin hóa đơn
+        // Cập nhật thông tin hóa đơn
         hoaDon.setTienSanPham(tienSanPham);
         hoaDon.setTongTien(tongTienSauGiam);
         hoaDon.setTongTienSauGiam(tongTienSauGiam);
@@ -564,7 +564,6 @@ public class BanHangServiceImpl implements BanHangService {
             chiTiet.setIdChiTietSanPham(chiTietSanPham);
             chiTiet.setGia(chiTietSanPham.getGiaBan());
             chiTiet.setIdImelDaBan(imelDaBan);
-//            chiTiet.set(item.getSoLuong()); // Thêm số lượng từ giỏ hàng
             chiTiet.setTrangThai((short) 1);
             chiTiet.setDeleted(false);
             chiTietList.add(chiTiet);
@@ -608,7 +607,7 @@ public class BanHangServiceImpl implements BanHangService {
         hoaDon.setTongTien(tongTienSauGiam);
         hoaDon.setLoaiDon(hoaDonRequest.getLoaiDon() != null ? hoaDonRequest.getLoaiDon() : "trực tiếp");
         hoaDon.setTongTienSauGiam(tongTienSauGiam);
-        hoaDon.setTrangThai((short) 1);
+        hoaDon.setTrangThai("trực tiếp".equals(hoaDonRequest.getLoaiDon()) ? (short) 3 : (short) 1);
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setDeleted(false);
         hoaDon = hoaDonRepository.save(hoaDon);

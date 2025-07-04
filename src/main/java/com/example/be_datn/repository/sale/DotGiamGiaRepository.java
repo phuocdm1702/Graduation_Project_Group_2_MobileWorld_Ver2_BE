@@ -68,11 +68,14 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
 //                                 Pageable pageable);
 
     @Query("SELECT new com.example.be_datn.dto.sale.respone.ViewCTSPDTO(sp, ctsp, anh, bnt, ms, " +
-            "(SELECT COUNT(ctdg) FROM ChiTietDotGiamGia ctdg " +
-            "WHERE ctdg.idChiTietSanPham.idSanPham.id = sp.id " +
-            "AND ctdg.idChiTietSanPham.idBoNhoTrong.id = bnt.id " +
-            "AND ctdg.idChiTietSanPham.idMauSac.id = ms.id " +
-            "AND ctdg.idDotGiamGia.deleted = false)) " +
+            "(SELECT COUNT(DISTINCT ctdg.idDotGiamGia.id) " +
+            " FROM ChiTietDotGiamGia ctdg " +
+            " WHERE ctdg.idChiTietSanPham.idSanPham.id = sp.id " +
+            " AND ctdg.idChiTietSanPham.idBoNhoTrong.id = bnt.id " +
+            " AND ctdg.idChiTietSanPham.idMauSac.id = ms.id " +
+            " AND ctdg.idDotGiamGia.deleted = false " +
+            " AND (:excludeDotGiamGiaId IS NULL OR ctdg.idDotGiamGia.id != :excludeDotGiamGiaId))" +  // <-- đây là dấu đóng `)` đúng chỗ
+            ") " +
             "FROM SanPham sp " +
             "INNER JOIN ChiTietSanPham ctsp ON ctsp.idSanPham.id = sp.id " +
             "INNER JOIN AnhSanPham anh ON ctsp.idAnhSanPham.id = anh.id " +
@@ -89,11 +92,13 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
             "    AND ctsp2.idMauSac.id = ms.id " +
             "    AND ctsp2.idBoNhoTrong.id = bnt.id " +
             "    AND ctsp2.deleted = false " +
-            "    GROUP BY ctsp2.idSanPham.id, ctsp2.idMauSac.id, ctsp2.idBoNhoTrong.id" +
-            ")")
-    List<ViewCTSPDTO> getAllCTSP(@Param("ids") List<Integer> ids,
-                                 @Param("idBoNhoTrongs") List<Integer> idBoNhoTrongs,
-                                 @Param("idMauSacs") List<Integer> idMauSacs);
+            "    GROUP BY ctsp2.idSanPham.id, ctsp2.idMauSac.id, ctsp2.idBoNhoTrong.id)")
+    List<ViewCTSPDTO> getAllCTSP(
+            @Param("ids") List<Integer> ids,
+            @Param("idBoNhoTrongs") List<Integer> idBoNhoTrongs,
+            @Param("idMauSacs") List<Integer> idMauSacs,
+            @Param("excludeDotGiamGiaId") Integer excludeDotGiamGiaId
+    );
 
     @Modifying
     @Transactional

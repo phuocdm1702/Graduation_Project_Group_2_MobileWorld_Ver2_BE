@@ -461,7 +461,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         diaChiKhachHang.setDiaChiCuThe(khachHangDTO.getDiaChiCuThe());
         diaChiKhachHang.setQuan(khachHangDTO.getQuan());
         diaChiKhachHang.setPhuong(khachHangDTO.getPhuong());
-
+        diaChiKhachHang.setDeleted(true);
         // Lưu vào database
         return diaChiKhachHangRepository.save(diaChiKhachHang);
     }

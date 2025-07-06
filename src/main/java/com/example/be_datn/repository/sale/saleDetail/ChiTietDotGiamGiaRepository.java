@@ -86,9 +86,9 @@ public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGia
 
     Optional<ChiTietDotGiamGia> findByIdChiTietSanPham_IdAndDeletedFalse(Integer chiTietSanPhamId);
 
-    @Query("SELECT c FROM ChiTietDotGiamGia c WHERE c.idChiTietSanPham.id = :chiTietSanPhamId AND c.deleted = false")
+    @Query("SELECT c FROM ChiTietDotGiamGia c WHERE c.idChiTietSanPham.id = :chiTietSanPhamId AND c.deleted = false AND c.idDotGiamGia.trangThai = false and c.idDotGiamGia.trangThai = true")
     Optional<ChiTietDotGiamGia> findByChiTietSanPhamIdAndActive(Integer chiTietSanPhamId);
 
-    @Query("SELECT c FROM ChiTietDotGiamGia c WHERE c.idChiTietSanPham.id = :chiTietSanPhamId AND c.deleted = :deleted")
+    @Query("SELECT c FROM ChiTietDotGiamGia c WHERE c.idChiTietSanPham.id = :chiTietSanPhamId AND c.deleted = :deleted AND c.idDotGiamGia.trangThai = false and c.idDotGiamGia.trangThai = true")
     Optional<ChiTietDotGiamGia> findByChiTietSanPhamIdAndDeleted(@Param("chiTietSanPhamId") Integer chiTietSanPhamId, @Param("deleted") Boolean deleted);
 }

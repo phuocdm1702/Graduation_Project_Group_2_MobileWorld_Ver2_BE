@@ -23,12 +23,14 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false)")
     long countByIdSanPhamIdAndDeletedFalse(@Param("idSanPham") Integer idSanPham, @Param("deleted") boolean deleted);
 
-    @Query("SELECT MIN(sp.ma) AS ma, sp.tenSanPham AS tenSanPham , ms.mauSac AS mauSac, r.dungLuongRam AS dungLuongRam, bnt.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, COUNT(DISTINCT c.idImel.imel) AS soLuong, MIN(c.giaBan) AS giaBan, sp.id AS idSanPham " +
+    @Query("SELECT MIN(sp.ma) AS ma, sp.tenSanPham AS tenSanPham, ms.mauSac AS mauSac, r.dungLuongRam AS dungLuongRam, bnt.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, " +
+            "COUNT(DISTINCT c.idImel.imel) AS soLuong, COALESCE(MIN(ctdgg.giaSauKhiGiam), MIN(c.giaBan)) AS giaBan, sp.id AS idSanPham " +
             "FROM ChiTietSanPham c " +
             "JOIN c.idSanPham sp " +
             "LEFT JOIN c.idMauSac ms " +
             "LEFT JOIN c.idRam r " +
             "LEFT JOIN c.idBoNhoTrong bnt " +
+            "LEFT JOIN ChiTietDotGiamGia ctdgg ON ctdgg.idChiTietSanPham.id = c.id AND ctdgg.deleted = false " +
             "WHERE (:sanPhamId IS NULL OR c.idSanPham.id = :sanPhamId) AND c.deleted = false " +
             "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false) " +
             "GROUP BY sp.id, sp.tenSanPham, ms.mauSac, r.dungLuongRam, bnt.dungLuongBoNhoTrong")
@@ -94,5 +96,4 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             @Param("mauSac") String mauSac,
             @Param("dungLuongRam") String dungLuongRam,
             @Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong);
-
 }

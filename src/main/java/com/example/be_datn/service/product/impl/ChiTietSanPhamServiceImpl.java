@@ -194,13 +194,11 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                 AnhSanPham anhSanPham;
 
                 if (existingUrl != null) {
-                    // Use existing image
                     Optional<AnhSanPham> existingImage = anhSanPhamRepository.findByProductGroupKeyAndHash(productGroupKey, providedHash);
                     if (existingImage.isPresent()) {
                         anhSanPham = existingImage.get();
                         logger.info("Reusing existing image with hash: {} for productGroupKey: {}", providedHash, productGroupKey);
                     } else {
-                        // Create new AnhSanPham for existing URL
                         anhSanPham = AnhSanPham.builder()
                                 .tenAnh(fileName)
                                 .duongDan(existingUrl)
@@ -212,7 +210,6 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                         logger.info("Saved new AnhSanPham for existing URL: {}", existingUrl);
                     }
                 } else {
-                    // Validate hash
                     String computedHash;
                     try {
                         computedHash = generateImageHash(image.getBytes());
@@ -226,13 +223,11 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                         throw new IllegalArgumentException("Hash ảnh không khớp: " + fileName);
                     }
 
-                    // Check if image exists
                     Optional<AnhSanPham> existingImage = anhSanPhamRepository.findByProductGroupKeyAndHash(productGroupKey, computedHash);
                     if (existingImage.isPresent()) {
                         anhSanPham = existingImage.get();
                         logger.info("Reusing existing image with hash: {} for productGroupKey: {}", computedHash, productGroupKey);
                     } else {
-                        // Upload to Cloudinary
                         try {
                             Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
                                     "public_id", "product_" + UUID.randomUUID().toString(),
@@ -283,7 +278,7 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
         }
 
         // Save variants and associated data
-        ChiTietSanPhamResponse response = null;
+        List<ChiTietSanPham> savedVariants = new ArrayList<>();
         for (ChiTietSanPhamRequest.VariantRequest variant : request.getVariants()) {
             MauSac mauSac = mauSacRepository.findById(variant.getIdMauSac())
                     .orElseThrow(() -> new IllegalArgumentException("Màu sắc không tồn tại"));
@@ -298,36 +293,70 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                     .findFirst();
             AnhSanPham anhSanPham = anhSanPhamOpt.orElse(savedImages.get(0));
 
-            String imei = variant.getImeiList().get(0); // Take first IMEI
-            if (imelRepository.existsByImelAndDeletedFalse(imei)) {
-                logger.warn("Duplicate IMEI detected: {}", imei);
-                throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+            // Save each IMEI as a separate ChiTietSanPham
+            for (String imei : variant.getImeiList()) {
+                if (imelRepository.existsByImelAndDeletedFalse(imei)) {
+                    logger.warn("Duplicate IMEI detected: {}", imei);
+                    throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+                }
+
+                Imel imel = Imel.builder()
+                        .imel(imei)
+                        .deleted(false)
+                        .build();
+                imel = imelRepository.save(imel);
+
+                ChiTietSanPham chiTietSanPham = ChiTietSanPham.builder()
+                        .idSanPham(sanPham)
+                        .idMauSac(mauSac)
+                        .idRam(ram)
+                        .idBoNhoTrong(boNhoTrong)
+                        .idImel(imel)
+                        .idAnhSanPham(anhSanPham)
+                        .giaBan(variant.getDonGia())
+                        .ghiChu(request.getGhiChu())
+                        .createdAt(new Date())
+                        .createdBy(1)
+                        .updatedAt(new Date())
+                        .updatedBy(1)
+                        .deleted(false)
+                        .build();
+                chiTietSanPham = chiTietSanPhamRepository.save(chiTietSanPham);
+                savedVariants.add(chiTietSanPham);
+                logger.info("Saved ChiTietSanPham for IMEI: {}", imei);
             }
-
-            Imel imel = Imel.builder()
-                    .imel(imei)
-                    .deleted(false)
-                    .build();
-            imel = imelRepository.save(imel);
-
-            ChiTietSanPham chiTietSanPham = ChiTietSanPham.builder()
-                    .idSanPham(sanPham)
-                    .idMauSac(mauSac)
-                    .idRam(ram)
-                    .idBoNhoTrong(boNhoTrong)
-                    .idImel(imel)
-                    .idAnhSanPham(anhSanPham)
-                    .giaBan(variant.getDonGia())
-                    .ghiChu(request.getGhiChu())
-                    .createdAt(new Date())
-                    .createdBy(1)
-                    .updatedAt(new Date())
-                    .updatedBy(1)
-                    .deleted(false)
-                    .build();
-            chiTietSanPham = chiTietSanPhamRepository.save(chiTietSanPham);
-            logger.info("Saved ChiTietSanPham for IMEI: {}", imei);
         }
+
+        // Build response
+        ChiTietSanPhamResponse response = ChiTietSanPhamResponse.builder()
+                .id(sanPham.getId())
+                .tenSanPham(sanPham.getTenSanPham())
+                .idNhaSanXuat(sanPham.getIdNhaSanXuat().getId())
+                .idPin(sanPham.getIdPin().getId())
+                .idCongNgheManHinh(sanPham.getCongNgheManHinh().getId())
+                .idHoTroBoNhoNgoai(sanPham.getIdHoTroBoNhoNgoai() != null ? sanPham.getIdHoTroBoNhoNgoai().getId() : null)
+                .idCpu(sanPham.getIdCpu().getId())
+                .idGpu(sanPham.getIdGpu().getId())
+                .idCumCamera(sanPham.getIdCumCamera().getId())
+                .idHeDieuHanh(sanPham.getIdHeDieuHanh().getId())
+                .idChiSoKhangBuiVaNuoc(sanPham.getIdChiSoKhangBuiVaNuoc().getId())
+                .idThietKe(sanPham.getIdThietKe().getId())
+                .idSim(sanPham.getIdSim().getId())
+                .idHoTroCongNgheSac(sanPham.getHoTroCongNgheSac().getId())
+                .idCongNgheMang(sanPham.getIdCongNgheMang().getId())
+                .ghiChu(request.getGhiChu())
+                .variants(request.getVariants().stream().map(variant -> {
+                    String imageUrl = colorImageUrls.getOrDefault(variant.getIdMauSac(), savedImages.get(0).getDuongDan());
+                    return ChiTietSanPhamResponse.VariantResponse.builder()
+                            .idMauSac(variant.getIdMauSac())
+                            .idRam(variant.getIdRam())
+                            .idBoNhoTrong(variant.getIdBoNhoTrong())
+                            .donGia(variant.getDonGia())
+                            .imeiList(variant.getImeiList())
+                            .imageUrl(imageUrl)
+                            .build();
+                }).collect(Collectors.toList()))
+                .build();
 
         logger.info("Successfully created ChiTietSanPham with SanPham ID: {}", sanPham.getId());
         return response;
@@ -367,14 +396,15 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                 logger.error("Validation failed: IMEI không được để trống cho biến thể");
                 throw new IllegalArgumentException("IMEI không được để trống cho biến thể");
             }
-            String imei = variant.getImeiList().get(0);
-            if (imei == null || imei.length() != 15) {
-                logger.error("Validation failed: IMEI phải có đúng 15 chữ số: {}", imei);
-                throw new IllegalArgumentException("IMEI phải có đúng 15 chữ số: " + imei);
-            }
-            if (imelRepository.existsByImelAndDeletedFalse(imei)) {
-                logger.error("Validation failed: IMEI đã tồn tại: {}", imei);
-                throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+            for (String imei : variant.getImeiList()) {
+                if (imei == null || imei.length() != 15) {
+                    logger.error("Validation failed: IMEI phải có đúng 15 chữ số: {}", imei);
+                    throw new IllegalArgumentException("IMEI phải có đúng 15 chữ số: " + imei);
+                }
+                if (imelRepository.existsByImelAndDeletedFalse(imei)) {
+                    logger.error("Validation failed: IMEI đã tồn tại: {}", imei);
+                    throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+                }
             }
         }
     }
@@ -449,7 +479,7 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
         sanPham.setIdCongNgheMang(congNgheMangRepository.findById(request.getIdCongNgheMang())
                 .orElseThrow(() -> new IllegalArgumentException("Công nghệ mạng không tồn tại")));
         sanPham.setUpdatedAt(new Date());
-        sanPham.setUpdatedBy(1); // Assuming a default user ID for now
+        sanPham.setUpdatedBy(1);
         sanPhamRepository.save(sanPham);
 
         // Prepare product group key
@@ -559,6 +589,7 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
 
         // Update variants
         List<ChiTietSanPham> existingVariants = chiTietSanPhamRepository.findByIdSanPhamIdAndDeletedFalse(id, false);
+        List<ChiTietSanPham> savedVariants = new ArrayList<>();
         for (ChiTietSanPhamRequest.VariantRequest variant : request.getVariants()) {
             MauSac mauSac = mauSacRepository.findById(variant.getIdMauSac())
                     .orElseThrow(() -> new IllegalArgumentException("Màu sắc không tồn tại"));
@@ -573,54 +604,58 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                     .findFirst();
             AnhSanPham anhSanPham = anhSanPhamOpt.orElse(savedImages.get(0));
 
-            String imei = variant.getImeiList().get(0);
-            Optional<ChiTietSanPham> existingChiTietSanPham = existingVariants.stream()
-                    .filter(ctsp -> ctsp.getIdImel().getImel().equals(imei))
-                    .findFirst();
+            // Process each IMEI
+            for (String imei : variant.getImeiList()) {
+                Optional<ChiTietSanPham> existingChiTietSanPham = existingVariants.stream()
+                        .filter(ctsp -> ctsp.getIdImel().getImel().equals(imei))
+                        .findFirst();
 
-            if (existingChiTietSanPham.isPresent()) {
-                // Update existing variant
-                ChiTietSanPham chiTietSanPham = existingChiTietSanPham.get();
-                chiTietSanPham.setIdMauSac(mauSac);
-                chiTietSanPham.setIdRam(ram);
-                chiTietSanPham.setIdBoNhoTrong(boNhoTrong);
-                chiTietSanPham.setIdAnhSanPham(anhSanPham);
-                chiTietSanPham.setGiaBan(variant.getDonGia());
-                chiTietSanPham.setGhiChu(request.getGhiChu());
-                chiTietSanPham.setUpdatedAt(new Date());
-                chiTietSanPham.setUpdatedBy(1);
-                chiTietSanPhamRepository.save(chiTietSanPham);
-                logger.info("Updated ChiTietSanPham for IMEI: {}", imei);
-            } else {
-                // Create new variant if IMEI doesn't exist
-                if (imelRepository.existsByImelAndDeletedFalse(imei)) {
-                    logger.warn("Duplicate IMEI detected: {}", imei);
-                    throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+                if (existingChiTietSanPham.isPresent()) {
+                    // Update existing variant
+                    ChiTietSanPham chiTietSanPham = existingChiTietSanPham.get();
+                    chiTietSanPham.setIdMauSac(mauSac);
+                    chiTietSanPham.setIdRam(ram);
+                    chiTietSanPham.setIdBoNhoTrong(boNhoTrong);
+                    chiTietSanPham.setIdAnhSanPham(anhSanPham);
+                    chiTietSanPham.setGiaBan(variant.getDonGia());
+                    chiTietSanPham.setGhiChu(request.getGhiChu());
+                    chiTietSanPham.setUpdatedAt(new Date());
+                    chiTietSanPham.setUpdatedBy(1);
+                    chiTietSanPhamRepository.save(chiTietSanPham);
+                    savedVariants.add(chiTietSanPham);
+                    logger.info("Updated ChiTietSanPham for IMEI: {}", imei);
+                } else {
+                    // Create new variant if IMEI doesn't exist
+                    if (imelRepository.existsByImelAndDeletedFalse(imei)) {
+                        logger.warn("Duplicate IMEI detected: {}", imei);
+                        throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+                    }
+
+                    Imel imel = Imel.builder()
+                            .imel(imei)
+                            .deleted(false)
+                            .build();
+                    imel = imelRepository.save(imel);
+
+                    ChiTietSanPham chiTietSanPham = ChiTietSanPham.builder()
+                            .idSanPham(sanPham)
+                            .idMauSac(mauSac)
+                            .idRam(ram)
+                            .idBoNhoTrong(boNhoTrong)
+                            .idImel(imel)
+                            .idAnhSanPham(anhSanPham)
+                            .giaBan(variant.getDonGia())
+                            .ghiChu(request.getGhiChu())
+                            .createdAt(new Date())
+                            .createdBy(1)
+                            .updatedAt(new Date())
+                            .updatedBy(1)
+                            .deleted(false)
+                            .build();
+                    chiTietSanPham = chiTietSanPhamRepository.save(chiTietSanPham);
+                    savedVariants.add(chiTietSanPham);
+                    logger.info("Created new ChiTietSanPham for IMEI: {}", imei);
                 }
-
-                Imel imel = Imel.builder()
-                        .imel(imei)
-                        .deleted(false)
-                        .build();
-                imel = imelRepository.save(imel);
-
-                ChiTietSanPham chiTietSanPham = ChiTietSanPham.builder()
-                        .idSanPham(sanPham)
-                        .idMauSac(mauSac)
-                        .idRam(ram)
-                        .idBoNhoTrong(boNhoTrong)
-                        .idImel(imel)
-                        .idAnhSanPham(anhSanPham)
-                        .giaBan(variant.getDonGia())
-                        .ghiChu(request.getGhiChu())
-                        .createdAt(new Date())
-                        .createdBy(1)
-                        .updatedAt(new Date())
-                        .updatedBy(1)
-                        .deleted(false)
-                        .build();
-                chiTietSanPhamRepository.save(chiTietSanPham);
-                logger.info("Created new ChiTietSanPham for IMEI: {}", imei);
             }
         }
 

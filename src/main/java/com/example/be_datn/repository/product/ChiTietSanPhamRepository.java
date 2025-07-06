@@ -30,7 +30,10 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "LEFT JOIN c.idMauSac ms " +
             "LEFT JOIN c.idRam r " +
             "LEFT JOIN c.idBoNhoTrong bnt " +
-            "LEFT JOIN ChiTietDotGiamGia ctdgg ON ctdgg.idChiTietSanPham.id = c.id AND ctdgg.deleted = false " +
+            "LEFT JOIN ChiTietDotGiamGia ctdgg ON ctdgg.idChiTietSanPham.id = c.id " +
+            "AND ctdgg.deleted = false " +
+            "AND ctdgg.idDotGiamGia.trangThai = false " +
+            "AND ctdgg.idDotGiamGia.deleted = false " +
             "WHERE (:sanPhamId IS NULL OR c.idSanPham.id = :sanPhamId) AND c.deleted = false " +
             "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false) " +
             "GROUP BY sp.id, sp.tenSanPham, ms.mauSac, r.dungLuongRam, bnt.dungLuongBoNhoTrong")

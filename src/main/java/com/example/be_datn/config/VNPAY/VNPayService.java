@@ -12,7 +12,7 @@ import java.util.*;
 @Service
 public class VNPayService {
 
-    public String createOrder(HttpServletRequest request, int amount, String orderInfor, String urlReturn){
+    public String createOrder(HttpServletRequest request, long amount, String orderInfor, String urlReturn){
         //Các bạn có thể tham khảo tài liệu hướng dẫn và điều chỉnh các tham số
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";

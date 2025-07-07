@@ -11,9 +11,9 @@ import java.util.Optional;
 
 @Repository
 public interface AnhSanPhamRepository extends JpaRepository<AnhSanPham, Integer> {
-    @Query("SELECT a FROM AnhSanPham a WHERE a.productGroupKey = :productGroupKey AND a.hash = :hash AND a.deleted = false")
-    Optional<AnhSanPham> findByProductGroupKeyAndHash(@Param("productGroupKey") String productGroupKey, @Param("hash") String hash);
+    @Query("SELECT a FROM AnhSanPham a WHERE a.duongDan = :duongDan AND a.deleted = false")
+    Optional<AnhSanPham> findByDuongDan(@Param("duongDan") String duongDan);
 
-    @Query("SELECT a FROM AnhSanPham a WHERE a.productGroupKey = :productGroupKey AND a.deleted = false")
-    List<AnhSanPham> findByProductGroupKeyAndDeletedFalse(@Param("productGroupKey") String productGroupKey);
+    @Query("SELECT a FROM AnhSanPham a WHERE a.imageHash = :imageHash AND a.deleted = false")
+    Optional<AnhSanPham> findByImageHash(@Param("imageHash") String imageHash);
 }

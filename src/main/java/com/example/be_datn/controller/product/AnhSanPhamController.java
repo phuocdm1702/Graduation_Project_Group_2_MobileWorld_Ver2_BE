@@ -19,18 +19,4 @@ public class AnhSanPhamController {
     public AnhSanPhamController(AnhSanPhamRepository anhSanPhamRepository) {
         this.anhSanPhamRepository = anhSanPhamRepository;
     }
-
-    @PostMapping("/check")
-    public ResponseEntity<Map<String, String>> checkExistingImages(@RequestBody Map<String, Object> request) {
-        String productGroupKey = (String) request.get("productGroupKey");
-        List<String> hashes = (List<String>) request.get("hashes");
-        Map<String, String> result = new HashMap<>();
-
-        for (String hash : hashes) {
-            Optional<AnhSanPham> anhSanPham = anhSanPhamRepository.findByProductGroupKeyAndHash(productGroupKey, hash);
-            anhSanPham.ifPresent(img -> result.put(hash, img.getDuongDan()));
-        }
-
-        return ResponseEntity.ok(result);
-    }
 }

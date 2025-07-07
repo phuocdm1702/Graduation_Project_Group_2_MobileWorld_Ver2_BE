@@ -37,17 +37,12 @@ public class AnhSanPham {
     @Column(name = "duong_dan", nullable = false)
     private String duongDan;
 
+    @Size(max = 64)
+    @Column(name = "image_hash")
+    private String imageHash;
+
     @NotNull
     @ColumnDefault("0")
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
-
-    @Size(max = 255)
-    @Column(name = "hash")
-    private String hash;
-
-    @Size(max = 255)
-    @Column(name = "product_group_key")
-    private String productGroupKey;
-
 }

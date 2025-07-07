@@ -5,7 +5,6 @@ import com.example.be_datn.dto.product.response.ChiTietSanPhamDetailResponse;
 import com.example.be_datn.dto.product.response.ChiTietSanPhamResponse;
 import com.example.be_datn.service.product.ChiTietSanPhamService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -31,9 +30,8 @@ public class ChiTietSanPhamController {
     public ResponseEntity<ChiTietSanPhamResponse> createChiTietSanPham(
             @Valid @ModelAttribute ChiTietSanPhamRequest request,
             @RequestParam(value = "images", required = false) List<MultipartFile> images,
-            @RequestParam(value = "existingImageUrls", required = false) List<String> existingImageUrls,
-            @RequestParam(value = "imageHashes", required = false) List<String> imageHashes) {
-        ChiTietSanPhamResponse response = chiTietSanPhamService.createChiTietSanPham(request, images, existingImageUrls, imageHashes);
+            @RequestParam(value = "existingImageUrls", required = false) List<String> existingImageUrls) {
+        ChiTietSanPhamResponse response = chiTietSanPhamService.createChiTietSanPham(request, images, existingImageUrls);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -58,9 +56,8 @@ public class ChiTietSanPhamController {
             @PathVariable Integer id,
             @Valid @ModelAttribute ChiTietSanPhamRequest request,
             @RequestParam(value = "images", required = false) List<MultipartFile> images,
-            @RequestParam(value = "existingImageUrls", required = false) List<String> existingImageUrls,
-            @RequestParam(value = "imageHashes", required = false) List<String> imageHashes) {
-        ChiTietSanPhamResponse response = chiTietSanPhamService.updateChiTietSanPham(id, request, images, existingImageUrls, imageHashes);
+            @RequestParam(value = "existingImageUrls", required = false) List<String> existingImageUrls) {
+        ChiTietSanPhamResponse response = chiTietSanPhamService.updateChiTietSanPham(id, request, images, existingImageUrls);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

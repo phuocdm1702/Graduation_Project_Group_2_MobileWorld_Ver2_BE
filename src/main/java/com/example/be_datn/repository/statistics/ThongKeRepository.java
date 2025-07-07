@@ -164,8 +164,8 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
     @Query(value = "SELECT c.id_chi_tiet_san_pham, COUNT(c.id) as soLuongBan " +
             "FROM hoa_don_chi_tiet c " +
             "JOIN hoa_don h ON c.id_hoa_don = h.id " +
-            "WHERE (:startDate IS NULL OR h.created_at >= CAST(:startDate AS DATE)) " +
-            "AND (:endDate IS NULL OR h.created_at <= CAST(:endDate AS DATE)) " +
+            "WHERE (:startDate IS NULL OR h.created_at >= :startDate) " +
+            "AND (:endDate IS NULL OR h.created_at < DATEADD(DAY, 1, :endDate)) " +
             "GROUP BY c.id_chi_tiet_san_pham",
             nativeQuery = true)
     Page<Object[]> findTopSellingProducts(
@@ -178,8 +178,8 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
     @Query(value = "SELECT c.id_chi_tiet_san_pham, COUNT(c.id) as soLuongBan " +
             "FROM hoa_don_chi_tiet c " +
             "JOIN hoa_don h ON c.id_hoa_don = h.id " +
-            "WHERE (:startDate IS NULL OR h.created_at >= CAST(:startDate AS DATE)) " +
-            "AND (:endDate IS NULL OR h.created_at <= CAST(:endDate AS DATE)) " +
+            "WHERE (:startDate IS NULL OR h.created_at >= :startDate) " +
+            "AND (:endDate IS NULL OR h.created_at < DATEADD(DAY, 1, :endDate)) " +
             "GROUP BY c.id_chi_tiet_san_pham",
             nativeQuery = true)
     List<Object[]> findAllTopSellingProducts(

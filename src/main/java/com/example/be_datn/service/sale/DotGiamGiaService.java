@@ -95,10 +95,9 @@ public class DotGiamGiaService {
         return nsxForDGGRepo.findAllByDeletedFalse();
     }
 
-    public List<ViewCTSPDTO> getAllCTSP(List<Integer> ids, List<Integer> idBoNhoTrongs, List<Integer> mauSac) {
-        return repository.getAllCTSP(ids, idBoNhoTrongs, mauSac);
+    public List<ViewCTSPDTO> getAllCTSP(List<Integer> ids, List<Integer> idBoNhoTrongs, List<Integer> idMauSacs, Integer excludeDotGiamGiaId) {
+        return repository.getAllCTSP(ids, idBoNhoTrongs, idMauSacs, excludeDotGiamGiaId);
     }
-
     public Boolean existByMa(String ma) {
         return repository.existsByMaAndDeletedTrue(ma);
     }
@@ -307,13 +306,30 @@ public class DotGiamGiaService {
     public Map<String, Object> getDataForUpdate(Integer id) {
         Map<String, Object> response = new HashMap<>();
         try {
+            // Fetch the DotGiamGia object
+            DotGiamGia dotGiamGia = repository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Đợt giảm giá không tồn tại"));
+
+            // Fetch the list of SanPham (dspList)
             List<SanPham> dspList = getThatDongSanPham(id);
+            List<Integer> dspIds = dspList.stream()
+                    .map(SanPham::getId)
+                    .collect(Collectors.toList());
+
+            // Fetch the list of ChiTietSanPham with overlap count, excluding the current DotGiamGia
+            List<ViewCTSPDTO> ctspList = getAllCTSP(dspIds, null, null, id);
+
+            // Fetch ctspIds for compatibility with frontend
             List<Integer> ctspIds = getChiTietSanPhamByDotGiamGia(id).stream()
                     .map(ChiTietSanPham::getId)
                     .collect(Collectors.toList());
 
+            // Add data to response
+            response.put("dotGiamGia", dotGiamGia);
             response.put("dspList", dspList != null ? dspList : Collections.emptyList());
+            response.put("ctspList", ctspList != null ? ctspList : Collections.emptyList());
             response.put("ctspIds", ctspIds != null ? ctspIds : Collections.emptyList());
+
             return response;
         } catch (Exception e) {
             System.err.println("Lỗi trong getDataForUpdate: " + e.getMessage());
@@ -321,7 +337,6 @@ public class DotGiamGiaService {
             throw new RuntimeException("Lỗi khi lấy dữ liệu cập nhật: " + e.getMessage());
         }
     }
-
     public Optional<DotGiamGia> findOne(Integer id) {
         return repository.findById(id);
     }

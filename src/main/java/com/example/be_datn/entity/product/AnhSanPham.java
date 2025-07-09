@@ -41,13 +41,4 @@ public class AnhSanPham {
     @ColumnDefault("0")
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
-
-    @Size(max = 255)
-    @Column(name = "hash")
-    private String hash;
-
-    @Size(max = 255)
-    @Column(name = "product_group_key")
-    private String productGroupKey;
-
 }

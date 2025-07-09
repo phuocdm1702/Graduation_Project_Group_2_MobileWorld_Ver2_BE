@@ -8,12 +8,9 @@ import com.example.be_datn.dto.product.response.ChiTietSanPhamResponse;
 import com.example.be_datn.entity.product.*;
 import com.example.be_datn.repository.product.*;
 import com.example.be_datn.service.product.ChiTietSanPhamService;
-import jakarta.persistence.criteria.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.*;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,8 +20,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -106,31 +101,118 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
         this.cloudinary = cloudinary;
     }
 
-    private String generateImageHash(byte[] imageBytes) {
+    private AnhSanPham uploadImageToCloudinary(MultipartFile image, String fileName) {
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] hashBytes = md.digest(imageBytes);
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashBytes) {
-                sb.append(String.format("%02x", b));
+            String publicId = "product_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8);
+            Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
+                    "public_id", publicId,
+                    "resource_type", "image"
+            ));
+            String imageUrl = (String) uploadResult.get("secure_url");
+            if (imageUrl == null || imageUrl.trim().isEmpty()) {
+                throw new RuntimeException("Cloudinary trả về URL ảnh rỗng");
             }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            logger.error("Failed to generate image hash: {}", e.getMessage());
-            throw new RuntimeException("Lỗi khi tạo hash cho ảnh: " + e.getMessage());
+            AnhSanPham anhSanPham = AnhSanPham.builder()
+                    .tenAnh(fileName)
+                    .duongDan(imageUrl)
+                    .deleted(false)
+                    .build();
+            anhSanPham = anhSanPhamRepository.save(anhSanPham);
+            logger.info("Successfully uploaded image to Cloudinary: {} -> {}", fileName, imageUrl);
+            return anhSanPham;
+        } catch (IOException e) {
+            logger.error("Failed to upload image {} to Cloudinary: {}", fileName, e.getMessage());
+            throw new RuntimeException("Lỗi khi tải ảnh " + fileName + " lên Cloudinary: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during image upload for {}: {}", fileName, e.getMessage());
+            throw new RuntimeException("Lỗi không mong muốn khi tải ảnh " + fileName + ": " + e.getMessage(), e);
         }
     }
 
-    @Transactional
-    @Override
-    public ChiTietSanPhamResponse createChiTietSanPham(ChiTietSanPhamRequest request, List<MultipartFile> images, List<String> existingImageUrls, List<String> imageHashes) {
-        logger.info("Processing createChiTietSanPham with request: {}", request);
+    private Map<Integer, String> processImageUploads(List<MultipartFile> images, List<ChiTietSanPhamRequest.VariantRequest> variants) {
+        logger.info("Starting image upload process");
+        Map<Integer, String> colorImageUrls = new HashMap<>();
+        List<AnhSanPham> savedImages = new ArrayList<>();
+        if (images == null || images.isEmpty()) {
+            logger.error("No images provided for upload");
+            throw new IllegalArgumentException("Phải có ít nhất một ảnh sản phẩm");
+        }
+        for (int i = 0; i < images.size(); i++) {
+            MultipartFile image = images.get(i);
+            if (image.isEmpty()) {
+                logger.error("Empty image file detected at index {}", i);
+                throw new IllegalArgumentException("File ảnh tại vị trí " + (i + 1) + " không được để trống");
+            }
+            String fileName = StringUtils.cleanPath(image.getOriginalFilename());
+            if (fileName == null || fileName.trim().isEmpty()) {
+                logger.error("Invalid filename at index {}", i);
+                throw new IllegalArgumentException("Tên file ảnh không hợp lệ tại vị trí " + (i + 1));
+            }
+            String contentType = image.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                logger.error("Invalid file type: {} at index {}", contentType, i);
+                throw new IllegalArgumentException("File tại vị trí " + (i + 1) + " không phải là ảnh hợp lệ");
+            }
+            if (image.getSize() > 10 * 1024 * 1024) {
+                logger.error("File too large: {} bytes at index {}", image.getSize(), i);
+                throw new IllegalArgumentException("File ảnh tại vị trí " + (i + 1) + " quá lớn (tối đa 10MB)");
+            }
+            AnhSanPham anhSanPham = uploadImageToCloudinary(image, fileName);
+            savedImages.add(anhSanPham);
+            if (i < variants.size()) {
+                Integer mauSacId = variants.get(i).getIdMauSac();
+                colorImageUrls.put(mauSacId, anhSanPham.getDuongDan());
+                logger.debug("Mapped image {} to color ID: {}", anhSanPham.getDuongDan(), mauSacId);
+            }
+        }
+        if (variants.size() > images.size() && !savedImages.isEmpty()) {
+            String lastImageUrl = savedImages.get(savedImages.size() - 1).getDuongDan();
+            for (int i = images.size(); i < variants.size(); i++) {
+                Integer mauSacId = variants.get(i).getIdMauSac();
+                if (!colorImageUrls.containsKey(mauSacId)) {
+                    colorImageUrls.put(mauSacId, lastImageUrl);
+                    logger.debug("Mapped additional variant color ID {} to last image: {}", mauSacId, lastImageUrl);
+                }
+            }
+        }
+        logger.info("Completed image upload process. Processed {} images, mapped {} color variants",
+                savedImages.size(), colorImageUrls.size());
+        return colorImageUrls;
+    }
 
-        // Validate input
-        validateRequest(request);
+    private Map<Integer, String> processImageUpdates(List<MultipartFile> images, List<String> existingImageUrls,
+                                                     List<ChiTietSanPhamRequest.VariantRequest> variants) {
+        logger.info("Starting image update process");
+        Map<Integer, String> colorImageUrls = new HashMap<>();
+        List<AnhSanPham> savedImages = new ArrayList<>();
+        if (images != null && !images.isEmpty()) {
+            colorImageUrls = processImageUploads(images, variants);
+        } else {
+            logger.info("No new images provided, using existing images");
+            if (existingImageUrls == null || existingImageUrls.isEmpty()) {
+                logger.error("No existing images found and no new images provided");
+                throw new IllegalArgumentException("Không tìm thấy ảnh hiện tại và không có ảnh mới được cung cấp");
+            }
+            for (int i = 0; i < variants.size(); i++) {
+                Integer mauSacId = variants.get(i).getIdMauSac();
+                String imageUrl = existingImageUrls.get(0);
+                Optional<AnhSanPham> anhSanPhamOpt = anhSanPhamRepository.findByDuongDan(imageUrl);
+                if (anhSanPhamOpt.isPresent()) {
+                    savedImages.add(anhSanPhamOpt.get());
+                    colorImageUrls.put(mauSacId, imageUrl);
+                    logger.debug("Mapped existing image {} to color ID: {}", imageUrl, mauSacId);
+                } else {
+                    logger.error("Existing image URL {} not found in database", imageUrl);
+                    throw new IllegalArgumentException("Ảnh hiện tại không tồn tại: " + imageUrl);
+                }
+            }
+        }
+        logger.info("Completed image update process");
+        return colorImageUrls;
+    }
 
-        // Create or find existing SanPham
-        SanPham sanPham = sanPhamRepository.findByTenSanPhamAndDeletedFalse(request.getTenSanPham())
+    private SanPham createOrFindSanPham(ChiTietSanPhamRequest request) {
+        return sanPhamRepository.findByTenSanPhamAndDeletedFalse(request.getTenSanPham())
                 .orElseGet(() -> {
                     logger.info("Creating new SanPham with name: {}", request.getTenSanPham());
                     SanPham newSanPham = SanPham.builder()
@@ -170,256 +252,11 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                             .build();
                     return sanPhamRepository.save(newSanPham);
                 });
-
-        // Prepare product group key
-        String productGroupKey = "SP" + sanPham.getId();
-
-        // Process images
-        Map<Integer, String> colorImageUrls = new HashMap<>();
-        List<AnhSanPham> savedImages = new ArrayList<>();
-        int hashIndex = 0;
-
-        if (images != null && !images.isEmpty() && existingImageUrls != null && imageHashes != null) {
-            for (int i = 0; i < images.size(); i++) {
-                MultipartFile image = images.get(i);
-                String providedHash = imageHashes.get(hashIndex);
-                String existingUrl = existingImageUrls.size() > i ? existingImageUrls.get(i) : null;
-
-                if (image.isEmpty()) {
-                    logger.warn("Empty image file detected at index {}", i);
-                    throw new IllegalArgumentException("File ảnh không được để trống");
-                }
-
-                String fileName = StringUtils.cleanPath(image.getOriginalFilename());
-                AnhSanPham anhSanPham;
-
-                if (existingUrl != null) {
-                    // Use existing image
-                    Optional<AnhSanPham> existingImage = anhSanPhamRepository.findByProductGroupKeyAndHash(productGroupKey, providedHash);
-                    if (existingImage.isPresent()) {
-                        anhSanPham = existingImage.get();
-                        logger.info("Reusing existing image with hash: {} for productGroupKey: {}", providedHash, productGroupKey);
-                    } else {
-                        // Create new AnhSanPham for existing URL
-                        anhSanPham = AnhSanPham.builder()
-                                .tenAnh(fileName)
-                                .duongDan(existingUrl)
-                                .hash(providedHash)
-                                .productGroupKey(productGroupKey)
-                                .deleted(false)
-                                .build();
-                        anhSanPham = anhSanPhamRepository.save(anhSanPham);
-                        logger.info("Saved new AnhSanPham for existing URL: {}", existingUrl);
-                    }
-                } else {
-                    // Validate hash
-                    String computedHash;
-                    try {
-                        computedHash = generateImageHash(image.getBytes());
-                    } catch (IOException e) {
-                        logger.error("Failed to read image bytes: {}", e.getMessage());
-                        throw new RuntimeException("Lỗi khi đọc file ảnh: " + e.getMessage());
-                    }
-
-                    if (!computedHash.equals(providedHash)) {
-                        logger.warn("Hash mismatch for image: {} (provided: {}, computed: {})", fileName, providedHash, computedHash);
-                        throw new IllegalArgumentException("Hash ảnh không khớp: " + fileName);
-                    }
-
-                    // Check if image exists
-                    Optional<AnhSanPham> existingImage = anhSanPhamRepository.findByProductGroupKeyAndHash(productGroupKey, computedHash);
-                    if (existingImage.isPresent()) {
-                        anhSanPham = existingImage.get();
-                        logger.info("Reusing existing image with hash: {} for productGroupKey: {}", computedHash, productGroupKey);
-                    } else {
-                        // Upload to Cloudinary
-                        try {
-                            Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
-                                    "public_id", "product_" + UUID.randomUUID().toString(),
-                                    "resource_type", "image",
-                                    "quality", "auto:low"
-                            ));
-                            String imageUrl = uploadResult.get("secure_url").toString();
-                            anhSanPham = AnhSanPham.builder()
-                                    .tenAnh(fileName)
-                                    .duongDan(imageUrl)
-                                    .hash(computedHash)
-                                    .productGroupKey(productGroupKey)
-                                    .deleted(false)
-                                    .build();
-                            anhSanPham = anhSanPhamRepository.save(anhSanPham);
-                            logger.info("Uploaded new image: {} with URL: {}", fileName, imageUrl);
-                        } catch (IOException e) {
-                            logger.error("Failed to upload image to Cloudinary: {}", e.getMessage());
-                            throw new RuntimeException("Lỗi khi tải ảnh lên Cloudinary: " + e.getMessage());
-                        }
-                    }
-                }
-                savedImages.add(anhSanPham);
-                Integer mauSacId = request.getVariants().get(hashIndex).getIdMauSac();
-                colorImageUrls.put(mauSacId, anhSanPham.getDuongDan());
-                hashIndex++;
-            }
-        } else {
-            logger.info("No images provided, using default image");
-            String defaultHash = UUID.randomUUID().toString();
-            Optional<AnhSanPham> existingDefaultImage = anhSanPhamRepository.findByProductGroupKeyAndHash(productGroupKey, defaultHash);
-            AnhSanPham defaultAnhSanPham;
-            if (existingDefaultImage.isPresent()) {
-                defaultAnhSanPham = existingDefaultImage.get();
-                logger.info("Reusing existing default image for productGroupKey: {}", productGroupKey);
-            } else {
-                defaultAnhSanPham = AnhSanPham.builder()
-                        .tenAnh("default_image.jpg")
-                        .duongDan("https://default-image-url.com/default.jpg")
-                        .hash(defaultHash)
-                        .productGroupKey(productGroupKey)
-                        .deleted(false)
-                        .build();
-                defaultAnhSanPham = anhSanPhamRepository.save(defaultAnhSanPham);
-            }
-            savedImages.add(defaultAnhSanPham);
-            colorImageUrls.put(request.getVariants().get(0).getIdMauSac(), defaultAnhSanPham.getDuongDan());
-        }
-
-        // Save variants and associated data
-        ChiTietSanPhamResponse response = null;
-        for (ChiTietSanPhamRequest.VariantRequest variant : request.getVariants()) {
-            MauSac mauSac = mauSacRepository.findById(variant.getIdMauSac())
-                    .orElseThrow(() -> new IllegalArgumentException("Màu sắc không tồn tại"));
-            Ram ram = ramRepository.findById(variant.getIdRam())
-                    .orElseThrow(() -> new IllegalArgumentException("RAM không tồn tại"));
-            BoNhoTrong boNhoTrong = boNhoTrongRepository.findById(variant.getIdBoNhoTrong())
-                    .orElseThrow(() -> new IllegalArgumentException("Bộ nhớ trong không tồn tại"));
-
-            String imageUrl = colorImageUrls.getOrDefault(variant.getIdMauSac(), savedImages.get(0).getDuongDan());
-            Optional<AnhSanPham> anhSanPhamOpt = savedImages.stream()
-                    .filter(img -> img.getDuongDan().equals(imageUrl))
-                    .findFirst();
-            AnhSanPham anhSanPham = anhSanPhamOpt.orElse(savedImages.get(0));
-
-            String imei = variant.getImeiList().get(0); // Take first IMEI
-            if (imelRepository.existsByImelAndDeletedFalse(imei)) {
-                logger.warn("Duplicate IMEI detected: {}", imei);
-                throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
-            }
-
-            Imel imel = Imel.builder()
-                    .imel(imei)
-                    .deleted(false)
-                    .build();
-            imel = imelRepository.save(imel);
-
-            ChiTietSanPham chiTietSanPham = ChiTietSanPham.builder()
-                    .idSanPham(sanPham)
-                    .idMauSac(mauSac)
-                    .idRam(ram)
-                    .idBoNhoTrong(boNhoTrong)
-                    .idImel(imel)
-                    .idAnhSanPham(anhSanPham)
-                    .giaBan(variant.getDonGia())
-                    .ghiChu(request.getGhiChu())
-                    .createdAt(new Date())
-                    .createdBy(1)
-                    .updatedAt(new Date())
-                    .updatedBy(1)
-                    .deleted(false)
-                    .build();
-            chiTietSanPham = chiTietSanPhamRepository.save(chiTietSanPham);
-            logger.info("Saved ChiTietSanPham for IMEI: {}", imei);
-        }
-
-        logger.info("Successfully created ChiTietSanPham with SanPham ID: {}", sanPham.getId());
-        return response;
     }
 
-    private void validateRequest(ChiTietSanPhamRequest request) {
-        logger.info("Validating ChiTietSanPhamRequest");
-
-        if (request.getTenSanPham() == null || request.getTenSanPham().trim().isEmpty()) {
-            logger.error("Validation failed: Tên sản phẩm không được để trống");
-            throw new IllegalArgumentException("Tên sản phẩm không được để trống");
-        }
-
-        if (request.getVariants() == null || request.getVariants().isEmpty()) {
-            logger.error("Validation failed: Danh sách biến thể không được để trống");
-            throw new IllegalArgumentException("Danh sách biến thể không được để trống");
-        }
-
-        for (ChiTietSanPhamRequest.VariantRequest variant : request.getVariants()) {
-            if (variant.getIdMauSac() == null) {
-                logger.error("Validation failed: Màu sắc không được để trống");
-                throw new IllegalArgumentException("Màu sắc không được để trống");
-            }
-            if (variant.getIdRam() == null) {
-                logger.error("Validation failed: RAM không được để trống");
-                throw new IllegalArgumentException("RAM không được để trống");
-            }
-            if (variant.getIdBoNhoTrong() == null) {
-                logger.error("Validation failed: Bộ nhớ trong không được để trống");
-                throw new IllegalArgumentException("Bộ nhớ trong không được để trống");
-            }
-            if (variant.getDonGia() == null || variant.getDonGia().compareTo(BigDecimal.ZERO) <= 0) {
-                logger.error("Validation failed: Đơn giá phải lớn hơn 0");
-                throw new IllegalArgumentException("Đơn giá phải lớn hơn 0");
-            }
-            if (variant.getImeiList() == null || variant.getImeiList().isEmpty()) {
-                logger.error("Validation failed: IMEI không được để trống cho biến thể");
-                throw new IllegalArgumentException("IMEI không được để trống cho biến thể");
-            }
-            String imei = variant.getImeiList().get(0);
-            if (imei == null || imei.length() != 15) {
-                logger.error("Validation failed: IMEI phải có đúng 15 chữ số: {}", imei);
-                throw new IllegalArgumentException("IMEI phải có đúng 15 chữ số: " + imei);
-            }
-            if (imelRepository.existsByImelAndDeletedFalse(imei)) {
-                logger.error("Validation failed: IMEI đã tồn tại: {}", imei);
-                throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
-            }
-        }
-    }
-
-    @Override
-    public List<ChiTietSanPhamDetailResponse> getProductDetailsBySanPhamId(Integer idSanPham) {
-        logger.info("Fetching product details for idSanPham: {}", idSanPham);
-
-        if (idSanPham == null || idSanPham <= 0) {
-            logger.error("Invalid idSanPham: {}", idSanPham);
-            throw new IllegalArgumentException("ID sản phẩm không hợp lệ");
-        }
-
-        List<Object[]> results = chiTietSanPhamRepository.findProductDetailsBySanPhamId(idSanPham);
-        if (results.isEmpty()) {
-            logger.warn("No product details found for idSanPham: {}", idSanPham);
-            throw new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm cho ID: " + idSanPham);
-        }
-
-        return results.stream().map(result -> ChiTietSanPhamDetailResponse.builder()
-                .tenSanPham((String) result[0])
-                .maSanPham((String) result[1])
-                .imei((String) result[2])
-                .mauSac((String) result[3])
-                .dungLuongRam((String) result[4])
-                .dungLuongBoNhoTrong((String) result[5])
-                .donGia((BigDecimal) result[6])
-                .deleted((Boolean) result[7])
-                .build()
-        ).collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional
-    public ChiTietSanPhamResponse updateChiTietSanPham(Integer id, ChiTietSanPhamRequest request, List<MultipartFile> images, List<String> existingImageUrls, List<String> imageHashes) {
-        logger.info("Processing updateChiTietSanPham with id: {} and request: {}", id, request);
-
-        // Validate input
-        validateRequest(request);
-
-        // Find existing SanPham
+    private SanPham updateExistingSanPham(Integer id, ChiTietSanPhamRequest request) {
         SanPham sanPham = sanPhamRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không tồn tại với ID: " + id));
-
-        // Update SanPham details
         sanPham.setTenSanPham(request.getTenSanPham());
         sanPham.setIdNhaSanXuat(nhaSanXuatRepository.findById(request.getIdNhaSanXuat())
                 .orElseThrow(() -> new IllegalArgumentException("Nhà sản xuất không tồn tại")));
@@ -449,116 +286,12 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
         sanPham.setIdCongNgheMang(congNgheMangRepository.findById(request.getIdCongNgheMang())
                 .orElseThrow(() -> new IllegalArgumentException("Công nghệ mạng không tồn tại")));
         sanPham.setUpdatedAt(new Date());
-        sanPham.setUpdatedBy(1); // Assuming a default user ID for now
-        sanPhamRepository.save(sanPham);
+        sanPham.setUpdatedBy(1);
+        return sanPhamRepository.save(sanPham);
+    }
 
-        // Prepare product group key
-        String productGroupKey = "SP" + sanPham.getId();
-
-        // Process images
-        Map<Integer, String> colorImageUrls = new HashMap<>();
-        List<AnhSanPham> savedImages = new ArrayList<>();
-        int hashIndex = 0;
-
-        if (images != null && !images.isEmpty() && existingImageUrls != null && imageHashes != null) {
-            for (int i = 0; i < images.size(); i++) {
-                MultipartFile image = images.get(i);
-                String providedHash = imageHashes.get(hashIndex);
-                String existingUrl = existingImageUrls.size() > i ? existingImageUrls.get(i) : null;
-
-                if (image.isEmpty()) {
-                    logger.warn("Empty image file detected at index {}", i);
-                    throw new IllegalArgumentException("File ảnh không được để trống");
-                }
-
-                String fileName = StringUtils.cleanPath(image.getOriginalFilename());
-                AnhSanPham anhSanPham;
-
-                if (existingUrl != null) {
-                    Optional<AnhSanPham> existingImage = anhSanPhamRepository.findByProductGroupKeyAndHash(productGroupKey, providedHash);
-                    if (existingImage.isPresent()) {
-                        anhSanPham = existingImage.get();
-                        logger.info("Reusing existing image with hash: {} for productGroupKey: {}", providedHash, productGroupKey);
-                    } else {
-                        anhSanPham = AnhSanPham.builder()
-                                .tenAnh(fileName)
-                                .duongDan(existingUrl)
-                                .hash(providedHash)
-                                .productGroupKey(productGroupKey)
-                                .deleted(false)
-                                .build();
-                        anhSanPham = anhSanPhamRepository.save(anhSanPham);
-                        logger.info("Saved new AnhSanPham for existing URL: {}", existingUrl);
-                    }
-                } else {
-                    String computedHash;
-                    try {
-                        computedHash = generateImageHash(image.getBytes());
-                    } catch (IOException e) {
-                        logger.error("Failed to read image bytes: {}", e.getMessage());
-                        throw new RuntimeException("Lỗi khi đọc file ảnh: " + e.getMessage());
-                    }
-
-                    if (!computedHash.equals(providedHash)) {
-                        logger.warn("Hash mismatch for image: {} (provided: {}, computed: {})", fileName, providedHash, computedHash);
-                        throw new IllegalArgumentException("Hash ảnh không khớp: " + fileName);
-                    }
-
-                    Optional<AnhSanPham> existingImage = anhSanPhamRepository.findByProductGroupKeyAndHash(productGroupKey, computedHash);
-                    if (existingImage.isPresent()) {
-                        anhSanPham = existingImage.get();
-                        logger.info("Reusing existing image with hash: {} for productGroupKey: {}", computedHash, productGroupKey);
-                    } else {
-                        try {
-                            Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
-                                    "public_id", "product_" + UUID.randomUUID().toString(),
-                                    "resource_type", "image",
-                                    "quality", "auto:low"
-                            ));
-                            String imageUrl = uploadResult.get("secure_url").toString();
-                            anhSanPham = AnhSanPham.builder()
-                                    .tenAnh(fileName)
-                                    .duongDan(imageUrl)
-                                    .hash(computedHash)
-                                    .productGroupKey(productGroupKey)
-                                    .deleted(false)
-                                    .build();
-                            anhSanPham = anhSanPhamRepository.save(anhSanPham);
-                            logger.info("Uploaded new image: {} with URL: {}", fileName, imageUrl);
-                        } catch (IOException e) {
-                            logger.error("Failed to upload image to Cloudinary: {}", e.getMessage());
-                            throw new RuntimeException("Lỗi khi tải ảnh lên Cloudinary: " + e.getMessage());
-                        }
-                    }
-                }
-                savedImages.add(anhSanPham);
-                Integer mauSacId = request.getVariants().get(hashIndex).getIdMauSac();
-                colorImageUrls.put(mauSacId, anhSanPham.getDuongDan());
-                hashIndex++;
-            }
-        } else {
-            logger.info("No new images provided, checking existing images");
-            List<AnhSanPham> existingImages = anhSanPhamRepository.findByProductGroupKeyAndDeletedFalse(productGroupKey);
-            if (existingImages.isEmpty()) {
-                String defaultHash = UUID.randomUUID().toString();
-                AnhSanPham defaultAnhSanPham = AnhSanPham.builder()
-                        .tenAnh("default_image.jpg")
-                        .duongDan("https://default-image-url.com/default.jpg")
-                        .hash(defaultHash)
-                        .productGroupKey(productGroupKey)
-                        .deleted(false)
-                        .build();
-                defaultAnhSanPham = anhSanPhamRepository.save(defaultAnhSanPham);
-                savedImages.add(defaultAnhSanPham);
-                colorImageUrls.put(request.getVariants().get(0).getIdMauSac(), defaultAnhSanPham.getDuongDan());
-            } else {
-                savedImages.addAll(existingImages);
-                colorImageUrls.put(request.getVariants().get(0).getIdMauSac(), existingImages.get(0).getDuongDan());
-            }
-        }
-
-        // Update variants
-        List<ChiTietSanPham> existingVariants = chiTietSanPhamRepository.findByIdSanPhamIdAndDeletedFalse(id, false);
+    private List<ChiTietSanPham> createProductVariants(ChiTietSanPhamRequest request, SanPham sanPham, Map<Integer, String> colorImageUrls) {
+        List<ChiTietSanPham> savedVariants = new ArrayList<>();
         for (ChiTietSanPhamRequest.VariantRequest variant : request.getVariants()) {
             MauSac mauSac = mauSacRepository.findById(variant.getIdMauSac())
                     .orElseThrow(() -> new IllegalArgumentException("Màu sắc không tồn tại"));
@@ -566,44 +299,19 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                     .orElseThrow(() -> new IllegalArgumentException("RAM không tồn tại"));
             BoNhoTrong boNhoTrong = boNhoTrongRepository.findById(variant.getIdBoNhoTrong())
                     .orElseThrow(() -> new IllegalArgumentException("Bộ nhớ trong không tồn tại"));
-
-            String imageUrl = colorImageUrls.getOrDefault(variant.getIdMauSac(), savedImages.get(0).getDuongDan());
-            Optional<AnhSanPham> anhSanPhamOpt = savedImages.stream()
-                    .filter(img -> img.getDuongDan().equals(imageUrl))
-                    .findFirst();
-            AnhSanPham anhSanPham = anhSanPhamOpt.orElse(savedImages.get(0));
-
-            String imei = variant.getImeiList().get(0);
-            Optional<ChiTietSanPham> existingChiTietSanPham = existingVariants.stream()
-                    .filter(ctsp -> ctsp.getIdImel().getImel().equals(imei))
-                    .findFirst();
-
-            if (existingChiTietSanPham.isPresent()) {
-                // Update existing variant
-                ChiTietSanPham chiTietSanPham = existingChiTietSanPham.get();
-                chiTietSanPham.setIdMauSac(mauSac);
-                chiTietSanPham.setIdRam(ram);
-                chiTietSanPham.setIdBoNhoTrong(boNhoTrong);
-                chiTietSanPham.setIdAnhSanPham(anhSanPham);
-                chiTietSanPham.setGiaBan(variant.getDonGia());
-                chiTietSanPham.setGhiChu(request.getGhiChu());
-                chiTietSanPham.setUpdatedAt(new Date());
-                chiTietSanPham.setUpdatedBy(1);
-                chiTietSanPhamRepository.save(chiTietSanPham);
-                logger.info("Updated ChiTietSanPham for IMEI: {}", imei);
-            } else {
-                // Create new variant if IMEI doesn't exist
+            String imageUrl = colorImageUrls.getOrDefault(variant.getIdMauSac(), colorImageUrls.values().iterator().next());
+            Optional<AnhSanPham> anhSanPhamOpt = anhSanPhamRepository.findByDuongDan(imageUrl);
+            AnhSanPham anhSanPham = anhSanPhamOpt.orElseThrow(() -> new IllegalArgumentException("Ảnh sản phẩm không tồn tại"));
+            for (String imei : variant.getImeiList()) {
                 if (imelRepository.existsByImelAndDeletedFalse(imei)) {
                     logger.warn("Duplicate IMEI detected: {}", imei);
                     throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
                 }
-
                 Imel imel = Imel.builder()
                         .imel(imei)
                         .deleted(false)
                         .build();
                 imel = imelRepository.save(imel);
-
                 ChiTietSanPham chiTietSanPham = ChiTietSanPham.builder()
                         .idSanPham(sanPham)
                         .idMauSac(mauSac)
@@ -619,12 +327,75 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                         .updatedBy(1)
                         .deleted(false)
                         .build();
-                chiTietSanPhamRepository.save(chiTietSanPham);
-                logger.info("Created new ChiTietSanPham for IMEI: {}", imei);
+                chiTietSanPham = chiTietSanPhamRepository.save(chiTietSanPham);
+                savedVariants.add(chiTietSanPham);
+                logger.info("Saved ChiTietSanPham for IMEI: {}", imei);
             }
         }
+        return savedVariants;
+    }
 
-        // Mark removed variants as deleted
+    private List<ChiTietSanPham> updateProductVariants(Integer id, ChiTietSanPhamRequest request, SanPham sanPham, Map<Integer, String> colorImageUrls) {
+        List<ChiTietSanPham> existingVariants = chiTietSanPhamRepository.findByIdSanPhamIdAndDeletedFalse(id, false);
+        List<ChiTietSanPham> savedVariants = new ArrayList<>();
+        for (ChiTietSanPhamRequest.VariantRequest variant : request.getVariants()) {
+            MauSac mauSac = mauSacRepository.findById(variant.getIdMauSac())
+                    .orElseThrow(() -> new IllegalArgumentException("Màu sắc không tồn tại"));
+            Ram ram = ramRepository.findById(variant.getIdRam())
+                    .orElseThrow(() -> new IllegalArgumentException("RAM không tồn tại"));
+            BoNhoTrong boNhoTrong = boNhoTrongRepository.findById(variant.getIdBoNhoTrong())
+                    .orElseThrow(() -> new IllegalArgumentException("Bộ nhớ trong không tồn tại"));
+            String imageUrl = colorImageUrls.getOrDefault(variant.getIdMauSac(), colorImageUrls.values().iterator().next());
+            Optional<AnhSanPham> anhSanPhamOpt = anhSanPhamRepository.findByDuongDan(imageUrl);
+            AnhSanPham anhSanPham = anhSanPhamOpt.orElseThrow(() -> new IllegalArgumentException("Ảnh sản phẩm không tồn tại"));
+            for (String imei : variant.getImeiList()) {
+                Optional<ChiTietSanPham> existingChiTietSanPham = existingVariants.stream()
+                        .filter(ctsp -> ctsp.getIdImel().getImel().equals(imei))
+                        .findFirst();
+                if (existingChiTietSanPham.isPresent()) {
+                    ChiTietSanPham chiTietSanPham = existingChiTietSanPham.get();
+                    chiTietSanPham.setIdMauSac(mauSac);
+                    chiTietSanPham.setIdRam(ram);
+                    chiTietSanPham.setIdBoNhoTrong(boNhoTrong);
+                    chiTietSanPham.setIdAnhSanPham(anhSanPham);
+                    chiTietSanPham.setGiaBan(variant.getDonGia());
+                    chiTietSanPham.setGhiChu(request.getGhiChu());
+                    chiTietSanPham.setUpdatedAt(new Date());
+                    chiTietSanPham.setUpdatedBy(1);
+                    chiTietSanPhamRepository.save(chiTietSanPham);
+                    savedVariants.add(chiTietSanPham);
+                    logger.info("Updated ChiTietSanPham for IMEI: {}", imei);
+                } else {
+                    if (imelRepository.existsByImelAndDeletedFalse(imei)) {
+                        logger.warn("Duplicate IMEI detected: {}", imei);
+                        throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+                    }
+                    Imel imel = Imel.builder()
+                            .imel(imei)
+                            .deleted(false)
+                            .build();
+                    imel = imelRepository.save(imel);
+                    ChiTietSanPham chiTietSanPham = ChiTietSanPham.builder()
+                            .idSanPham(sanPham)
+                            .idMauSac(mauSac)
+                            .idRam(ram)
+                            .idBoNhoTrong(boNhoTrong)
+                            .idImel(imel)
+                            .idAnhSanPham(anhSanPham)
+                            .giaBan(variant.getDonGia())
+                            .ghiChu(request.getGhiChu())
+                            .createdAt(new Date())
+                            .createdBy(1)
+                            .updatedAt(new Date())
+                            .updatedBy(1)
+                            .deleted(false)
+                            .build();
+                    chiTietSanPham = chiTietSanPhamRepository.save(chiTietSanPham);
+                    savedVariants.add(chiTietSanPham);
+                    logger.info("Created new ChiTietSanPham for IMEI: {}", imei);
+                }
+            }
+        }
         for (ChiTietSanPham existingVariant : existingVariants) {
             boolean existsInRequest = request.getVariants().stream()
                     .anyMatch(variant -> variant.getImeiList().contains(existingVariant.getIdImel().getImel()));
@@ -634,9 +405,11 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                 logger.info("Marked ChiTietSanPham as deleted for IMEI: {}", existingVariant.getIdImel().getImel());
             }
         }
+        return savedVariants;
+    }
 
-        // Build response
-        ChiTietSanPhamResponse response = ChiTietSanPhamResponse.builder()
+    private ChiTietSanPhamResponse buildChiTietSanPhamResponse(SanPham sanPham, ChiTietSanPhamRequest request, Map<Integer, String> colorImageUrls) {
+        return ChiTietSanPhamResponse.builder()
                 .id(sanPham.getId())
                 .tenSanPham(sanPham.getTenSanPham())
                 .idNhaSanXuat(sanPham.getIdNhaSanXuat().getId())
@@ -654,7 +427,7 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                 .idCongNgheMang(sanPham.getIdCongNgheMang().getId())
                 .ghiChu(request.getGhiChu())
                 .variants(request.getVariants().stream().map(variant -> {
-                    String imageUrl = colorImageUrls.getOrDefault(variant.getIdMauSac(), savedImages.get(0).getDuongDan());
+                    String imageUrl = colorImageUrls.getOrDefault(variant.getIdMauSac(), colorImageUrls.values().iterator().next());
                     return ChiTietSanPhamResponse.VariantResponse.builder()
                             .idMauSac(variant.getIdMauSac())
                             .idRam(variant.getIdRam())
@@ -665,8 +438,99 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                             .build();
                 }).collect(Collectors.toList()))
                 .build();
+    }
 
-        logger.info("Successfully updated ChiTietSanPham with SanPham ID: {}", sanPham.getId());
-        return response;
+    private void validateRequest(ChiTietSanPhamRequest request) {
+        logger.info("Validating ChiTietSanPhamRequest");
+        if (request.getTenSanPham() == null || request.getTenSanPham().trim().isEmpty()) {
+            logger.error("Validation failed: Tên sản phẩm không được để trống");
+            throw new IllegalArgumentException("Tên sản phẩm không được để trống");
+        }
+        if (request.getVariants() == null || request.getVariants().isEmpty()) {
+            logger.error("Validation failed: Danh sách biến thể không được để trống");
+            throw new IllegalArgumentException("Danh sách biến thể không được để trống");
+        }
+        for (ChiTietSanPhamRequest.VariantRequest variant : request.getVariants()) {
+            if (variant.getIdMauSac() == null) {
+                logger.error("Validation failed: Màu sắc không được để trống");
+                throw new IllegalArgumentException("Màu sắc không được để trống");
+            }
+            if (variant.getIdRam() == null) {
+                logger.error("Validation failed: RAM không được để trống");
+                throw new IllegalArgumentException("RAM không được để trống");
+            }
+            if (variant.getIdBoNhoTrong() == null) {
+                logger.error("Validation failed: Bộ nhớ trong không được để trống");
+                throw new IllegalArgumentException("Bộ nhớ trong không được để trống");
+            }
+            if (variant.getDonGia() == null || variant.getDonGia().compareTo(BigDecimal.ZERO) <= 0) {
+                logger.error("Validation failed: Đơn giá phải lớn hơn 0");
+                throw new IllegalArgumentException("Đơn giá phải lớn hơn 0");
+            }
+            if (variant.getImeiList() == null || variant.getImeiList().isEmpty()) {
+                logger.error("Validation failed: IMEI không được để trống cho biến thể");
+                throw new IllegalArgumentException("IMEI không được để trống cho biến thể");
+            }
+            for (String imei : variant.getImeiList()) {
+                if (imei == null || imei.length() != 15) {
+                    logger.error("Validation failed: IMEI phải có đúng 15 chữ số: {}", imei);
+                    throw new IllegalArgumentException("IMEI phải có đúng 15 chữ số: " + imei);
+                }
+                if (imelRepository.existsByImelAndDeletedFalse(imei)) {
+                    logger.error("Validation failed: IMEI đã tồn tại: {}", imei);
+                    throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+                }
+            }
+        }
+    }
+
+    @Override
+    public List<ChiTietSanPhamDetailResponse> getProductDetailsBySanPhamId(Integer idSanPham) {
+        logger.info("Fetching product details for idSanPham: {}", idSanPham);
+        if (idSanPham == null || idSanPham <= 0) {
+            logger.error("Invalid idSanPham: {}", idSanPham);
+            throw new IllegalArgumentException("ID sản phẩm không hợp lệ");
+        }
+        List<Object[]> results = chiTietSanPhamRepository.findProductDetailsBySanPhamId(idSanPham);
+        if (results.isEmpty()) {
+            logger.warn("No product details found for idSanPham: {}", idSanPham);
+            throw new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm cho ID: " + idSanPham);
+        }
+        return results.stream().map(result -> ChiTietSanPhamDetailResponse.builder()
+                .tenSanPham((String) result[0])
+                .maSanPham((String) result[1])
+                .imei((String) result[2])
+                .mauSac((String) result[3])
+                .dungLuongRam((String) result[4])
+                .dungLuongBoNhoTrong((String) result[5])
+                .donGia((BigDecimal) result[6])
+                .deleted((Boolean) result[7])
+                .imageUrl((String) result[8]) // Ánh xạ trường imageUrl
+                .build()
+        ).collect(Collectors.toList());
+    }
+
+    @Transactional
+    @Override
+    public ChiTietSanPhamResponse createChiTietSanPham(ChiTietSanPhamRequest request, List<MultipartFile> images,
+                                                       List<String> existingImageUrls) {
+        logger.info("Processing createChiTietSanPham with request: {}", request);
+        validateRequest(request);
+        SanPham sanPham = createOrFindSanPham(request);
+        Map<Integer, String> colorImageUrls = processImageUploads(images, request.getVariants());
+        createProductVariants(request, sanPham, colorImageUrls);
+        return buildChiTietSanPhamResponse(sanPham, request, colorImageUrls);
+    }
+
+    @Transactional
+    @Override
+    public ChiTietSanPhamResponse updateChiTietSanPham(Integer id, ChiTietSanPhamRequest request,
+                                                       List<MultipartFile> images, List<String> existingImageUrls) {
+        logger.info("Processing updateChiTietSanPham with id: {} and request: {}", id, request);
+        validateRequest(request);
+        SanPham sanPham = updateExistingSanPham(id, request);
+        Map<Integer, String> colorImageUrls = processImageUpdates(images, existingImageUrls, request.getVariants());
+        updateProductVariants(id, request, sanPham, colorImageUrls);
+        return buildChiTietSanPhamResponse(sanPham, request, colorImageUrls);
     }
 }

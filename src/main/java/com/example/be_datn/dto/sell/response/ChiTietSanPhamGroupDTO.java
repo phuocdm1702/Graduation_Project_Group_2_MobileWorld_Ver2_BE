@@ -13,12 +13,14 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChiTietSanPhamGroupDTO {
-    private Integer idSanPham; // Thêm id để xác định nhóm sản phẩm duy nhất
-    private String tenSanPham;
-    private String ma;
-    private String mauSac;
-    private String dungLuongRam;
-    private String dungLuongBoNhoTrong;
-    private Integer soLuong;
-    private BigDecimal giaBan;
+    private Integer idSanPham; // ID của chi tiết sản phẩm
+    private String tenSanPham; // Tên sản phẩm
+    private String ma; // Mã sản phẩm
+    private String mauSac; // Màu sắc
+    private String dungLuongRam; // Dung lượng RAM
+    private String dungLuongBoNhoTrong; // Dung lượng bộ nhớ trong
+    private Integer soLuong; // Số lượng sản phẩm khả dụng (tính từ ChiTietSanPham)
+    private BigDecimal giaBan; // Giá hiện tại (giá sau giảm nếu có)
+    private BigDecimal giaBanGoc; // Giá gốc (giá sau giảm trong đợt giảm giá)
+    private BigDecimal giaBanBanDau; // Giá ban đầu từ ChiTietSanPham
 }

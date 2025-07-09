@@ -1,6 +1,7 @@
 package com.example.be_datn.dto.product.response;
 
 import lombok.*;
+
 import java.math.BigDecimal;
 
 @Getter
@@ -17,4 +18,5 @@ public class ChiTietSanPhamDetailResponse {
     private String dungLuongBoNhoTrong;
     private BigDecimal donGia;
     private Boolean deleted;
+    private String imageUrl; // Thêm trường imageUrl
 }

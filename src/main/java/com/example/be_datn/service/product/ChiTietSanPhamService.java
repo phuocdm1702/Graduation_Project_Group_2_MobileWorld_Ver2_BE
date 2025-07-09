@@ -8,9 +8,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface ChiTietSanPhamService {
-    ChiTietSanPhamResponse createChiTietSanPham(ChiTietSanPhamRequest request, List<MultipartFile> images, List<String> existingImageUrls, List<String> imageHashes);
+    ChiTietSanPhamResponse createChiTietSanPham(ChiTietSanPhamRequest request, List<MultipartFile> images, List<String> existingImageUrls);
 
-    ChiTietSanPhamResponse updateChiTietSanPham(Integer id, ChiTietSanPhamRequest request, List<MultipartFile> images, List<String> existingImageUrls, List<String> imageHashes);
+    ChiTietSanPhamResponse updateChiTietSanPham(Integer id, ChiTietSanPhamRequest request, List<MultipartFile> images, List<String> existingImageUrls);
 
     List<ChiTietSanPhamDetailResponse> getProductDetailsBySanPhamId(Integer idSanPham);
 }

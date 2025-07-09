@@ -99,7 +99,8 @@ public class DotGiamGiaController {
             @RequestParam(defaultValue = "0") int pageDSP,
             @RequestParam(defaultValue = "5") int sizeDSP,
             @RequestParam(defaultValue = "0") int pageCTSP,
-            @RequestParam(defaultValue = "5") int sizeCTSP) {
+            @RequestParam(defaultValue = "5") int sizeCTSP,
+            @RequestParam(required = false) Integer dotGiamGiaId) { // Add optional parameter for update mode
 
         String keyword = request.getKeyword();
         List<Integer> idDSPs = request.getIdDSPs();
@@ -110,29 +111,27 @@ public class DotGiamGiaController {
 
         List<ViewSanPhamDTO> dspList = sr.getDSP(keyword, idHeDieuHanh, idNhaSanXuat);
 
-        Pageable pageableCTSP = PageRequest.of(pageCTSP, sizeCTSP);
         List<ViewCTSPDTO> ctspList = idDSPs != null && !idDSPs.isEmpty()
-                ? sr.getAllCTSP(idDSPs, idBoNhoTrongs, idMauSac)
+                ? sr.getAllCTSP(idDSPs, idBoNhoTrongs, idMauSac, dotGiamGiaId) // Pass dotGiamGiaId
                 : Collections.emptyList();
 
         List<HeDieuHanh> heDieuHanhList = sr.getAllHeDieuHanh();
         List<NhaSanXuat> nhaSanXuatList = sr.getAllNhaSanXuat();
 
         CombinedResponse response = new CombinedResponse(
-                dspList,                   // Không phân trang
-                ctspList,                  // Không phân trang
-                1,                         // totalPagesDSP = 1
-                0,                         // currentPageDSP = 0
+                dspList,
+                ctspList,
+                1,
+                0,
                 dspList.size(),
-                1,                         // totalPagesCTSP = 1
-                0,                         // currentPageCTSP = 0
-                ctspList.size(),           // totalElementsCTSP
+                1,
+                0,
+                ctspList.size(),
                 heDieuHanhList,
                 nhaSanXuatList
         );
         return ResponseEntity.ok(response);
     }
-
 
 
     @PostMapping("/AddDotGiamGia")

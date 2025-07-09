@@ -17,7 +17,7 @@ public class VNPAYController {
 
     @PostMapping("/create")
     public ResponseEntity<String> createPayment(HttpServletRequest request,
-                                                @RequestParam("amount") int amount,
+                                                @RequestParam("amount") long amount,
                                                 @RequestParam("orderInfo") String orderInfo) {
         String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
         String paymentUrl = vnPayService.createOrder(request, amount, orderInfo, baseUrl);

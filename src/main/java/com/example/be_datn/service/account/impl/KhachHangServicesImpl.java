@@ -262,21 +262,17 @@ public class KhachHangServicesImpl implements KhachHangServices {
 
     //update dia chi
     @Override
-    public KhachHang updateDchi(Integer id, KhachHangResponse khachHangResponse) {
-        return khachHangRepository.findById(id)
-                .map(existingKhachHang -> {
-                    existingKhachHang.setTen(khachHangResponse.getTenKH());
-                    if (existingKhachHang.getIdDiaChiKhachHang() != null) {
-                        DiaChiKhachHang diachi = diaChiKhachHangRepository.findById(existingKhachHang.getIdDiaChiKhachHang().getId())
-                                .orElseThrow(() -> new RuntimeException("Địa chỉ không tồn tại"));
-                        diachi.setDiaChiCuThe(khachHangResponse.getDiaChiCuThe());
-                        diachi.setPhuong(khachHangResponse.getPhuong());
-                        diachi.setThanhPho(khachHangResponse.getThanhPho());
-                        diachi.setQuan(khachHangResponse.getQuan());
-                        diaChiKhachHangRepository.save(diachi);
-                    }
-                    return khachHangRepository.save(existingKhachHang);
-                }).orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại"));
+    public DiaChiKhachHang updateDchi(Integer addressId, KhachHangResponse addressDTO) {
+        DiaChiKhachHang address = diaChiKhachHangRepository.findById(addressId)
+                .orElseThrow(() -> new RuntimeException("Địa chỉ không tồn tại"));
+
+        address.setDiaChiCuThe(addressDTO.getDiaChiCuThe());
+        address.setThanhPho(addressDTO.getThanhPho());
+        address.setQuan(addressDTO.getQuan());
+        address.setPhuong(addressDTO.getPhuong());
+        address.setMacDinh(addressDTO.getMacDinh() != null ? addressDTO.getMacDinh() : false);
+
+        return diaChiKhachHangRepository.save(address);
     }
 
     //thay doi trang thai

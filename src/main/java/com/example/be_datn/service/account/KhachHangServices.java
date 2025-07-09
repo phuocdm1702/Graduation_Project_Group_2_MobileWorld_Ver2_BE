@@ -26,7 +26,7 @@ public interface KhachHangServices {
 
     KhachHang updateKhachHang(Integer id, KhachHangResponse khachHangResponse);
 
-    KhachHang updateDchi(Integer id, KhachHangResponse khachHangDTO);
+    DiaChiKhachHang updateDchi(Integer id, KhachHangResponse khachHangDTO);
 
     boolean delete(Integer id);
 

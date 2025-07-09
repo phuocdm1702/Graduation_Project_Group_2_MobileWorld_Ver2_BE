@@ -93,15 +93,14 @@ public class KhachHangController {
 
     //update dia chi
     @PutMapping("/updateDchi/{id}")
-    public ResponseEntity<?> updateDchi(@PathVariable Integer id, @RequestBody KhachHangResponse khachHangDTO) {
+    public ResponseEntity<?> updateDchi(@PathVariable Integer id, @RequestBody KhachHangResponse addressDTO) {
         try {
-            KhachHang updateDchi = khachHangServices.updateDchi(id, khachHangDTO);
-            return ResponseEntity.ok(updateDchi);
+            DiaChiKhachHang updatedAddress = khachHangServices.updateDchi(id, addressDTO);
+            return ResponseEntity.ok(("Cập nhật địa chỉ thành công" + updatedAddress));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body((e.getMessage()));
         }
     }
-
     //thay doi trang thai khach hang
     @PutMapping("/trang-thai/{id}")
     public ResponseEntity<?> trangthai(@PathVariable Integer id) {

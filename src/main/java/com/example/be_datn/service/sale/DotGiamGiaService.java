@@ -73,12 +73,12 @@ public class DotGiamGiaService {
         return repository.getAllSanPham(timKiem, idHeDieuHanh, idNhaSanXuat);
     }
 
-    public BigDecimal maxGiaTriGiamGia(){
-        return repository.maxGiaTriGiamGia();
+    public BigDecimal maxGiaTriGiamGia(Boolean trangThai, Boolean deleted){
+        return repository.maxGiaTriGiamGia(trangThai,deleted);
     }
 
-    public BigDecimal maxSoTienGiamToiDa(){
-        return repository.maxSoTienGiamToiDa();
+    public BigDecimal maxSoTienGiamToiDa(Boolean trangThai, Boolean deleted){
+        return repository.maxSoTienGiamToiDa(trangThai,deleted);
     }
 
     public List<HeDieuHanh> getAllHeDieuHanh() {

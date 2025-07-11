@@ -139,11 +139,15 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
             @Param("deleted") Boolean deleted
     );
 
-    @Query("SELECT MAX(d.giaTriGiamGia) FROM DotGiamGia d")
-    BigDecimal maxGiaTriGiamGia();
+    @Query("SELECT MAX(d.giaTriGiamGia) FROM DotGiamGia d " +
+            "WHERE (:trangThai IS NULL OR d.trangThai = :trangThai) " +
+            "AND (:deleted IS NULL OR d.deleted = :deleted)")
+    BigDecimal maxGiaTriGiamGia(@Param("trangThai") Boolean trangThai, @Param("deleted") Boolean deleted);
 
-    @Query("SELECT MAX(d.soTienGiamToiDa) FROM DotGiamGia d")
-    BigDecimal maxSoTienGiamToiDa();
+    @Query("SELECT MAX(d.soTienGiamToiDa) FROM DotGiamGia d " +
+            "WHERE (:trangThai IS NULL OR d.trangThai = :trangThai) " +
+            "AND (:deleted IS NULL OR d.deleted = :deleted)")
+    BigDecimal maxSoTienGiamToiDa(@Param("trangThai") Boolean trangThai, @Param("deleted") Boolean deleted);
 
     @Modifying
     @Transactional

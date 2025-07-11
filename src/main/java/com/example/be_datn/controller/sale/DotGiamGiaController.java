@@ -188,12 +188,16 @@ public class DotGiamGiaController {
     }
 
     @GetMapping("/maxGiaTriGiamGia")
-    public ResponseEntity<BigDecimal> getMaxGiaTriGiamGia() {
-        return ResponseEntity.ok(sr.maxGiaTriGiamGia());
+    public ResponseEntity<BigDecimal> getMaxGiaTriGiamGia(
+            @RequestParam(required = false) Boolean trangThai,
+            @RequestParam(required = false) Boolean deleted) {
+        return ResponseEntity.ok(sr.maxGiaTriGiamGia(trangThai, deleted));
     }
 
     @GetMapping("/maxSoTienGiamToiDa")
-    public ResponseEntity<BigDecimal> getMaxSoTienGiamToiDa() {
-        return ResponseEntity.ok(sr.maxSoTienGiamToiDa());
+    public ResponseEntity<BigDecimal> getMaxSoTienGiamToiDa(
+            @RequestParam(required = false) Boolean trangThai,
+            @RequestParam(required = false) Boolean deleted) {
+        return ResponseEntity.ok(sr.maxSoTienGiamToiDa(trangThai, deleted));
     }
 }

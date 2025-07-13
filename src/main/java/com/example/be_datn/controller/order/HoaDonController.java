@@ -125,4 +125,17 @@ public class HoaDonController {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
         hoaDonService.exportHoaDonToExcel(response);
     }
+
+    @PutMapping("/{id}/update-status")
+    public ResponseEntity<HoaDonResponse> updateHoaDonStatus(
+            @PathVariable Integer id,
+            @RequestParam Short trangThai,
+            @RequestParam(required = false) Integer idNhanVien) {
+        try {
+            HoaDonResponse response = hoaDonService.updateHoaDonStatus(id, trangThai, idNhanVien);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
 }

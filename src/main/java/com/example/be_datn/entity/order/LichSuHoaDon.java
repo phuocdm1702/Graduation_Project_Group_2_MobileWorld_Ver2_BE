@@ -24,11 +24,11 @@ public class LichSuHoaDon {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_hoa_don", nullable = false)
+    @JoinColumn(name = "id_hoa_don", referencedColumnName = "id")
     private HoaDon hoaDon;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_nhan_vien")
+    @JoinColumn(name = "id_nhan_vien", referencedColumnName = "id")
     private NhanVien idNhanVien;
 
     @Size(max = 255)

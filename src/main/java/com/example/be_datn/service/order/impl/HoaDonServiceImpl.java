@@ -5,8 +5,11 @@ import com.example.be_datn.common.order.HoaDonMapper;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.entity.order.HoaDon;
+import com.example.be_datn.entity.order.LichSuHoaDon;
 import com.example.be_datn.entity.pay.HinhThucThanhToan;
+import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
+import com.example.be_datn.repository.order.LichSuHoaDonRepository;
 import com.example.be_datn.repository.pay.HinhThucThanhToanRepository;
 import com.example.be_datn.service.order.HoaDonService;
 import com.example.be_datn.service.order.XuatDanhSachHoaDon;
@@ -22,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,7 +41,9 @@ public class HoaDonServiceImpl implements HoaDonService {
     @Autowired
     private HoaDonDetailMapper hoaDonDetailMapper;
     @Autowired
-    private HinhThucThanhToanRepository hinhThucThanhToanRepository;
+    private NhanVienRepository nhanVienRepository;
+    @Autowired
+    private LichSuHoaDonRepository lichSuHoaDonRepository;
 
 
     //    @Override
@@ -176,6 +182,63 @@ public class HoaDonServiceImpl implements HoaDonService {
             XSSFSheet sheet = workbook.createSheet("DanhSachHoaDon");
             XuatDanhSachHoaDon exporter = new XuatDanhSachHoaDon(workbook, sheet, hoaDonList, chiTietList, lichSuList);
             exporter.export(response);
+        }
+    }
+
+    @Override
+    public HoaDonResponse updateHoaDonStatus(Integer id, Short trangThai, Integer idNhanVien) {
+        // Tìm hóa đơn theo ID
+        HoaDon hoaDon = hoaDonRepository.findHoaDonDetailById(id)
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại hoặc đã bị xóa"));
+
+        // Kiểm tra xem hóa đơn có phải là đơn online không
+        if (!"online".equalsIgnoreCase(hoaDon.getLoaiDon())) {
+            throw new RuntimeException("Chỉ có thể cập nhật trạng thái cho hóa đơn online");
+        }
+
+        // Kiểm tra trạng thái hợp lệ
+        if (!isValidTrangThai(trangThai)) {
+            throw new RuntimeException("Trạng thái không hợp lệ");
+        }
+
+        // Cập nhật trạng thái
+        hoaDon.setTrangThai(trangThai);
+
+        // Thêm bản ghi vào lịch sử hóa đơn
+        LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
+        lichSuHoaDon.setMa("LSHD_" + System.currentTimeMillis());
+        lichSuHoaDon.setHanhDong("Cập nhật trạng thái: " + mapStatusToString(trangThai));
+        lichSuHoaDon.setThoiGian(Instant.now());
+        lichSuHoaDon.setIdNhanVien(idNhanVien != null ?
+                nhanVienRepository.findById(idNhanVien)
+                        .orElseThrow(() -> new RuntimeException("Nhân viên không tồn tại"))
+                : null);
+        lichSuHoaDon.setHoaDon(hoaDon);
+
+        // Lưu lịch sử hóa đơn
+        lichSuHoaDonRepository.save(lichSuHoaDon);
+
+        // Lưu hóa đơn đã cập nhật
+        hoaDonRepository.save(hoaDon);
+
+        // Trả về response
+        return hoaDonMapper.mapToDto(hoaDon);
+    }
+
+    // Hàm kiểm tra trạng thái hợp lệ
+    private boolean isValidTrangThai(Short trangThai) {
+        return trangThai >= 0 && trangThai <= 4; // 0: Chờ xác nhận, 1: Chờ giao hàng, 2: Đang giao, 3: Hoàn thành, 4: Đã hủy
+    }
+
+    // Hàm ánh xạ trạng thái sang chuỗi
+    private String mapStatusToString(Short trangThai) {
+        switch (trangThai) {
+            case 0: return "Chờ xác nhận";
+            case 1: return "Chờ giao hàng";
+            case 2: return "Đang giao";
+            case 3: return "Hoàn thành";
+            case 4: return "Đã hủy";
+            default: return "N/A";
         }
     }
 }

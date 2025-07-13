@@ -19,4 +19,6 @@ public interface HoaDonService {
     HoaDonResponse getHoaDonByMa(String maHD);
 
     void exportHoaDonToExcel(HttpServletResponse response) throws IOException;
+
+    HoaDonResponse updateHoaDonStatus(Integer id, Short trangThai, Integer idNhanVien);
 }

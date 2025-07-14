@@ -115,7 +115,7 @@ public class KhachHangController {
 
     //search khach hang
     @GetMapping("/search")
-    public ResponseEntity<List<KhachHang>> searchKhachHang(@RequestParam("query") String keyword) {
+    public ResponseEntity<List<KhachHang>> searchKhachHang(@RequestParam("keyword") String keyword) {
         List<KhachHang> result = khachHangServices.searchKhachHang(keyword);
         return ResponseEntity.ok(result);
     }

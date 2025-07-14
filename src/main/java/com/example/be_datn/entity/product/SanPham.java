@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
+import java.util.Collection;
 import java.util.Date;
 
 @Getter
@@ -109,4 +110,7 @@ public class SanPham {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cong_nghe_man_hinh_id", referencedColumnName = "id")
     private CongNgheManHinh congNgheManHinh;
+
+    @OneToMany(mappedBy = "idSanPham")
+    private Collection<ChiTietSanPham> chiTietSanPhams;
 }

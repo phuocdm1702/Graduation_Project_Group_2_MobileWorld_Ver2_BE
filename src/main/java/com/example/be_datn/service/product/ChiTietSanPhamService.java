@@ -13,4 +13,12 @@ public interface ChiTietSanPhamService {
     ChiTietSanPhamResponse updateChiTietSanPham(Integer id, ChiTietSanPhamRequest request, List<MultipartFile> images, List<String> existingImageUrls);
 
     List<ChiTietSanPhamDetailResponse> getProductDetailsBySanPhamId(Integer idSanPham);
+
+    public List<Object[]> findChiTietSanPhamBySanPhamId(Integer sanPhamId);
+
+    public Double findMinPrice();
+
+    public Double findMaxPrice();
+
+    public List<String> findDistinctColors();
 }

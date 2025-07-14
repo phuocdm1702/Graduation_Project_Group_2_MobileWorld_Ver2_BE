@@ -70,7 +70,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "c.idBoNhoTrong.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, c.giaBan AS donGia, " +
             "c.deleted AS deleted, c.idAnhSanPham.duongDan AS imageUrl " +
             "FROM ChiTietSanPham c " +
-            "WHERE c.idSanPham.id = :idSanPham AND c.deleted = false")
+            "WHERE c.idSanPham.id = :idSanPham)
     List<Object[]> findProductDetailsBySanPhamId(@Param("idSanPham") Integer idSanPham);
 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imel AND c.deleted = false")

@@ -7,6 +7,7 @@ import com.example.be_datn.entity.product.*;
 import com.example.be_datn.repository.product.ChiTietSanPhamRepository;
 import com.example.be_datn.repository.product.SanPhamRepository;
 import com.example.be_datn.service.product.SanPhamService;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -281,5 +282,37 @@ public class SanPhamServiceImpl implements SanPhamService {
         sanPham.setCongNgheManHinh(requestDto.congNgheManHinhId() != null ? CongNgheManHinh.builder().id(requestDto.congNgheManHinhId()).build() : null);
         sanPham.setUpdatedAt(Date.from(Instant.now()));
         return sanPhamRepository.save(sanPham);
+    }
+
+    public List<Object[]> findProductsWithLatestVariant(@Param("idNhaSanXuat") Integer idNhaSanXuat) {
+        return sanPhamRepository.findProductsWithLatestVariant(idNhaSanXuat);
+    }
+
+    public List<Object[]> showNewProduct(@Param("idNhaSanXuat") Integer idNhaSanXuat) {
+        return sanPhamRepository.showNewProduct(idNhaSanXuat);
+    }
+
+    public List<Object[]> showBestProduct(@Param("sortBy") String sortBy) {
+        return sanPhamRepository.showBestProduct(sortBy);
+    }
+
+    public Page<Object[]> showAllProduct(Pageable pageable){
+        return sanPhamRepository.showAllProduct(pageable);
+    }
+
+    public List<Object[]> suggestProductTop6(){
+        return sanPhamRepository.suggestProductTop6();
+    }
+
+    public Page<Object[]> showAllProduct(Pageable pageable,  String sortBy,String useCases, String colors, String brands, double minPrice, double maxPrice) {
+        return sanPhamRepository.showAllProduct(pageable, sortBy,useCases, colors, brands, minPrice, maxPrice);
+    }
+
+    public List<Object[]> getProductForCompare() {
+        return sanPhamRepository.getProductForCompare();
+    }
+
+    public Optional<SanPham> findSanPhamWithDetailsById(Integer id) {
+        return sanPhamRepository.findSanPhamWithDetailsById(id);
     }
 }

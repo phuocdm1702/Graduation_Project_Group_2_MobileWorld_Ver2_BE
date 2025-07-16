@@ -20,7 +20,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "FROM ChiTietSanPham c " +
             "WHERE c.idSanPham.id = :idSanPham " +
             "AND c.deleted = false " +
-            "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false)")
+            "AND c.idImel.deleted = false")
     long countByIdSanPhamIdAndDeletedFalse(@Param("idSanPham") Integer idSanPham, @Param("deleted") boolean deleted);
 
     @Query("SELECT MIN(sp.ma) AS ma, sp.tenSanPham AS tenSanPham, ms.mauSac AS mauSac, r.dungLuongRam AS dungLuongRam, bnt.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, " +
@@ -35,14 +35,14 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "AND ctdgg.idDotGiamGia.trangThai = false " +
             "AND ctdgg.idDotGiamGia.deleted = false " +
             "WHERE (:sanPhamId IS NULL OR c.idSanPham.id = :sanPhamId) AND c.deleted = false " +
-            "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false) " +
+            "AND c.idImel.deleted = false " +
             "GROUP BY sp.id, sp.tenSanPham, ms.mauSac, r.dungLuongRam, bnt.dungLuongBoNhoTrong")
     List<Object[]> findGroupedProductsBySanPhamId(@Param("sanPhamId") Integer sanPhamId);
 
     @Query("SELECT c.idImel.imel FROM ChiTietSanPham c " +
             "WHERE c.idSanPham.id = :sanPhamId AND c.deleted = false " +
             "AND c.idMauSac.mauSac = :mauSac AND c.idRam.dungLuongRam = :dungLuongRam AND c.idBoNhoTrong.dungLuongBoNhoTrong = :dungLuongBoNhoTrong " +
-            "AND NOT EXISTS (SELECT i FROM ImelDaBan i WHERE i.imel = c.idImel.imel AND i.deleted = false)")
+            "AND c.idImel.deleted = false")
     List<String> findIMEIsBySanPhamIdAndAttributes(@Param("sanPhamId") Integer sanPhamId,
                                                    @Param("mauSac") String mauSac,
                                                    @Param("dungLuongRam") String dungLuongRam,

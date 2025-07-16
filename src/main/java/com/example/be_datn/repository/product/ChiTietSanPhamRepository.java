@@ -107,9 +107,15 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
         bnt.dung_luong_bo_nho_trong AS bo_nho_trong_dung_luong,
         COALESCE(asp.duong_dan, '/assets/images/placeholder.jpg') AS anh_san_pham_url,
         ctsp.ghi_chu,
-        COALESCE(ctdgg.gia_sau_khi_giam, ctsp.gia_ban) AS gia_sau_khi_giam,
+        COALESCE(
+            CASE 
+                WHEN dgg.trang_thai = 0 AND dgg.deleted = 0 THEN ctdgg.gia_sau_khi_giam 
+                ELSE ctsp.gia_ban 
+            END, 
+            ctsp.gia_ban
+        ) AS gia_sau_khi_giam,
         ctdgg.gia_ban_dau AS gia_ban_dau,
-        CASE WHEN ctdgg.id IS NOT NULL THEN 1 ELSE 0 END AS has_discount,
+        CASE WHEN ctdgg.id IS NOT NULL AND dgg.trang_thai = 0 AND dgg.deleted = 0 THEN 1 ELSE 0 END AS has_discount,
         dgg.gia_tri_giam_gia AS giam_phan_tram,
         dgg.so_tien_giam_toi_da AS giam_toi_da,
         COALESCE(dgg.loai_giam_gia_ap_dung, 'NONE') AS loai_giam_gia_ap_dung,
@@ -185,7 +191,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     LEFT JOIN bo_nho_trong bnt ON ctsp.id_bo_nho_trong = bnt.id
     LEFT JOIN anh_san_pham asp ON ctsp.id_anh_san_pham = asp.id
     LEFT JOIN chi_tiet_dot_giam_gia ctdgg ON ctsp.id = ctdgg.id_chi_tiet_san_pham AND ctdgg.deleted = 0
-    LEFT JOIN dot_giam_gia dgg ON ctdgg.id_dot_giam_gia = dgg.id
+    LEFT JOIN dot_giam_gia dgg ON ctdgg.id_dot_giam_gia = dgg.id AND dgg.trang_thai = 0 AND dgg.deleted = 0
     WHERE 
         sp.id = :sanPhamId 
         AND sp.deleted = 0

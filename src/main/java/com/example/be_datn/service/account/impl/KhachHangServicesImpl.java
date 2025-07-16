@@ -161,6 +161,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         dchi.setQuan(khachHangResponse.getQuan());
         dchi.setPhuong(khachHangResponse.getPhuong());
         dchi.setDiaChiCuThe(khachHangResponse.getDiaChiCuThe());
+        dchi.setDeleted(true);
         dchi.setMacDinh(true);
         dchi.setIdKhachHang(kh);
         diaChiKhachHangRepository.save(dchi);
@@ -443,8 +444,6 @@ public class KhachHangServicesImpl implements KhachHangServices {
     }
 
     public DiaChiKhachHang addDiaChi(DiaChiKhachHangResponse khachHangDTO) {
-
-
         // Kiểm tra idKhachHang có tồn tại
         KhachHang khachHang = khachHangRepository.findById(khachHangDTO.getIdKhachHang())
                 .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với ID: " + khachHangDTO.getIdKhachHang()));

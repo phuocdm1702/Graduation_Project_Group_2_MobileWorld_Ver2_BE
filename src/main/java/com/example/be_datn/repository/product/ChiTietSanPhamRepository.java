@@ -135,7 +135,8 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
         cnmh.do_phan_giai,
         cnmh.do_sang_toi_da,
         cnmh.tan_so_quet,
-        cnmh.kieu_man_hinh
+        cnmh.kieu_man_hinh,
+        i.imel AS imel_value -- Thay vì id_imel, lấy trực tiếp imel
     FROM 
         san_pham sp
     LEFT JOIN nha_san_xuat nsx ON sp.id_nha_san_xuat = nsx.id
@@ -192,11 +193,13 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     LEFT JOIN anh_san_pham asp ON ctsp.id_anh_san_pham = asp.id
     LEFT JOIN chi_tiet_dot_giam_gia ctdgg ON ctsp.id = ctdgg.id_chi_tiet_san_pham AND ctdgg.deleted = 0
     LEFT JOIN dot_giam_gia dgg ON ctdgg.id_dot_giam_gia = dgg.id AND dgg.trang_thai = 0 AND dgg.deleted = 0
+    LEFT JOIN imel i ON ctsp.id_imel = i.id
     WHERE 
         sp.id = :sanPhamId 
         AND sp.deleted = 0
 """, nativeQuery = true)
     List<Object[]> findChiTietSanPhamBySanPhamId(@Param("sanPhamId") Integer sanPhamId);
+
     @Query("SELECT MIN(ctsp.giaBan) FROM ChiTietSanPham ctsp WHERE ctsp.deleted = false")
     Double findMinPrice();
 
@@ -205,4 +208,13 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
     @Query("SELECT DISTINCT ctsp.idMauSac.mauSac FROM ChiTietSanPham ctsp WHERE ctsp.deleted = false")
     List<String> findDistinctColors();
+
+    @Query("SELECT c.ma, c.idSanPham.tenSanPham, c.idMauSac.mauSac, c.idRam.dungLuongRam, c.idBoNhoTrong.dungLuongBoNhoTrong, COUNT(c.id), c.giaBan, c.id " +
+            "FROM ChiTietSanPham c " +
+            "WHERE c.deleted = false AND (:keyword IS NULL OR c.idSanPham.tenSanPham LIKE %:keyword% OR c.ma LIKE %:keyword%) " +
+            "GROUP BY c.ma, c.idSanPham.tenSanPham, c.idMauSac.mauSac, c.idRam.dungLuongRam, c.idBoNhoTrong.dungLuongBoNhoTrong, c.giaBan, c.id")
+    List<Object[]> findGroupedProductsBySanPhamIdAndKeyword(@Param("keyword") String keyword);
+
+    @Query("SELECT COUNT(c) FROM ChiTietSanPham c WHERE c.id = :id AND c.deleted = false")
+    int countAvailableById(@Param("id") Integer chiTietSanPhamId);
 }

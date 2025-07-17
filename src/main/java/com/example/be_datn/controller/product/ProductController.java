@@ -72,6 +72,7 @@ public class ProductController {
             variant.put("do_sang_toi_da", record[38] != null ? record[38] : "Không có thông tin");
             variant.put("tan_so_quet", record[39] != null ? record[39] : "Không có thông tin");
             variant.put("kieu_man_hinh", record[40] != null ? record[40] : "Không có thông tin");
+            variant.put("imel_value", record[41] != null ? record[41] : "Không có thông tin");
             return variant;
         }).collect(Collectors.toList());
     }

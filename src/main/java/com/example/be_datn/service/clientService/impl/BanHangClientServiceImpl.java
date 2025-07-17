@@ -258,10 +258,11 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             }
 
             newItem.setGiaBan(giaSauGiam);
-            newItem.setGiaBanGoc(giaSauGiam); // Sử dụng giá sau giảm làm giá gốc
+            newItem.setGiaBanGoc(giaSauGiam);
             newItem.setGhiChuGia(ghiChuGia);
             newItem.setSoLuong(1);
             newItem.setTongTien(giaSauGiam);
+            newItem.setImage(chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null);
 
             boolean imeiExists = gh.getChiTietGioHangDTOS().stream()
                     .anyMatch(item -> item.getMaImel().equals(imei.trim()));
@@ -319,7 +320,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             gioHangDTO.setTongTien(BigDecimal.ZERO);
             redisTemplate.opsForValue().set(ghKey, gioHangDTO, 24, TimeUnit.HOURS);
         } else {
-            // Cập nhật giá sản phẩm từ database
+            // Cập nhật giá sản phẩm và image từ database
             for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
                 Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId());
                 if (chiTietSanPhamOpt.isEmpty()) {
@@ -340,6 +341,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 item.setGiaBanGoc(giaSauGiam);
                 item.setGhiChuGia(ghiChuGia);
                 item.setTongTien(giaSauGiam);
+                item.setImage(chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null); // Thêm ánh xạ image
             }
             gioHangDTO.setTongTien(gioHangDTO.getChiTietGioHangDTOS().stream()
                     .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)

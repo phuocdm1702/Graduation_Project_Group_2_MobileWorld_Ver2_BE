@@ -2,6 +2,7 @@ package com.example.be_datn.controller.clientController;
 
 import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
+import com.example.be_datn.dto.product.response.ChiTietSanPhamResponseForClient;
 import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
@@ -90,10 +91,34 @@ public class BanHangClientController {
     }
 
     @GetMapping("/chi-tiet-san-pham/{chiTietSanPhamId}")
-    public ResponseEntity<ChiTietSanPham> getChiTietSanPhamById(@PathVariable Integer chiTietSanPhamId) {
-        Optional<ChiTietSanPham> chiTietSanPham = chiTietSanPhamRepository.findById(chiTietSanPhamId);
-        return chiTietSanPham.map(ResponseEntity::ok)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm cho ID: " + chiTietSanPhamId));
+    public ResponseEntity<ChiTietSanPhamResponseForClient> getChiTietSanPhamById(@PathVariable Integer chiTietSanPhamId) {
+        Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findById(chiTietSanPhamId);
+
+        if (chiTietSanPhamOpt.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm cho ID: " + chiTietSanPhamId);
+        }
+
+        ChiTietSanPham chiTietSanPham = chiTietSanPhamOpt.get();
+        ChiTietSanPhamResponseForClient responseDTO = ChiTietSanPhamResponseForClient.builder()
+                .id(chiTietSanPham.getId())
+                .ma(chiTietSanPham.getMa())
+                .giaBan(chiTietSanPham.getGiaBan())
+                .ghiChu(chiTietSanPham.getGhiChu())
+                .deleted(chiTietSanPham.getDeleted())
+                .createdAt(chiTietSanPham.getCreatedAt())
+                .createdBy(chiTietSanPham.getCreatedBy())
+                .updatedAt(chiTietSanPham.getUpdatedAt())
+                .updatedBy(chiTietSanPham.getUpdatedBy())
+                .idSanPham(chiTietSanPham.getIdSanPham() != null ? chiTietSanPham.getIdSanPham().getId() : null)
+                .tenSanPham(chiTietSanPham.getIdSanPham() != null ? chiTietSanPham.getIdSanPham().getTenSanPham() : null)
+                .maImel(chiTietSanPham.getIdImel() != null ? chiTietSanPham.getIdImel().getMa() : null)
+                .mauSac(chiTietSanPham.getIdMauSac() != null ? chiTietSanPham.getIdMauSac().getMauSac() : null)
+                .ram(chiTietSanPham.getIdRam() != null ? chiTietSanPham.getIdRam().getDungLuongRam() : null)
+                .boNhoTrong(chiTietSanPham.getIdBoNhoTrong() != null ? chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong() : null)
+                .duongDanAnh(chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null)
+                .build();
+
+        return ResponseEntity.ok(responseDTO);
     }
 
     @DeleteMapping("/hoa-don-cho/{idHD}")

@@ -631,60 +631,109 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(email);
-            helper.setSubject("Thông tin đơn hàng #" + hoaDonDetailResponse.getMaHoaDon());
+            helper.setSubject("Xác nhận đơn hàng #" + hoaDonDetailResponse.getMaHoaDon() + " - MobileWorld");
 
             StringBuilder emailContent = new StringBuilder();
-            emailContent.append("<h2>Thông tin đơn hàng #" + hoaDonDetailResponse.getMaHoaDon() + "</h2>");
-            emailContent.append("<p>Cảm ơn bạn đã mua sắm tại MobileWorld!</p>");
+            emailContent.append("<!DOCTYPE html>")
+                    .append("<html lang='vi'>")
+                    .append("<head>")
+                    .append("<meta charset='UTF-8'>")
+                    .append("<meta name='viewport' content='width=device-width, initial-scale=1.0'>")
+                    .append("<style>")
+                    .append("body { font-family: 'Arial', sans-serif; background-color: #f4f7fa; margin: 0; padding: 0; }")
+                    .append(".container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden; }")
+                    .append(".header { background: linear-gradient(90deg, #002c69, #13ad75); color: #ffffff; padding: 20px; text-align: center; position: relative; }")
+                    .append(".logo { max-width: 100px; position: absolute; top: 10px; left: 20px; }")
+                    .append(".header h1 { margin: 0; font-size: 24px; }")
+                    .append(".content { padding: 20px; }")
+                    .append("h2 { color: #002c69; font-size: 20px; margin-bottom: 15px; }")
+                    .append("p { color: #4B5563; font-size: 16px; line-height: 1.6; margin: 10px 0; }")
+                    .append(".info-box { background-color: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 20px; }")
+                    .append(".table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }")
+                    .append(".table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }")
+                    .append(".table th { background-color: #002c69; color: #ffffff; font-weight: bold; }")
+                    .append(".table td { background-color: #ffffff; color: #1F2937; }")
+                    .append(".total { font-weight: bold; font-size: 16px; color: #002c69; }")
+                    .append(".button { display: inline; padding: 0; background: none; color: #002c69; text-decoration: underline; transition: color 0.3s; }")
+                    .append(".button:hover { color: #13ad75; }")
+                    .append(".cancel-button { color: #EF4444; margin-left: 10px; }")
+                    .append(".cancel-button:hover { color: #DC2626; }")
+                    .append(".footer { background-color: #f4f7fa; padding: 15px; text-align: center; font-size: 14px; color: #6B7280; }")
+                    .append(".footer a { color: #002c69; text-decoration: none; }")
+                    .append("</style>")
+                    .append("</head>")
+                    .append("<body>")
+                    .append("<div class='container'>")
+                    .append("<div class='header'>")
+                    .append("<img src='https://res.cloudinary.com/dwusxbhbr/image/upload/v1752927151/logo_rucu1t.png' alt='MobileWorld Logo' class='logo'>")
+                    .append("<h1>Xác nhận đơn hàng #" + hoaDonDetailResponse.getMaHoaDon() + "</h1>")
+                    .append("</div>")
+                    .append("<div class='content'>")
+                    .append("<p>Kính gửi Quý khách " + (hoaDonDetailResponse.getTenKhachHang() != null ? hoaDonDetailResponse.getTenKhachHang() : "N/A") + ",</p>")
+                    .append("<p>Cảm ơn Quý khách đã tin tưởng và mua sắm tại <strong>MobileWorld</strong>! Dưới đây là thông tin chi tiết về đơn hàng của Quý khách.</p>")
 
-            // Thông tin khách hàng
-            emailContent.append("<h3>Thông tin khách hàng</h3>");
-            emailContent.append("<p><strong>Tên khách hàng:</strong> ").append(hoaDonDetailResponse.getTenKhachHang() != null ? hoaDonDetailResponse.getTenKhachHang() : "N/A").append("</p>");
-            emailContent.append("<p><strong>Số điện thoại:</strong> ").append(hoaDonDetailResponse.getSoDienThoaiKhachHang() != null ? hoaDonDetailResponse.getSoDienThoaiKhachHang() : "N/A").append("</p>");
-            emailContent.append("<p><strong>Email:</strong> ").append(hoaDonDetailResponse.getEmail() != null ? hoaDonDetailResponse.getEmail() : "N/A").append("</p>");
-            emailContent.append("<p><strong>Địa chỉ giao hàng:</strong> ").append(hoaDonDetailResponse.getDiaChiKhachHang() != null ? hoaDonDetailResponse.getDiaChiKhachHang() : "N/A").append("</p>");
+                    // Thông tin khách hàng
+                    .append("<div class='info-box'>")
+                    .append("<h2>Thông tin khách hàng</h2>")
+                    .append("<p><strong>Họ và tên:</strong> " + (hoaDonDetailResponse.getTenKhachHang() != null ? hoaDonDetailResponse.getTenKhachHang() : "N/A") + "</p>")
+                    .append("<p><strong>Số điện thoại:</strong> " + (hoaDonDetailResponse.getSoDienThoaiKhachHang() != null ? hoaDonDetailResponse.getSoDienThoaiKhachHang() : "N/A") + "</p>")
+                    .append("<p><strong>Email:</strong> " + (hoaDonDetailResponse.getEmail() != null ? hoaDonDetailResponse.getEmail() : "N/A") + "</p>")
+                    .append("<p><strong>Địa chỉ giao hàng:</strong> " + (hoaDonDetailResponse.getDiaChiKhachHang() != null ? hoaDonDetailResponse.getDiaChiKhachHang() : "N/A") + "</p>")
+                    .append("</div>")
 
-            // Chi tiết sản phẩm
-            emailContent.append("<h3>Chi tiết đơn hàng</h3>");
+                    // Chi tiết sản phẩm
+                    .append("<h2>Chi tiết đơn hàng</h2>");
             List<HoaDonDetailResponse.SanPhamChiTietInfo> sanPhamChiTietInfos = hoaDonDetailResponse.getSanPhamChiTietInfos();
             if (sanPhamChiTietInfos == null || sanPhamChiTietInfos.isEmpty()) {
                 emailContent.append("<p>Không có sản phẩm nào trong đơn hàng này.</p>");
             } else {
-                emailContent.append("<table border='1' style='border-collapse: collapse; width: 100%;'>");
-                emailContent.append("<tr><th>Sản phẩm</th><th>IMEI</th><th>Màu sắc</th><th>RAM</th><th>Bộ nhớ</th><th>Giá bán</th></tr>");
+                emailContent.append("<table class='table'>")
+                        .append("<tr><th>Sản phẩm</th><th>IMEI</th><th>Màu sắc</th><th>RAM</th><th>Bộ nhớ</th><th>Giá bán</th></tr>");
                 for (var item : sanPhamChiTietInfos) {
                     emailContent.append("<tr>")
-                            .append("<td>").append(item.getTenSanPham() != null ? item.getTenSanPham() : "N/A").append("</td>")
-                            .append("<td>").append(item.getImel() != null ? item.getImel() : "N/A").append("</td>")
-                            .append("<td>").append(item.getMauSac() != null ? item.getMauSac() : "N/A").append("</td>")
-                            .append("<td>").append(item.getDungLuongRam() != null ? item.getDungLuongRam() : "N/A").append("</td>")
-                            .append("<td>").append(item.getDungLuongBoNhoTrong() != null ? item.getDungLuongBoNhoTrong() : "N/A").append("</td>")
-                            .append("<td>").append(formatPrice(item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO)).append("</td>")
+                            .append("<td>" + (item.getTenSanPham() != null ? item.getTenSanPham() : "N/A") + "</td>")
+                            .append("<td>" + (item.getImel() != null ? item.getImel() : "N/A") + "</td>")
+                            .append("<td>" + (item.getMauSac() != null ? item.getMauSac() : "N/A") + "</td>")
+                            .append("<td>" + (item.getDungLuongRam() != null ? item.getDungLuongRam() : "N/A") + "</td>")
+                            .append("<td>" + (item.getDungLuongBoNhoTrong() != null ? item.getDungLuongBoNhoTrong() : "N/A") + "</td>")
+                            .append("<td>" + formatPrice(item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO) + "</td>")
                             .append("</tr>");
                 }
                 emailContent.append("</table>");
             }
 
             // Thông tin thanh toán
-            emailContent.append("<h3>Thông tin thanh toán</h3>");
-            BigDecimal tongTienTruocGiam = (sanPhamChiTietInfos != null && !sanPhamChiTietInfos.isEmpty())
-                    ? sanPhamChiTietInfos.stream().map(HoaDonDetailResponse.SanPhamChiTietInfo::getGiaBan).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add)
-                    : BigDecimal.ZERO;
-            emailContent.append("<p><strong>Tổng tiền trước giảm:</strong> ").append(formatPrice(tongTienTruocGiam)).append("</p>");
+            emailContent.append("<div class='info-box'>")
+                    .append("<h2>Thông tin thanh toán</h2>")
+                    .append("<p><strong>Tổng tiền sản phẩm:</strong> " + formatPrice((sanPhamChiTietInfos != null && !sanPhamChiTietInfos.isEmpty())
+                            ? sanPhamChiTietInfos.stream().map(HoaDonDetailResponse.SanPhamChiTietInfo::getGiaBan).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add)
+                            : BigDecimal.ZERO) + "</p>");
             if (hoaDonDetailResponse.getTienGiam() != null && hoaDonDetailResponse.getTienGiam().compareTo(BigDecimal.ZERO) > 0) {
-                emailContent.append("<p><strong>Tiền giảm (").append(hoaDonDetailResponse.getPhanTramGiam() != null ? hoaDonDetailResponse.getPhanTramGiam() : 0).append("%):</strong> ")
-                        .append(formatPrice(hoaDonDetailResponse.getTienGiam())).append("</p>");
+                emailContent.append("<p><strong>Giảm giá (" + (hoaDonDetailResponse.getPhanTramGiam() != null ? hoaDonDetailResponse.getPhanTramGiam() : 0) + "%):</strong> "
+                        + formatPrice(hoaDonDetailResponse.getTienGiam()) + "</p>");
             }
-            emailContent.append("<p><strong>Phí vận chuyển:</strong> ").append(formatPrice(hoaDonDetailResponse.getPhiVanChuyen() != null ? hoaDonDetailResponse.getPhiVanChuyen() : BigDecimal.ZERO)).append("</p>");
-            emailContent.append("<p><strong>Tổng tiền sau giảm:</strong> ").append(formatPrice(hoaDonDetailResponse.getTongTienSauGiam() != null ? hoaDonDetailResponse.getTongTienSauGiam() : BigDecimal.ZERO)).append("</p>");
-            emailContent.append("<p><strong>Phương thức thanh toán:</strong> COD (Thanh toán khi nhận hàng)</p>");
+            emailContent.append("<p><strong>Phí vận chuyển:</strong> " + formatPrice(hoaDonDetailResponse.getPhiVanChuyen() != null ? hoaDonDetailResponse.getPhiVanChuyen() : BigDecimal.ZERO) + "</p>")
+                    .append("<p class='total'><strong>Tổng tiền thanh toán:</strong> " + formatPrice(hoaDonDetailResponse.getTongTienSauGiam() != null ? hoaDonDetailResponse.getTongTienSauGiam() : BigDecimal.ZERO) + "</p>")
+                    .append("<p><strong>Phương thức thanh toán:</strong> COD (Thanh toán khi nhận hàng)</p>")
+                    .append("</div>")
 
-            // Trạng thái đơn hàng
-            emailContent.append("<p><strong>Trạng thái:</strong> ").append(getTrangThaiText(hoaDonDetailResponse.getTrangThai())).append("</p>");
+                    // Trạng thái đơn hàng
+                    .append("<p><strong>Trạng thái đơn hàng:</strong> " + getTrangThaiText(hoaDonDetailResponse.getTrangThai()) + "</p>")
 
-            // Link tra cứu
-            emailContent.append("<p><strong>Mã hóa đơn:</strong> ").append(hoaDonDetailResponse.getMaHoaDon() != null ? hoaDonDetailResponse.getMaHoaDon() : "N/A").append("</p>");
-            emailContent.append("<p>Vui lòng sử dụng mã hóa đơn để tra cứu trạng thái đơn hàng tại trang <a href='http://localhost:5173/invoice-status'>Tra cứu đơn hàng</a>.</p>");
+                    // Link tra cứu và hủy đơn
+                    .append("<p><strong>Mã hóa đơn:</strong> " + (hoaDonDetailResponse.getMaHoaDon() != null ? hoaDonDetailResponse.getMaHoaDon() : "N/A") + "</p>")
+                    .append("<p>Vui lòng sử dụng mã hóa đơn để tra cứu trạng thái đơn hàng tại <a href='http://localhost:5173/invoice-status' class='button'>Tra cứu đơn hàng</a> ")
+                    .append("hoặc hủy đơn hàng tại<a href='http://localhost:5173/cancel-order?id=" + hoaDonDetailResponse.getId() + "' class='button cancel-button'>Hủy đơn hàng</a>.</p>")
+
+                    // Footer
+                    .append("</div>")
+                    .append("<div class='footer'>")
+                    .append("<p>Cảm ơn Quý khách đã lựa chọn MobileWorld. Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ qua email <a href='mailto:support@mobileworld.com'>support@mobileworld.com</a> hoặc số hotline: 1800-123-456.</p>")
+                    .append("<p>© 2025 MobileWorld. All rights reserved.</p>")
+                    .append("</div>")
+                    .append("</div>")
+                    .append("</body>")
+                    .append("</html>");
 
             helper.setText(emailContent.toString(), true);
             mailSender.send(message);

@@ -562,6 +562,9 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         return response;
     }
 
+
+
+
     @Override
     public Page<ChiTietSanPhamGroupDTO> layDanhSachSanPham(int page, int size, String keyword) {
         Pageable pageable = PageRequest.of(page, size);

@@ -28,6 +28,9 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Integer>,TaiK
     @Query("SELECT tk FROM TaiKhoan tk WHERE tk.tenDangNhap = :tenDangNhap AND tk.matKhau = :matKhau")
     TaiKhoan findByTenDangNhapAndMatKhau(@Param("tenDangNhap") String tenDangNhap, @Param("matKhau") String matKhau);
 
+
+
+
     //checkEmail
     Optional<TaiKhoan> findBytenDangNhap(String tenDangNhap);
     boolean existsBySoDienThoai(String soDienThoai);
@@ -35,4 +38,5 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Integer>,TaiK
 
     boolean existsByEmail(String email);
 
-}
+    @Query("SELECT t FROM TaiKhoan t WHERE (t.tenDangNhap = :login OR t.email = :login) AND t.matKhau = :matKhau")
+    TaiKhoan findByTenDangNhapOrEmailAndMatKhau(String login, String matKhau);}

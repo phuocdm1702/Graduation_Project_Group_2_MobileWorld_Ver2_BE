@@ -132,7 +132,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         taiKhoan.setMa(MaTaiKhoan());
         taiKhoan.setEmail(khachHangResponse.getEmail());
         taiKhoan.setSoDienThoai(khachHangResponse.getSoDienThoai());
-        taiKhoan.setTenDangNhap(khachHangResponse.getUserName());
+        taiKhoan.setTenDangNhap(generateMaKhachHang(khachHangResponse.getTenKH()));
         taiKhoan.setIdQuyenHan(quyenHan);
         taiKhoan.setDeleted(true);
 

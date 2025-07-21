@@ -38,8 +38,22 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
             throw new RuntimeException("Không tìm thấy nhân viên với ID: " + id);
         }
         TaiKhoan nv = tk.get();
-        nv.setDeleted(!nv.getDeleted()); // Toggle trạng thái
+        nv.setDeleted(!nv.getDeleted());
         return taiKhoanRepository.save(nv);
     }
+    @Override
+    public String dangnhap(String login, String matKhau) {
+        if (login == null || login.trim().isEmpty() || matKhau == null || matKhau.trim().isEmpty()) {
+            throw new RuntimeException("Tên đăng nhập hoặc email và mật khẩu không được để trống");
+        }
 
+        TaiKhoan taiKhoan = taiKhoanRepository.findByTenDangNhapOrEmailAndMatKhau(login, matKhau);
+        if (taiKhoan == null) {
+            throw new RuntimeException("Tên đăng nhập/email hoặc mật khẩu không đúng");
+        }
+        if (taiKhoan.getDeleted() == false) {
+            throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
+        }
+        return taiKhoan.getTenDangNhap();
+    }
 }

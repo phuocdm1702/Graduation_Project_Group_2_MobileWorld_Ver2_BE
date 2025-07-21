@@ -9,4 +9,6 @@ public interface TaiKhoanService {
     TaiKhoan trangthaiKH(Integer id);
 
     TaiKhoan trangthaiNV(Integer id);
+
+    String dangnhap(String tenDangNhap, String matKhau);
 }

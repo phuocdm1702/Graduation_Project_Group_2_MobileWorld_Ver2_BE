@@ -24,6 +24,7 @@ public class ChiTietGioHangDTO {
 
     private Integer idPhieuGiamGia; // Thêm trường để lưu idPhieuGiamGia
 
+    private String image;
 
     public ChiTietGioHangDTO() {
     }
@@ -41,6 +42,22 @@ public class ChiTietGioHangDTO {
         this.ghiChuGia = ghiChuGia;
         this.tongTien = tongTien;
         this.idPhieuGiamGia = idPhieuGiamGia;
+    }
+
+    public ChiTietGioHangDTO(Integer chiTietSanPhamId, String maImel, String tenSanPham, String mauSac, String ram, String boNhoTrong, Integer soLuong, BigDecimal giaBan, BigDecimal giaBanGoc, String ghiChuGia, BigDecimal tongTien, Integer idPhieuGiamGia, String image) {
+        this.chiTietSanPhamId = chiTietSanPhamId;
+        this.maImel = maImel;
+        this.tenSanPham = tenSanPham;
+        this.mauSac = mauSac;
+        this.ram = ram;
+        this.boNhoTrong = boNhoTrong;
+        this.soLuong = soLuong;
+        this.giaBan = giaBan;
+        this.giaBanGoc = giaBanGoc;
+        this.ghiChuGia = ghiChuGia;
+        this.tongTien = tongTien;
+        this.idPhieuGiamGia = idPhieuGiamGia;
+        this.image = image;
     }
 
     public Integer getChiTietSanPhamId() {
@@ -137,5 +154,13 @@ public class ChiTietGioHangDTO {
 
     public void setIdPhieuGiamGia(Integer idPhieuGiamGia) {
         this.idPhieuGiamGia = idPhieuGiamGia;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
     }
 }

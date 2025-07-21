@@ -54,6 +54,9 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         if (taiKhoan.getDeleted() == false) {
             throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
         }
+        if (taiKhoan.getIdQuyenHan() == null || taiKhoan.getIdQuyenHan().getId() != 1) {
+            throw new RuntimeException("Bạn không có quyền để đăng nhập!");
+        }
         return taiKhoan.getTenDangNhap();
     }
 }

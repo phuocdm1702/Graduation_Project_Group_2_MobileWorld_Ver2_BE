@@ -3,6 +3,7 @@ package com.example.be_datn.repository.account.KhachHang;
 import com.example.be_datn.entity.account.KhachHang;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,5 +20,8 @@ public interface KhachHangRepository extends JpaRepository<KhachHang,Integer>,Kh
     List<KhachHang> searchFormAdd(String keyword);
 
     Optional<KhachHang> findByTen(String ten);
+
+    @Query("SELECT kh FROM KhachHang kh WHERE (:gioiTinh IS NULL OR kh.gioiTinh = :gioiTinh)")
+    List<KhachHang> findByGioiTinh(@Param("gioiTinh") Boolean gioiTinh);
 
 }

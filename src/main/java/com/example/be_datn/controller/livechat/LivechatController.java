@@ -1,29 +1,45 @@
 package com.example.be_datn.controller.livechat;
 
 import com.example.be_datn.dto.chat.ChatMessage;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
+import com.example.be_datn.entity.account.KhachHang;
+import com.example.be_datn.service.chatclient.ChatMessageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 
-@Controller
+@RestController
 public class LivechatController {
 
-    private static final Logger logger = LoggerFactory.getLogger(LivechatController.class);
-    private final SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private ChatMessageService chatMessageService;
 
-
-    public LivechatController(SimpMessagingTemplate messagingTemplate) {
-        this.messagingTemplate = messagingTemplate;
+    @MessageMapping("/chat/customer/{customerId}")
+    public void handleCustomerMessage(@DestinationVariable Integer customerId, ChatMessage message) {
+        message.setCustomerId(customerId);
+        message.setSender("customer");
+        chatMessageService.sendMessageToCustomer(message);
     }
 
-    @MessageMapping("/sendMessage")
-    public void handleChatMessage(@Payload ChatMessage message) {
-        logger.info("Received message: {}", message);
-        String destination = "/topic/messages/" + message.getRecipient();
-        messagingTemplate.convertAndSend(destination, message);
+    @MessageMapping("/chat/employee/{customerId}")
+    public void handleEmployeeMessage(@DestinationVariable Integer customerId, ChatMessage message) {
+        message.setCustomerId(customerId);
+        message.setSender("employee");
+        chatMessageService.sendMessageToCustomer(message);
+    }
+
+    @GetMapping("/api/customers")
+    public List<KhachHang> getAllCustomers() {
+        return chatMessageService.getAllCustomers();
+    }
+
+    @GetMapping("/api/messages/{customerId}")
+    public List<ChatMessage> getMessages(@PathVariable Integer customerId) {
+        return chatMessageService.getMessagesForCustomer(customerId);
     }
 }

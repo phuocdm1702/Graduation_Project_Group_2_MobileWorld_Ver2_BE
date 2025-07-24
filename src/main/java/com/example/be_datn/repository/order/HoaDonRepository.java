@@ -106,4 +106,11 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     @Query("SELECT hd FROM HoaDon hd WHERE hd.ma = :ma")
     Optional<HoaDonResponse> findByMa(@Param("ma") String ma);
 
+    @Query("SELECT COUNT(h) FROM HoaDon h WHERE h.idKhachHang.id = :khachHangId")
+    Long countByKhachHangId(@Param("khachHangId") Integer khachHangId);
+
+    // Tìm hóa đơn gần nhất của khách hàng theo ngày tạo, giới hạn 1 kết quả
+    @Query("SELECT h FROM HoaDon h WHERE h.idKhachHang.id = :khachHangId ORDER BY h.ngayTao DESC FETCH FIRST 1 ROW ONLY")
+    Optional<HoaDon> findTopByKhachHangIdOrderByNgayTaoDesc(@Param("khachHangId") Integer khachHangId);
+
 }

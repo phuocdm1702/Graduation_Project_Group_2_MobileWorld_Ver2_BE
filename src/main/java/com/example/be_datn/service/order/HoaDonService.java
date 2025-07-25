@@ -2,6 +2,7 @@ package com.example.be_datn.service.order;
 
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
+import com.example.be_datn.entity.product.Imel;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,4 +22,7 @@ public interface HoaDonService {
     void exportHoaDonToExcel(HttpServletResponse response) throws IOException;
 
     HoaDonResponse updateHoaDonStatus(Integer id, Short trangThai, Integer idNhanVien);
+
+    Page<Imel> getAllImelSP(Pageable pageable, Boolean deleted);
+
 }

@@ -5,9 +5,12 @@ import com.example.be_datn.common.order.HoaDonMapper;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.entity.order.HoaDon;
+import com.example.be_datn.entity.order.HoaDonChiTiet;
 import com.example.be_datn.entity.order.LichSuHoaDon;
 import com.example.be_datn.entity.pay.HinhThucThanhToan;
+import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
+import com.example.be_datn.repository.order.HoaDonChiTietRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
 import com.example.be_datn.repository.order.LichSuHoaDonRepository;
 import com.example.be_datn.repository.pay.HinhThucThanhToanRepository;
@@ -44,6 +47,8 @@ public class HoaDonServiceImpl implements HoaDonService {
     private NhanVienRepository nhanVienRepository;
     @Autowired
     private LichSuHoaDonRepository lichSuHoaDonRepository;
+    @Autowired
+    private HoaDonChiTietRepository hoaDonChiTietRepository;
 
 
     //    @Override
@@ -223,6 +228,11 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         // Trả về response
         return hoaDonMapper.mapToDto(hoaDon);
+    }
+
+    @Override
+    public Page<Imel> getAllImelSP(Pageable pageable, Boolean deleted) {
+        return hoaDonChiTietRepository.getAllImelSP(pageable, false);
     }
 
     // Hàm kiểm tra trạng thái hợp lệ

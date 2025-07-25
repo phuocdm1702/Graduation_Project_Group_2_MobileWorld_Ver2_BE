@@ -1,6 +1,7 @@
 package com.example.be_datn.controller.discount;
 
 import com.example.be_datn.config.Email.EmailSend;
+import com.example.be_datn.dto.account.response.KhachHangDTO;
 import com.example.be_datn.dto.discount.request.PhieuGiamGiaRequest;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
@@ -41,8 +42,8 @@ public class AddPhieuGiamGiaController {
     private EmailSend emailSend;
 
     @GetMapping("/data-kh")
-    public List<KhachHang> fetchDataKH() {
-        List<KhachHang> listKH = khachHangService.getall();
+    public List<KhachHangDTO> fetchDataKH() {
+        List<KhachHangDTO> listKH = khachHangService.getKHPgg();
         if (listKH == null) {
             System.out.println("Danh sách khách hàng trả về null, trả về mảng rỗng");
             return Collections.emptyList();
@@ -58,6 +59,27 @@ public class AddPhieuGiamGiaController {
             return ResponseEntity.ok(Collections.emptyList());
         }
         return ResponseEntity.ok(listSearch);
+    }
+
+    @GetMapping("/filter-kh-by-gioitinh")
+    public ResponseEntity<?> filterKHByGioiTinh(
+            @RequestParam(value = "gioiTinh", required = false) String gioiTinh) {
+        Boolean parsedGioiTinh = null;
+        if (gioiTinh != null && !gioiTinh.isEmpty()) {
+            if ("true".equalsIgnoreCase(gioiTinh)) {
+                parsedGioiTinh = true;
+            } else if ("false".equalsIgnoreCase(gioiTinh)) {
+                parsedGioiTinh = false;
+            } else {
+                return ResponseEntity.badRequest().body("Giá trị gioiTinh không hợp lệ. Phải là 'true', 'false' hoặc không có.");
+            }
+        }
+        List<KhachHang> listFiltered = khachHangService.filterByGioiTinh(parsedGioiTinh);
+        if (listFiltered == null) {
+            System.out.println("Danh sách lọc theo giới tính trả về null, trả về mảng rỗng");
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        return ResponseEntity.ok(listFiltered);
     }
 
     @Transactional

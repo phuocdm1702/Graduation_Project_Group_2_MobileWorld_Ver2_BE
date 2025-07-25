@@ -4,7 +4,6 @@ public class TaiKhoanDTO {
 
     private String email;
     private String sdt;
-    private String userName;
     private String matKhau;
     private String tenDangNhap;
 
@@ -25,14 +24,6 @@ public class TaiKhoanDTO {
 
     public void setSdt(String sdt) {
         this.sdt = sdt;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
     }
 
     public String getMatKhau() {

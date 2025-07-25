@@ -1,5 +1,6 @@
 package com.example.be_datn.entity.product;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -112,5 +113,6 @@ public class SanPham {
     private CongNgheManHinh congNgheManHinh;
 
     @OneToMany(mappedBy = "idSanPham")
+    @JsonBackReference // Ngăn serialize danh sách ChiTietSanPham
     private Collection<ChiTietSanPham> chiTietSanPhams;
 }

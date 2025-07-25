@@ -2,19 +2,19 @@ package com.example.be_datn.service.account.impl;
 
 import com.example.be_datn.common.Email.EmailServices;
 import com.example.be_datn.dto.account.response.DiaChiKhachHangResponse;
+import com.example.be_datn.dto.account.response.KhachHangDTO;
 import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.entity.account.DiaChiKhachHang;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.QuyenHan;
 import com.example.be_datn.entity.account.TaiKhoan;
+import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.repository.account.DiaChiKH.DiaChiKhachHangRepository;
 import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
+import com.example.be_datn.repository.order.HoaDonRepository;
 import com.example.be_datn.service.account.KhachHangServices;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
@@ -29,14 +29,17 @@ public class KhachHangServicesImpl implements KhachHangServices {
     private final KhachHangRepository khachHangRepository;
     private final TaiKhoanRepository taiKhoanRepository;
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
+
+    private final HoaDonRepository hoaDonRepository;
     private final EmailServices emailServices;
 
 
     @Autowired
-    public KhachHangServicesImpl(KhachHangRepository khachHangRepository, TaiKhoanRepository taiKhoanRepository, DiaChiKhachHangRepository diaChiKhachHangRepository, EmailServices emailServices) {
+    public KhachHangServicesImpl(KhachHangRepository khachHangRepository, TaiKhoanRepository taiKhoanRepository, DiaChiKhachHangRepository diaChiKhachHangRepository, HoaDonRepository hoaDonRepository, EmailServices emailServices) {
         this.khachHangRepository = khachHangRepository;
         this.taiKhoanRepository = taiKhoanRepository;
         this.diaChiKhachHangRepository = diaChiKhachHangRepository;
+        this.hoaDonRepository = hoaDonRepository;
         this.emailServices = emailServices;
     }
 
@@ -47,6 +50,15 @@ public class KhachHangServicesImpl implements KhachHangServices {
                 .stream()
                 .filter(kh -> !"KH00001".equals(kh.getMa())).collect(Collectors.toUnmodifiableList());
     }
+
+    @Override
+    public List<KhachHangDTO> getKHPgg() {
+        List<KhachHang> khachHangs = khachHangRepository.findAll();
+        return  khachHangs.stream()
+                .map(this::mapToKhachHangDTO)
+                .collect(Collectors.toList());
+    }
+
 
     //tao ma Tk
     public String MaTaiKhoan() {
@@ -81,6 +93,14 @@ public class KhachHangServicesImpl implements KhachHangServices {
             return khachHangRepository.findAll();
         }
         return khachHangRepository.searchFormAdd(keyword);
+    }
+
+    @Override
+    public List<KhachHang> filterByGioiTinh(Boolean gioiTinh) {
+        if (gioiTinh == null) {
+            return khachHangRepository.findAll();
+        }
+        return khachHangRepository.findByGioiTinh(gioiTinh);
     }
 
     @Override
@@ -132,7 +152,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         taiKhoan.setMa(MaTaiKhoan());
         taiKhoan.setEmail(khachHangResponse.getEmail());
         taiKhoan.setSoDienThoai(khachHangResponse.getSoDienThoai());
-        taiKhoan.setTenDangNhap(khachHangResponse.getUserName());
+        taiKhoan.setTenDangNhap(generateMaKhachHang(khachHangResponse.getTenKH()));
         taiKhoan.setIdQuyenHan(quyenHan);
         taiKhoan.setDeleted(true);
 
@@ -459,5 +479,25 @@ public class KhachHangServicesImpl implements KhachHangServices {
         diaChiKhachHang.setDeleted(true);
         // Lưu vào database
         return diaChiKhachHangRepository.save(diaChiKhachHang);
+    }
+
+    private KhachHangDTO mapToKhachHangDTO(KhachHang khachHang) {
+        // Lấy tổng số lần mua
+        Long totalOrders = hoaDonRepository.countByKhachHangId(khachHang.getId());
+
+        // Lấy ngày mua gần nhất
+        Date lastOrderDate = hoaDonRepository.findTopByKhachHangIdOrderByNgayTaoDesc(khachHang.getId())
+                .map(HoaDon::getNgayTao)
+                .orElse(null);
+
+        return new KhachHangDTO(
+                khachHang.getId(),
+                khachHang.getMa(),
+                khachHang.getTen(),
+                khachHang.getGioiTinh(),
+                khachHang.getNgaySinh(),
+                totalOrders != null ? totalOrders.intValue() : 0,
+                lastOrderDate
+        );
     }
 }

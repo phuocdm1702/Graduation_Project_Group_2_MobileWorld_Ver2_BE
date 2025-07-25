@@ -51,7 +51,7 @@ public class ChiTietSanPhamController {
         return new ResponseEntity<>(responses, HttpStatus.OK);
     }
 
-    @PutMapping("/edit/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<ChiTietSanPhamResponse> updateChiTietSanPham(
             @PathVariable Integer id,
             @Valid @ModelAttribute ChiTietSanPhamRequest request,

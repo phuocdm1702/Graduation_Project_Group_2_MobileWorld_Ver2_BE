@@ -2,6 +2,7 @@ package com.example.be_datn.controller.order;
 
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
+import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.service.order.HoaDonService;
 import com.example.be_datn.service.order.InHoaDonService;
 import com.example.be_datn.service.order.XuatDanhSachHoaDon;
@@ -39,6 +40,15 @@ public class HoaDonController {
     ) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(hoaDonService.getHoaDon(pageable));
+    }
+
+    @GetMapping("/hoa-don-chi-tiet/imel")
+    public ResponseEntity<Page<Imel>> getImelHoaDonInHDCT(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(hoaDonService.getAllImelSP(pageable,false));
     }
 
 

@@ -40,10 +40,15 @@ public class InHoaDonService {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try {
-            ClassPathResource reportResource = new ClassPathResource("reports/hoa_don.jrxml");
+            // Chọn template JRXML dựa trên loaiDon
+            String reportFileName = "hoa_don.jrxml"; // Mặc định cho trực tiếp
+            if (hoaDon.getLoaiDon() != null && hoaDon.getLoaiDon().equalsIgnoreCase("online")) {
+                reportFileName = "hoa_don_client.jrxml"; // Cho online
+            }
+            ClassPathResource reportResource = new ClassPathResource("reports/" + reportFileName);
             if (!reportResource.exists()) {
-                logger.error("File hoa_don.jrxml không tồn tại trong thư mục resources/reports");
-                throw new Exception("File hoa_don.jrxml không tồn tại trong thư mục resources/reports");
+                logger.error("File {} không tồn tại trong thư mục resources/reports", reportFileName);
+                throw new Exception("File " + reportFileName + " không tồn tại trong thư mục resources/reports");
             }
 
             try (InputStream reportStream = reportResource.getInputStream()) {
@@ -165,7 +170,7 @@ public class InHoaDonService {
             }
         }
 
-        ClassPathResource logoResource = new ClassPathResource("static/images/Logo_Mobile_World_vector.png");
+        ClassPathResource logoResource = new ClassPathResource("static/images/logo.png");
         BufferedImage logoImage = ImageIO.read(logoResource.getInputStream());
 
         BufferedImage circularLogo = new BufferedImage(logoSize, logoSize, BufferedImage.TYPE_INT_ARGB);

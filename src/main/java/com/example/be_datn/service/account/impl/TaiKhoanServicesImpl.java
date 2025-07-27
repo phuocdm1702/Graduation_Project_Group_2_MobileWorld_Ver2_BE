@@ -79,7 +79,7 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         if (taiKhoan == null) {
             throw new RuntimeException("Tên đăng nhập/email hoặc mật khẩu không đúng");
         }
-        if (taiKhoan.getDeleted() == false) {
+        if (taiKhoan.getDeleted() == true) {
             throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
         }
         return taiKhoan.getTenDangNhap();

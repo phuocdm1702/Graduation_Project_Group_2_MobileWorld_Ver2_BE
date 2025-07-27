@@ -1,11 +1,13 @@
 package com.example.be_datn.service.account.impl;
 
+import com.example.be_datn.config.JwtUtil;
 import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -13,6 +15,13 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
 
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
+
+    private final JwtUtil jwtUtil;
+
+    public TaiKhoanServicesImpl(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
 
     @Override
     public String findById(Integer idTK) {
@@ -51,13 +60,13 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         if (taiKhoan == null) {
             throw new RuntimeException("Tên đăng nhập/email hoặc mật khẩu không đúng");
         }
-        if (taiKhoan.getDeleted() == false) {
+        if (taiKhoan.getDeleted() == true) {
             throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
         }
         if (taiKhoan.getIdQuyenHan() == null || taiKhoan.getIdQuyenHan().getId() != 1) {
             throw new RuntimeException("Bạn không có quyền để đăng nhập!");
         }
-        return taiKhoan.getTenDangNhap();
+        return jwtUtil.generateToken(taiKhoan.getTenDangNhap());
     }
 
     @Override
@@ -74,5 +83,11 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
             throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
         }
         return taiKhoan.getTenDangNhap();
+    }
+
+    @Override
+    public List<TaiKhoan> getall(){
+        return taiKhoanRepository.findAll();
+
     }
 }

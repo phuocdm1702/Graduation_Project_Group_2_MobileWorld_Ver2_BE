@@ -6,6 +6,8 @@ import com.example.be_datn.service.account.TaiKhoanService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @CrossOrigin(origins = {"http://localhost:5173","http://localhost:3000"})
 @RequestMapping("tai-khoan")
@@ -16,6 +18,11 @@ public class TaiKhoanController {
 
     public TaiKhoanController(TaiKhoanService taiKhoanService) {
         this.taiKhoanService = taiKhoanService;
+    }
+
+    @GetMapping("/home")
+    public List<TaiKhoan> getall(){
+        return taiKhoanService.getall();
     }
 
 

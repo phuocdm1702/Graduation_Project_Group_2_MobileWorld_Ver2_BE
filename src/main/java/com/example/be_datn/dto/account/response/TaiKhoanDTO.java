@@ -6,8 +6,18 @@ public class TaiKhoanDTO {
     private String sdt;
     private String matKhau;
     private String tenDangNhap;
+    private boolean trangThai;
+
 
     public TaiKhoanDTO() {
+    }
+
+    public boolean getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(boolean trangThai) {
+        this.trangThai = trangThai;
     }
 
     public String getEmail() {

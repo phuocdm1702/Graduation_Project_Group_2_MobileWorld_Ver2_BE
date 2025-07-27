@@ -59,4 +59,20 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         }
         return taiKhoan.getTenDangNhap();
     }
+
+    @Override
+    public String dangnhapWeb(String login, String matKhau) {
+        if (login == null || login.trim().isEmpty() || matKhau == null || matKhau.trim().isEmpty()) {
+            throw new RuntimeException("Tên đăng nhập hoặc email và mật khẩu không được để trống");
+        }
+
+        TaiKhoan taiKhoan = taiKhoanRepository.findByTenDangNhapOrEmailAndMatKhau(login, matKhau);
+        if (taiKhoan == null) {
+            throw new RuntimeException("Tên đăng nhập/email hoặc mật khẩu không đúng");
+        }
+        if (taiKhoan.getDeleted() == false) {
+            throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
+        }
+        return taiKhoan.getTenDangNhap();
+    }
 }

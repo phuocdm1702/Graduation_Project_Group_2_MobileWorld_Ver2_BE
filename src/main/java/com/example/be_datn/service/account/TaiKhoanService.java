@@ -11,4 +11,6 @@ public interface TaiKhoanService {
     TaiKhoan trangthaiNV(Integer id);
 
     String dangnhap(String tenDangNhap, String matKhau);
+
+    String dangnhapWeb(String login, String matKhau);
 }

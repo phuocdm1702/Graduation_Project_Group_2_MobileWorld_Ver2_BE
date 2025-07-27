@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="hoa_don" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
-	<style name="Default" fontName="SansSerif" fontSize="10" isBold="false"/>
-	<style name="Title" fontName="SansSerif" fontSize="16" isBold="true"/>
-	<style name="SubTitle" fontName="SansSerif" fontSize="12" isBold="true"/>
-	<style name="TableHeader" fontName="SansSerif" fontSize="10" isBold="true" forecolor="#FFFFFF" backcolor="#4A90E2"/>
-	<style name="TableData" fontName="SansSerif" fontSize="10"/>
-
+	<!-- Preserved Parameters -->
 	<parameter name="maHoaDon" class="java.lang.String"/>
 	<parameter name="tenKhachHang" class="java.lang.String"/>
 	<parameter name="ngayBan" class="java.lang.String"/>
@@ -16,10 +11,10 @@
 	<parameter name="tongTienSauGiam" class="java.math.BigDecimal"/>
 	<parameter name="tienGiam" class="java.math.BigDecimal"/>
 	<parameter name="phanTramGiam" class="java.lang.Double"/>
-	<parameter name="logoQrImage" class="java.awt.Image"/> <!-- Tham số cho hình ảnh kết hợp Logo + QR -->
+	<parameter name="logoQrImage" class="java.awt.Image"/>
 	<parameter name="hinhThucThanhToan" class="java.lang.String"/>
 
-
+	<!-- Preserved Fields -->
 	<queryString language="sql"><![CDATA[]]></queryString>
 	<field name="stt" class="java.lang.Integer"/>
 	<field name="tenSanPham" class="java.lang.String"/>
@@ -28,266 +23,382 @@
 	<field name="boNho" class="java.lang.String"/>
 	<field name="gia" class="java.math.BigDecimal"/>
 
-	<background>
-		<band splitType="Stretch"/>
-	</background>
-
+	<!-- Title Band -->
 	<title>
-		<band height="100" splitType="Stretch">
-			<image>
-				<reportElement x="20" y="10" width="80" height="80"/>
-				<imageExpression><![CDATA[$P{logoQrImage}]]></imageExpression>
-			</image>
+		<band height="120">
 			<staticText>
-				<reportElement style="Title" x="100" y="10" width="455" height="30"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="20" y="10" width="515" height="30"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="16" isBold="true"/>
+				</textElement>
 				<text><![CDATA[HÓA ĐƠN BÁN HÀNG]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Default" x="100" y="40" width="455" height="20"/>
-				<textElement textAlignment="Center"/>
+				<reportElement x="20" y="40" width="515" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="12" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Mobile World]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Default" x="100" y="60" width="455" height="20"/>
-				<textElement textAlignment="Center"/>
+				<reportElement x="20" y="60" width="515" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<text><![CDATA[Tầng 5, Tòa nhà FPT Polytechnic, 13 Trịnh Văn Bô, Phương Canh, Nam Từ Liêm, Hà Nội]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Default" x="100" y="80" width="455" height="20"/>
-				<textElement textAlignment="Center"/>
+				<reportElement x="20" y="80" width="515" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<text><![CDATA[Số điện thoại: 0123 456 789 | Email: contact@mobileworld.vn]]></text>
 			</staticText>
 			<line>
-				<reportElement x="20" y="95" width="555" height="1"/>
+				<reportElement x="20" y="110" width="515" height="1"/>
 				<graphicElement>
-					<pen lineWidth="0.5" lineColor="#4A90E2"/>
+					<pen lineWidth="0.5"/>
 				</graphicElement>
 			</line>
 		</band>
 	</title>
 
+	<!-- Page Header Band -->
 	<pageHeader>
-		<band height="80" splitType="Stretch">
+		<band height="100">
 			<staticText>
-				<reportElement style="SubTitle" x="20" y="10" width="100" height="20"/>
+				<reportElement x="20" y="10" width="120" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Mã Hóa Đơn:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="120" y="10" width="200" height="20"/>
-				<textElement verticalAlignment="Middle"/>
+				<reportElement x="150" y="10" width="150" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$P{maHoaDon}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="20" y="30" width="100" height="20"/>
+				<reportElement x="20" y="40" width="120" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Khách Hàng:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="120" y="30" width="200" height="20"/>
-				<textElement verticalAlignment="Middle"/>
+				<reportElement x="150" y="40" width="150" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$P{tenKhachHang}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="20" y="50" width="100" height="20"/>
+				<reportElement x="20" y="70" width="120" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Ngày Bán:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="120" y="50" width="200" height="20"/>
-				<textElement verticalAlignment="Middle"/>
+				<reportElement x="150" y="70" width="150" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$P{ngayBan}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="320" y="10" width="100" height="20"/>
+				<reportElement x="320" y="10" width="120" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Tên Nhân Viên:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="420" y="10" width="135" height="20"/>
-				<textElement verticalAlignment="Middle"/>
+				<reportElement x="450" y="10" width="150" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$P{tenNhanVien}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="320" y="30" width="100" height="20"/>
+				<reportElement x="320" y="40" width="120" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Số Điện Thoại:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="420" y="30" width="135" height="20"/>
-				<textElement verticalAlignment="Middle"/>
+				<reportElement x="450" y="40" width="150" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$P{soDienThoai}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="320" y="50" width="100" height="20"/>
+				<reportElement x="320" y="70" width="120" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Địa Chỉ:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="420" y="50" width="135" height="20"/>
-				<textElement verticalAlignment="Middle"/>
+				<reportElement x="450" y="70" width="150" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$P{diaChi}]]></textFieldExpression>
 			</textField>
+			<line>
+				<reportElement x="20" y="95" width="515" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
 		</band>
 	</pageHeader>
 
+	<!-- Column Header Band -->
 	<columnHeader>
-		<band height="30" splitType="Stretch">
+		<band height="30">
 			<staticText>
-				<reportElement style="TableHeader" x="20" y="0" width="40" height="30"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="20" y="5" width="40" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[STT]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="TableHeader" x="60" y="0" width="200" height="30"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="60" y="5" width="150" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[SẢN PHẨM]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="TableHeader" x="260" y="0" width="100" height="30"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="210" y="5" width="100" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[IMEI]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="TableHeader" x="360" y="0" width="80" height="30"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="310" y="5" width="80" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[MÀU SẮC]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="TableHeader" x="440" y="0" width="60" height="30"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="390" y="5" width="60" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[BỘ NHỚ]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="TableHeader" x="500" y="0" width="75" height="30"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="450" y="5" width="85" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[ĐƠN GIÁ]]></text>
 			</staticText>
+			<line>
+				<reportElement x="20" y="25" width="515" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
 		</band>
 	</columnHeader>
 
+	<!-- Detail Band -->
 	<detail>
-		<band height="20" splitType="Stretch">
+		<band height="20">
 			<textField>
-				<reportElement style="TableData" x="20" y="0" width="40" height="20"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="20" y="0" width="40" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$F{stt}.toString()]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement style="TableData" x="60" y="0" width="200" height="20"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA["Điện thoại di động" + " " + $F{tenSanPham}]]></textFieldExpression>
+				<reportElement x="60" y="0" width="150" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Điện thoại" + " " + $F{tenSanPham}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement style="TableData" x="260" y="0" width="100" height="20"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="210" y="0" width="100" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$F{imel}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement style="TableData" x="360" y="0" width="80" height="20"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="310" y="0" width="80" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$F{mauSac}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement style="TableData" x="440" y="0" width="60" height="20"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<reportElement x="390" y="0" width="60" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$F{boNho}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement style="TableData" x="500" y="0" width="75" height="20"/>
-				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{gia}]]></textFieldExpression>
+				<reportElement x="450" y="0" width="85" height="20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0 VND").format($F{gia})]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
 
-	<pageFooter>
-		<band height="250" splitType="Stretch">
+	<!-- Summary Band -->
+	<summary>
+		<band height="280">
+			<line>
+				<reportElement x="20" y="10" width="515" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
 			<staticText>
-				<reportElement style="SubTitle" x="20" y="10" width="555" height="20"/>
-				<textElement textAlignment="Center"/>
+				<reportElement x="20" y="20" width="515" height="30"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="12" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Cảm ơn quý khách đã mua hàng tại Mobile World!]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Default" x="20" y="30" width="555" height="20"/>
-				<textElement textAlignment="Left"/>
+				<reportElement x="20" y="50" width="515" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[*Lưu ý:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Default" x="20" y="50" width="555" height="20"/>
-				<textElement textAlignment="Left"/>
+				<reportElement x="20" y="70" width="515" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<text><![CDATA[1. Hãy kiểm tra kỹ thông tin trên hóa đơn trước khi rời khỏi cửa hàng. Nếu có sai sót, vui lòng báo cho nhân viên.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Default" x="20" y="70" width="555" height="20"/>
-				<textElement textAlignment="Left"/>
+				<reportElement x="20" y="90" width="515" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<text><![CDATA[2. Nếu có vấn đề sau khi mua hàng, hãy liên hệ số: 0334.536.700.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Default" x="20" y="90" width="555" height="20"/>
-				<textElement textAlignment="Left"/>
+				<reportElement x="20" y="110" width="515" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<text><![CDATA[3. Đừng chia sẻ thông tin thanh toán với ai ngoài nhân viên cửa hàng.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement style="Default" x="20" y="110" width="555" height="20"/>
-				<textElement textAlignment="Left"/>
+				<reportElement x="20" y="130" width="515" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<text><![CDATA[Cảm ơn quý khách đã tin tưởng chúng tôi!]]></text>
 			</staticText>
+			<line>
+				<reportElement x="20" y="160" width="515" height="1"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
 			<staticText>
-				<reportElement style="SubTitle" x="320" y="130" width="100" height="20"/>
+				<reportElement x="305" y="170" width="120" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Hình thức thanh toán:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="420" y="130" width="135" height="20"/>
-				<textElement verticalAlignment="Middle"/>
+				<reportElement x="425" y="170" width="110" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$P{hinhThucThanhToan}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="320" y="150" width="100" height="20"/>
+				<reportElement x="305" y="190" width="120" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Tổng tiền:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="420" y="150" width="135" height="20"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$P{tongTien}]]></textFieldExpression>
+				<reportElement x="425" y="190" width="110" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0 VND").format($P{tongTien})]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="320" y="170" width="100" height="20"/>
+				<reportElement x="305" y="210" width="120" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Giảm giá:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="420" y="170" width="135" height="20"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$P{tienGiam} != null ? $P{tienGiam} : "0"]]></textFieldExpression>
+				<reportElement x="425" y="210" width="110" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{tienGiam} != null ? new java.text.DecimalFormat("#,##0 VND").format($P{tienGiam}) : "0 VND"]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="320" y="190" width="100" height="20"/>
+				<reportElement x="305" y="230" width="120" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Phần trăm giảm:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="420" y="190" width="135" height="20"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$P{phanTramGiam} != null ? $P{phanTramGiam} : "0"]]></textFieldExpression>
+				<reportElement x="425" y="230" width="110" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{phanTramGiam} != null ? new java.text.DecimalFormat("#,##0.00").format($P{phanTramGiam}) + "%" : "0%"]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement style="SubTitle" x="320" y="210" width="100" height="20"/>
+				<reportElement x="305" y="250" width="120" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="12" isBold="true"/>
+				</textElement>
 				<text><![CDATA[Thành tiền:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="420" y="210" width="135" height="20"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$P{tongTienSauGiam}]]></textFieldExpression>
+				<reportElement x="425" y="250" width="110" height="20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0 VND").format($P{tongTienSauGiam})]]></textFieldExpression>
 			</textField>
 			<image>
-				<reportElement x="20" y="130" width="60" height="60"/>
+				<reportElement x="20" y="170" width="80" height="80"/>
 				<imageExpression><![CDATA[$P{logoQrImage}]]></imageExpression>
 			</image>
 			<staticText>
-				<reportElement style="Default" x="90" y="150" width="200" height="20"/>
-				<textElement textAlignment="Left"/>
+				<reportElement x="20" y="250" width="80" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="DejaVu Sans" size="9"/>
+				</textElement>
 				<text><![CDATA[Quét mã QR để xem chi tiết hóa đơn]]></text>
 			</staticText>
-			<line>
-				<reportElement x="20" y="120" width="555" height="1"/>
-				<graphicElement>
-					<pen lineWidth="0.5" lineColor="#4A90E2"/>
-				</graphicElement>
-			</line>
 		</band>
-	</pageFooter>
+	</summary>
 </jasperReport>

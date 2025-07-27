@@ -67,7 +67,7 @@ public class ChiTietSanPhamRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class VariantRequest {
+    public static class VariantRequest implements IVariantRequest {
         @NotNull(message = "Màu sắc không được để trống")
         private Integer idMauSac;
 
@@ -81,6 +81,7 @@ public class ChiTietSanPhamRequest {
         @DecimalMin(value = "0.01", message = "Đơn giá phải lớn hơn 0")
         private BigDecimal donGia;
 
+        @NotEmpty(message = "Danh sách IMEI không được để trống")
         private List<String> imeiList;
     }
 }

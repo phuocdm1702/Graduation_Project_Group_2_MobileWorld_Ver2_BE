@@ -27,7 +27,7 @@ public class ChiTietSanPhamUpdateRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class VariantRequest {
+    public static class VariantRequest implements IVariantRequest {
         @NotNull(message = "Màu sắc không được để trống")
         private Integer idMauSac;
 

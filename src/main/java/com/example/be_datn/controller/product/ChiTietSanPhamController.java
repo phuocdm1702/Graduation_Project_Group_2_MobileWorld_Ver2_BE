@@ -1,6 +1,7 @@
 package com.example.be_datn.controller.product;
 
 import com.example.be_datn.dto.product.request.ChiTietSanPhamRequest;
+import com.example.be_datn.dto.product.request.ChiTietSanPhamUpdateRequest;
 import com.example.be_datn.dto.product.response.ChiTietSanPhamDetailResponse;
 import com.example.be_datn.dto.product.response.ChiTietSanPhamResponse;
 import com.example.be_datn.service.product.ChiTietSanPhamService;
@@ -54,7 +55,7 @@ public class ChiTietSanPhamController {
     @PutMapping("/{id}")
     public ResponseEntity<ChiTietSanPhamResponse> updateChiTietSanPham(
             @PathVariable Integer id,
-            @Valid @ModelAttribute ChiTietSanPhamRequest request,
+            @Valid @ModelAttribute ChiTietSanPhamUpdateRequest request,
             @RequestParam(value = "images", required = false) List<MultipartFile> images,
             @RequestParam(value = "existingImageUrls", required = false) List<String> existingImageUrls) {
         ChiTietSanPhamResponse response = chiTietSanPhamService.updateChiTietSanPham(id, request, images, existingImageUrls);

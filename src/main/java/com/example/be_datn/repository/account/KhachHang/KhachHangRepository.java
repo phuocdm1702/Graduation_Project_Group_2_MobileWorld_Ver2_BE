@@ -24,4 +24,6 @@ public interface KhachHangRepository extends JpaRepository<KhachHang,Integer>,Kh
     @Query("SELECT kh FROM KhachHang kh WHERE (:gioiTinh IS NULL OR kh.gioiTinh = :gioiTinh)")
     List<KhachHang> findByGioiTinh(@Param("gioiTinh") Boolean gioiTinh);
 
+    KhachHang findByIdTaiKhoan_Id(Integer taiKhoanId);
+
 }

@@ -17,4 +17,6 @@ public interface TaiKhoanService {
     String dangnhapWeb(String login, String matKhau);
 
     List<TaiKhoan> getall();
+
+    Integer getCustomerIdByTaiKhoan(String login);
 }

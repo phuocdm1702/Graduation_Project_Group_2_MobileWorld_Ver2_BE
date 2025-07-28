@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface TaiKhoanRepository extends JpaRepository<TaiKhoan,Integer>,TaiKhoanCustomRepository {
     Optional<TaiKhoan> findByEmail(String email);
 
+    TaiKhoan findByTenDangNhapOrEmail(String tenDangNhap, String email);
+
     List<TaiKhoan> findBySoDienThoai(String soDienThoai);
 
     @Query("SELECT MAX(t.ma) FROM TaiKhoan t WHERE t.ma LIKE 'TK%'")

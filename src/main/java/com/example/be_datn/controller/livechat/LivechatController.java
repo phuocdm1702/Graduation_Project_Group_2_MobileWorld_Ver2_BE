@@ -42,4 +42,6 @@ public class LivechatController {
     public List<ChatMessage> getMessages(@PathVariable Integer customerId) {
         return chatMessageService.getMessagesForCustomer(customerId);
     }
+
+
 }

@@ -1,7 +1,9 @@
 package com.example.be_datn.service.account.impl;
 
 import com.example.be_datn.config.JwtUtil;
+import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.TaiKhoan;
+import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,9 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
 
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
+
+    @Autowired
+    private KhachHangRepository khachHangRepository;
 
     private final JwtUtil jwtUtil;
 
@@ -89,6 +94,16 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
     public List<TaiKhoan> getall(){
         return taiKhoanRepository.findAll();
 
+    }
+
+    @Override
+    public Integer getCustomerIdByTaiKhoan(String login) {
+        TaiKhoan taiKhoan = taiKhoanRepository.findByTenDangNhapOrEmail(login, login);
+        if (taiKhoan != null) {
+            KhachHang khachHang = khachHangRepository.findByIdTaiKhoan_Id(taiKhoan.getId());
+            return khachHang != null ? khachHang.getId() : null;
+        }
+        return null;
     }
     public TaiKhoan findByUsername(String username) {
         return taiKhoanRepository.findByTenDangNhap(username);

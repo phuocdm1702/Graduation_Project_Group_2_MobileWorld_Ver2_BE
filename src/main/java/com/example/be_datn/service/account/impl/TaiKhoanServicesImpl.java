@@ -90,4 +90,7 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         return taiKhoanRepository.findAll();
 
     }
+    public TaiKhoan findByUsername(String username) {
+        return taiKhoanRepository.findByTenDangNhap(username);
+    }
 }

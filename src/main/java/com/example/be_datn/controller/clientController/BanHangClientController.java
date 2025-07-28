@@ -126,4 +126,10 @@ public class BanHangClientController {
         banHangClientService.xoaHoaDonCho(idHD);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/hoa-don/xac-nhan-imei/{idHD}")
+    public ResponseEntity<HoaDonDetailResponse> xacNhanVaGanImei(@PathVariable Integer idHD, @RequestBody Map<Integer, String> imelMap) {
+        HoaDonDetailResponse response = banHangClientService.xacNhanVaGanImei(idHD, imelMap);
+        return ResponseEntity.ok(response);
+    }
 }

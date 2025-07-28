@@ -52,4 +52,6 @@ public interface ImelRepository extends JpaRepository<Imel, Integer> {
     @Query("SELECT i FROM Imel i WHERE i.imel = :imel AND i.deleted = true")
     Optional<Imel> findByImelAndDeletedTrue(@Param("imel") String imel);
 
+    @Query("SELECT COUNT(i) FROM Imel i WHERE i.id = :imelId AND i.deleted = false")
+    long countByImelIdAndDeletedFalse(@Param("imelId") Integer imelId);
 }

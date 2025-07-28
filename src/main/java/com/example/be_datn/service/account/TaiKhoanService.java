@@ -19,4 +19,7 @@ public interface TaiKhoanService {
     List<TaiKhoan> getall();
 
     Integer getCustomerIdByTaiKhoan(String login);
+  
+    TaiKhoan findByUsername(String username);
+
 }

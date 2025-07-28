@@ -105,4 +105,7 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         }
         return null;
     }
+    public TaiKhoan findByUsername(String username) {
+        return taiKhoanRepository.findByTenDangNhap(username);
+    }
 }

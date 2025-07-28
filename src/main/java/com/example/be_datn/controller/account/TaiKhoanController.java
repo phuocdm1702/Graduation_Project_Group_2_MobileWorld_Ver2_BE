@@ -25,6 +25,16 @@ public class TaiKhoanController {
     public List<TaiKhoan> getall() {
         return taiKhoanService.getall();
     }
+    // Lấy thông tin tài khoản theo username
+    @GetMapping("/thong-tin/{username}")
+    public ResponseEntity<TaiKhoan> getTaiKhoanByUsername(@PathVariable String username) {
+        TaiKhoan taiKhoan = taiKhoanService.findByUsername(username);
+        if (taiKhoan != null) {
+            return ResponseEntity.ok(taiKhoan);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     private Map<String, Object> processLogin(String login, String matKhau) {
         Map<String, Object> response = new HashMap<>();

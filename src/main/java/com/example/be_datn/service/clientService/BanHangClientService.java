@@ -26,4 +26,5 @@ public interface BanHangClientService {
     KhachHang layThongTinKhachHang(Integer idKhachHang);
     void guiEmailThongTinDonHang(HoaDonDetailResponse hoaDonDetailResponse, String email);
     void xoaHoaDonCho(Integer idHD);
+    HoaDonDetailResponse xacNhanVaGanImei(Integer idHD, Map<Integer, String> imelMap);
 }

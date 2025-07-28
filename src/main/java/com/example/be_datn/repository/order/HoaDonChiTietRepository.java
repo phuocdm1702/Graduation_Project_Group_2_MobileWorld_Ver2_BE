@@ -9,17 +9,25 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, Integer> {
     @Query("""
     SELECT new com.example.be_datn.entity.product.Imel(
-    i.id,
-    i.ma,
-    i.imel,
-    i.deleted
-    ) 
+        i.id,
+        i.ma,
+        i.imel,
+        i.deleted
+    )
     FROM Imel i
+    LEFT JOIN ChiTietSanPham ctsp ON ctsp.idImel.id = i.id
+    LEFT JOIN ImelDaBan idb ON idb.imel = i.imel
     WHERE i.deleted = :deleted
+    AND (ctsp.deleted IS NULL OR ctsp.deleted = false)
+    AND idb.imel IS NULL
     """)
     Page<Imel> getAllImelSP(Pageable pageable, @Param("deleted") Boolean deleted);
+
+    List<HoaDonChiTiet> findByHoaDonIdAndDeletedFalse(Integer idHD);
 }

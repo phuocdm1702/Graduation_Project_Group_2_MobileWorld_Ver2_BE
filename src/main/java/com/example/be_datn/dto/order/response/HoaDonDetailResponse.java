@@ -65,6 +65,7 @@ public class HoaDonDetailResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SanPhamChiTietInfo {
+        private Integer chiTietSanPhamId; // Thêm trường này để lưu ID của ChiTietSanPham
         private String maHinhSanPhamChiTiet;
         private Integer idHoaDon;
         private String maSanPham;
@@ -76,6 +77,22 @@ public class HoaDonDetailResponse {
         private String dungLuongRam;
         private String dungLuongBoNhoTrong;
         private String duongDan;
+
+        public SanPhamChiTietInfo(Integer chiTietSanPhamId, Integer idHoaDon, String maSanPham, String tenSanPham,
+                                  String imel, BigDecimal giaBan, String ghiChu, String mauSac,
+                                  String dungLuongRam, String dungLuongBoNhoTrong, String duongDan) {
+            this.chiTietSanPhamId = chiTietSanPhamId;
+            this.idHoaDon = idHoaDon;
+            this.maSanPham = maSanPham;
+            this.tenSanPham = tenSanPham;
+            this.imel = imel;
+            this.giaBan = giaBan;
+            this.ghiChu = ghiChu;
+            this.mauSac = mauSac;
+            this.dungLuongRam = dungLuongRam;
+            this.dungLuongBoNhoTrong = dungLuongBoNhoTrong;
+            this.duongDan = duongDan;
+        }
     }
 
     // DTO con cho lịch sử hóa đơn

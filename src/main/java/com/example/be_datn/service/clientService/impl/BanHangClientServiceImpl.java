@@ -421,8 +421,21 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             throw new RuntimeException("Email là bắt buộc để gửi thông tin đơn hàng!");
         }
 
+        // Kiểm tra trạng thái Imel của ChiTietSanPham
+        for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
+                    .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
+            if (chiTietSanPham.getIdImel() == null) {
+                throw new RuntimeException("Sản phẩm ID " + item.getChiTietSanPhamId() + " không có IMEI liên kết!");
+            }
+            Imel imel = imelRepository.findById(chiTietSanPham.getIdImel().getId())
+                    .orElseThrow(() -> new RuntimeException("IMEI của sản phẩm ID " + item.getChiTietSanPhamId() + " không tồn tại!"));
+            if (imel.getDeleted()) {
+                throw new RuntimeException("IMEI của sản phẩm ID " + item.getChiTietSanPhamId() + " đã được sử dụng!");
+            }
+        }
+
         // Xử lý khách hàng
-        // Gán idKhachHang = 1 cho khách lẻ
         KhachHang khachHang = khachHangRepository.findById(1)
                 .orElseThrow(() -> new RuntimeException("Khách hàng mặc định (ID = 1) không tồn tại!"));
         hoaDon.setIdKhachHang(khachHang);
@@ -463,27 +476,18 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         hoaDon.setTongTien(tongTienSauGiam);
         hoaDon.setTongTienSauGiam(tongTienSauGiam);
 
-        // Lưu chi tiết hóa đơn
+        // Lưu chi tiết hóa đơn mà không gán IMEI ngay
         List<HoaDonChiTiet> chiTietList = new ArrayList<>();
         for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
             ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
-            chiTietSanPham.setDeleted(true);
-            chiTietSanPhamRepository.save(chiTietSanPham);
-
-            ImelDaBan imelDaBan = new ImelDaBan();
-            imelDaBan.setMa("IMELDB_CLIENT_" + UUID.randomUUID().toString().substring(0, 8));
-            imelDaBan.setImel(item.getMaImel());
-            imelDaBan.setNgayBan(Date.from(Instant.now()));
-            imelDaBan.setGhiChu("Bán kèm hóa đơn " + hoaDon.getMa());
-            imelDaBanRepository.save(imelDaBan);
 
             HoaDonChiTiet chiTiet = new HoaDonChiTiet();
             chiTiet.setHoaDon(hoaDon);
             chiTiet.setIdChiTietSanPham(chiTietSanPham);
             chiTiet.setGia(item.getGiaBan());
-            chiTiet.setIdImelDaBan(imelDaBan);
-            chiTiet.setTrangThai((short) 1);
+            chiTiet.setIdImelDaBan(null); // Không gán IMEI lúc này
+            chiTiet.setTrangThai((short) 1); // Đặt trạng thái chờ xác nhận
             chiTiet.setDeleted(false);
             chiTietList.add(chiTiet);
         }
@@ -491,12 +495,11 @@ public class BanHangClientServiceImpl implements BanHangClientService {
 
         // Xử lý phương thức thanh toán (COD)
         HinhThucThanhToan hinhThuc = new HinhThucThanhToan();
-        // Thay dòng 521
         List<PhuongThucThanhToan> phuongThucList = phuongThucThanhToanRepository.findAllByKieuThanhToan("Tiền mặt");
         if (phuongThucList.isEmpty()) {
             throw new RuntimeException("Phương thức thanh toán COD không tồn tại!");
         }
-        PhuongThucThanhToan phuongThuc = phuongThucList.get(0); // Chọn bản ghi đầu tiên
+        PhuongThucThanhToan phuongThuc = phuongThucList.get(0);
         hinhThuc.setHoaDon(hoaDon);
         hinhThuc.setIdPhuongThucThanhToan(phuongThuc);
         hinhThuc.setTienMat(tongTienSauGiam);
@@ -507,7 +510,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
 
         // Cập nhật trạng thái hóa đơn
         hoaDon.setLoaiDon("online");
-        hoaDon.setTrangThai((short) 0); // Đã thanh toán
+        hoaDon.setTrangThai((short) 0); // Đã thanh toán, chờ xác nhận IMEI
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setDeleted(false);
         hoaDon = hoaDonRepository.save(hoaDon);
@@ -518,7 +521,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         lichSu.setIdNhanVien(nhanVienRepository.findById(1)
                 .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại")));
         lichSu.setMa(hoaDon.getMa());
-        lichSu.setHanhDong("Thanh toán hóa đơn qua client (COD)");
+        lichSu.setHanhDong("Thanh toán hóa đơn qua client (COD), chờ xác nhận IMEI");
         lichSu.setThoiGian(Instant.now());
         lichSu.setDeleted(false);
         lichSuHoaDonRepository.save(lichSu);
@@ -531,6 +534,77 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         guiEmailThongTinDonHang(response, hoaDonRequest.getEmail());
 
         return response;
+    }
+
+
+    @Transactional
+    public HoaDonDetailResponse xacNhanVaGanImei(Integer idHD, Map<Integer, String> imelMap) {
+        // Kiểm tra hóa đơn
+        HoaDon hoaDon = hoaDonRepository.findById(idHD)
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại!"));
+        if (hoaDon.getTrangThai() != 0) {
+            throw new RuntimeException("Hóa đơn không ở trạng thái chờ xác nhận IMEI!");
+        }
+
+        // Lấy danh sách chi tiết hóa đơn
+        List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(idHD);
+        for (HoaDonChiTiet chiTiet : chiTietList) {
+            // Lấy ID chi tiết sản phẩm
+            Integer chiTietId = chiTiet.getIdChiTietSanPham().getId();
+            // Lấy IMEI từ map
+            String imel = imelMap.get(chiTietId);
+            if (imel == null || imel.trim().isEmpty()) {
+                throw new RuntimeException("IMEI cho sản phẩm ID " + chiTietId + " không được cung cấp!");
+            }
+
+            // Kiểm tra IMEI hợp lệ
+            Imel imelEntity = imelRepository.findByImelAndDeleted(imel, false)
+                    .orElseThrow(() -> new RuntimeException("IMEI " + imel + " không tồn tại hoặc đã được sử dụng!"));
+
+            // Kiểm tra xem IMEI có khớp với idImel của ChiTietSanPham không
+            ChiTietSanPham chiTietSanPham = chiTiet.getIdChiTietSanPham();
+            if (chiTietSanPham.getIdImel() != null && !chiTietSanPham.getIdImel().getId().equals(imelEntity.getId())) {
+                throw new RuntimeException("IMEI " + imel + " không khớp với thông số sản phẩm đã chọn!");
+            }
+
+            // Đánh dấu Imel là đã sử dụng
+            imelEntity.setDeleted(true);
+            imelRepository.save(imelEntity);
+
+            // Tạo ImelDaBan
+            ImelDaBan imelDaBan = new ImelDaBan();
+            imelDaBan.setMa("IMELDB_" + UUID.randomUUID().toString().substring(0, 8));
+            imelDaBan.setImel(imel);
+            imelDaBan.setNgayBan(Date.from(Instant.now()));
+            imelDaBan.setGhiChu("Gán IMEI cho hóa đơn " + hoaDon.getMa());
+            imelDaBan = imelDaBanRepository.save(imelDaBan);
+
+            // Gán IMEI cho chi tiết hóa đơn
+            chiTiet.setIdImelDaBan(imelDaBan);
+            chiTiet.setTrangThai((short) 2); // Đã xác nhận và sẵn sàng giao
+            hoaDonChiTietRepository.save(chiTiet);
+
+            // Cập nhật trạng thái deleted của ChiTietSanPham thành true
+            chiTietSanPham.setDeleted(true);
+            chiTietSanPhamRepository.save(chiTietSanPham);
+        }
+
+        // Cập nhật trạng thái hóa đơn
+        hoaDon.setTrangThai((short) 1); // Đang giao
+        hoaDon = hoaDonRepository.save(hoaDon);
+
+        // Lưu lịch sử
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hoaDon);
+        lichSu.setIdNhanVien(nhanVienRepository.findById(1)
+                .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại")));
+        lichSu.setMa("LSHD_" + UUID.randomUUID().toString().substring(0, 8)); // Tạo mã duy nhất
+        lichSu.setHanhDong("Xác nhận và gán IMEI cho hóa đơn " + hoaDon.getMa());
+        lichSu.setThoiGian(Instant.now());
+        lichSu.setDeleted(false);
+        lichSuHoaDonRepository.save(lichSu);
+
+        return mapToHoaDonDetailResponse(hoaDon);
     }
 
 
@@ -733,7 +807,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 .map(hdct -> {
                     ChiTietSanPham ctsp = hdct.getIdChiTietSanPham();
                     return new HoaDonDetailResponse.SanPhamChiTietInfo(
-                            ctsp.getMa(),
+                            ctsp.getId(),
                             hoaDon.getId(),
                             ctsp.getIdSanPham().getMa(),
                             ctsp.getIdSanPham().getTenSanPham(),

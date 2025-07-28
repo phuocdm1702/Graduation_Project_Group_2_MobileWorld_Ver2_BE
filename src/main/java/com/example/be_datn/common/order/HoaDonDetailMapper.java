@@ -12,15 +12,17 @@ import org.mapstruct.factory.Mappers;
 public interface HoaDonDetailMapper {
     HoaDonDetailMapper INSTANCE = Mappers.getMapper(HoaDonDetailMapper.class);
 
-    @Mapping(source = "hoaDon.id", target = "idHoaDon") // Ánh xạ idHoaDon
+    @Mapping(source = "idChiTietSanPham.id", target = "chiTietSanPhamId") // Ánh xạ ID của ChiTietSanPham
+    @Mapping(source = "hoaDon.id", target = "idHoaDon")
+    @Mapping(source = "idChiTietSanPham.ma", target = "maHinhSanPhamChiTiet") // Ánh xạ ma của ChiTietSanPham
     @Mapping(source = "idChiTietSanPham.idSanPham.ma", target = "maSanPham")
     @Mapping(source = "idChiTietSanPham.idSanPham.tenSanPham", target = "tenSanPham")
     @Mapping(source = "idImelDaBan.imel", target = "imel")
     @Mapping(source = "gia", target = "giaBan")
     @Mapping(source = "ghiChu", target = "ghiChu")
-    @Mapping(source = "idChiTietSanPham.idMauSac.mauSac", target = "mauSac") // Thêm ánh xạ cho màu sắc
-    @Mapping(source = "idChiTietSanPham.idBoNhoTrong.dungLuongBoNhoTrong", target = "dungLuongBoNhoTrong") // Thêm ánh xạ cho bộ nhớ
-    @Mapping(source = "idChiTietSanPham.idRam.dungLuongRam", target = "dungLuongRam") // Thêm ánh xạ cho bộ nhớ
+    @Mapping(source = "idChiTietSanPham.idMauSac.mauSac", target = "mauSac")
+    @Mapping(source = "idChiTietSanPham.idBoNhoTrong.dungLuongBoNhoTrong", target = "dungLuongBoNhoTrong")
+    @Mapping(source = "idChiTietSanPham.idRam.dungLuongRam", target = "dungLuongRam")
     @Mapping(source = "idChiTietSanPham.idAnhSanPham.duongDan", target = "duongDan") // ánh xạ đường dẫn của ảnh SP
     HoaDonDetailResponse.SanPhamChiTietInfo mapToSanPhamChiTietInfo(HoaDonChiTiet hoaDonChiTiet);
 

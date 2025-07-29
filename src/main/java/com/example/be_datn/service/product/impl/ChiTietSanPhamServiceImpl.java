@@ -115,9 +115,7 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                 throw new RuntimeException("Cloudinary trả về URL ảnh rỗng");
             }
             AnhSanPham anhSanPham = AnhSanPham.builder()
-                    .tenAnh
-
-                            (fileName)
+                    .tenAnh(fileName)
                     .duongDan(imageUrl)
                     .deleted(false)
                     .build();
@@ -192,6 +190,7 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                 savedImages.size(), colorImageUrls.size());
         return colorImageUrls;
     }
+
     private Map<Integer, String> processImageUpdates(List<MultipartFile> images, List<String> existingImageUrls,
                                                      List<ChiTietSanPhamRequest.VariantRequest> variants) {
         logger.info("Starting image update process");
@@ -433,9 +432,11 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
 
         // Validate request
         if (request.getVariants() == null || request.getVariants().isEmpty()) {
+            logger.error("Validation failed: Danh sách biến thể không được để trống");
             throw new IllegalArgumentException("Danh sách biến thể không được để trống");
         }
         if (request.getVariants().size() != 1) {
+            logger.error("Validation failed: Chỉ được cung cấp một biến thể để cập nhật chi tiết sản phẩm");
             throw new IllegalArgumentException("Chỉ được cung cấp một biến thể để cập nhật chi tiết sản phẩm");
         }
 
@@ -443,67 +444,97 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
 
         // Validate variant
         if (variant.getIdMauSac() == null) {
+            logger.error("Validation failed: Màu sắc không được để trống");
             throw new IllegalArgumentException("Màu sắc không được để trống");
         }
         if (variant.getIdRam() == null) {
+            logger.error("Validation failed: RAM không được để trống");
             throw new IllegalArgumentException("RAM không được để trống");
         }
         if (variant.getIdBoNhoTrong() == null) {
+            logger.error("Validation failed: Bộ nhớ trong không được để trống");
             throw new IllegalArgumentException("Bộ nhớ trong không được để trống");
         }
         if (variant.getDonGia() == null || variant.getDonGia().compareTo(BigDecimal.ZERO) <= 0) {
+            logger.error("Validation failed: Đơn giá phải lớn hơn 0");
             throw new IllegalArgumentException("Đơn giá phải lớn hơn 0");
         }
         if (variant.getImeiList() == null || variant.getImeiList().isEmpty()) {
+            logger.error("Validation failed: IMEI không được để trống");
             throw new IllegalArgumentException("IMEI không được để trống");
         }
         if (variant.getImeiList().size() != 1) {
+            logger.error("Validation failed: Chỉ được cung cấp một IMEI để cập nhật chi tiết sản phẩm");
             throw new IllegalArgumentException("Chỉ được cung cấp một IMEI để cập nhật chi tiết sản phẩm");
         }
 
         // Tìm chi tiết sản phẩm cần cập nhật
         ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Chi tiết sản phẩm không tồn tại với ID: " + id));
+                .orElseThrow(() -> {
+                    logger.error("Chi tiết sản phẩm không tồn tại với ID: {}", id);
+                    return new IllegalArgumentException("Chi tiết sản phẩm không tồn tại với ID: " + id);
+                });
+
+        // Xử lý IMEI
+        String imei = variant.getImeiList().get(0);
+        if (!imei.equals(chiTietSanPham.getIdImel().getImel())) {
+            logger.info("IMEI thay đổi: từ {} thành {}", chiTietSanPham.getIdImel().getImel(), imei);
+            // Kiểm tra định dạng IMEI
+            if (imei == null || imei.length() != 15 || !imei.matches("\\d{15}")) {
+                logger.error("Validation failed: IMEI phải là 15 chữ số: {}", imei);
+                throw new IllegalArgumentException("IMEI phải là 15 chữ số: " + imei);
+            }
+            // Kiểm tra trùng lặp IMEI
+            if (imelRepository.existsByImelAndDeletedFalse(imei)) {
+                logger.error("Validation failed: IMEI đã tồn tại: {}", imei);
+                throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
+            }
+            // Cập nhật IMEI
+            Imel imel = chiTietSanPham.getIdImel();
+            imel.setImel(imei);
+            imelRepository.save(imel);
+        } else {
+            logger.info("IMEI không thay đổi, giữ nguyên: {}", imei);
+        }
 
         // Xử lý ảnh
         Map<Integer, String> colorImageUrls = new HashMap<>();
         if (images != null && !images.isEmpty()) {
+            logger.info("Processing new image uploads");
             colorImageUrls = processImageUploads(images, request.getVariants());
         } else if (existingImageUrls != null && !existingImageUrls.isEmpty()) {
+            logger.info("Using existing image URLs");
             colorImageUrls.put(variant.getIdMauSac(), existingImageUrls.get(0));
         } else {
-            // Nếu không có ảnh mới và không có ảnh hiện tại, sử dụng ảnh hiện có trong database
+            logger.info("No new images or existing URLs provided, keeping current image");
             colorImageUrls.put(variant.getIdMauSac(), chiTietSanPham.getIdAnhSanPham().getDuongDan());
         }
 
         // Cập nhật thông tin chi tiết sản phẩm
         MauSac mauSac = mauSacRepository.findById(variant.getIdMauSac())
-                .orElseThrow(() -> new IllegalArgumentException("Màu sắc không tồn tại"));
+                .orElseThrow(() -> {
+                    logger.error("Màu sắc không tồn tại: {}", variant.getIdMauSac());
+                    return new IllegalArgumentException("Màu sắc không tồn tại");
+                });
         Ram ram = ramRepository.findById(variant.getIdRam())
-                .orElseThrow(() -> new IllegalArgumentException("RAM không tồn tại"));
+                .orElseThrow(() -> {
+                    logger.error("RAM không tồn tại: {}", variant.getIdRam());
+                    return new IllegalArgumentException("RAM không tồn tại");
+                });
         BoNhoTrong boNhoTrong = boNhoTrongRepository.findById(variant.getIdBoNhoTrong())
-                .orElseThrow(() -> new IllegalArgumentException("Bộ nhớ trong không tồn tại"));
+                .orElseThrow(() -> {
+                    logger.error("Bộ nhớ trong không tồn tại: {}", variant.getIdBoNhoTrong());
+                    return new IllegalArgumentException("Bộ nhớ trong không tồn tại");
+                });
 
-        // Xử lý IMEI - chỉ kiểm tra nếu IMEI thay đổi
-        String imei = variant.getImeiList().get(0);
-        if (!imei.equals(chiTietSanPham.getIdImel().getImel())) {
-            if (imelRepository.existsByImelAndDeletedFalse(imei)) {
-                throw new IllegalArgumentException("IMEI đã tồn tại: " + imei);
-            }
-            Imel imel = Imel.builder()
-                    .imel(imei)
-                    .deleted(false)
-                    .build();
-            imel = imelRepository.save(imel);
-            chiTietSanPham.setIdImel(imel);
-        }
-
-        // Cập nhật ảnh sản phẩm - chỉ khi có ảnh mới hoặc ảnh hiện tại được cung cấp
+        // Cập nhật ảnh sản phẩm
         String imageUrl = colorImageUrls.get(variant.getIdMauSac());
-        AnhSanPham anhSanPham = null;
         if (imageUrl != null) {
-            anhSanPham = anhSanPhamRepository.findByDuongDan(imageUrl)
-                    .orElseThrow(() -> new IllegalArgumentException("Ảnh sản phẩm không tồn tại"));
+            AnhSanPham anhSanPham = anhSanPhamRepository.findByDuongDan(imageUrl)
+                    .orElseThrow(() -> {
+                        logger.error("Ảnh sản phẩm không tồn tại: {}", imageUrl);
+                        return new IllegalArgumentException("Ảnh sản phẩm không tồn tại");
+                    });
             chiTietSanPham.setIdAnhSanPham(anhSanPham);
         }
 
@@ -518,6 +549,7 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
 
         // Lưu thay đổi
         chiTietSanPham = chiTietSanPhamRepository.save(chiTietSanPham);
+        logger.info("Successfully updated ChiTietSanPham with id: {}", id);
 
         // Xây dựng response
         return ChiTietSanPhamResponse.builder()
@@ -536,19 +568,34 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
                 .build();
     }
 
-    public List<Object[]> findChiTietSanPhamBySanPhamId(Integer sanPhamId){
+    @Override
+    public Integer findChiTietSanPhamIdByImei(String imei) {
+        logger.info("Finding ChiTietSanPham ID for IMEI: {}", imei);
+        if (imei == null || imei.length() != 15 || !imei.matches("\\d{15}")) {
+            logger.error("Invalid IMEI format: {}", imei);
+            throw new IllegalArgumentException("IMEI phải là 15 chữ số: " + imei);
+        }
+        Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(imei);
+        if (chiTietSanPhamOpt.isEmpty()) {
+            logger.warn("No ChiTietSanPham found for IMEI: {}", imei);
+            throw new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm cho IMEI: " + imei);
+        }
+        return chiTietSanPhamOpt.get().getId();
+    }
+
+    public List<Object[]> findChiTietSanPhamBySanPhamId(Integer sanPhamId) {
         return chiTietSanPhamRepository.findChiTietSanPhamBySanPhamId(sanPhamId);
     }
 
-    public Double findMinPrice(){
+    public Double findMinPrice() {
         return chiTietSanPhamRepository.findMinPrice();
     }
 
-    public Double findMaxPrice(){
+    public Double findMaxPrice() {
         return chiTietSanPhamRepository.findMaxPrice();
     }
 
-    public List<String> findDistinctColors(){
+    public List<String> findDistinctColors() {
         return chiTietSanPhamRepository.findDistinctColors();
     }
 }

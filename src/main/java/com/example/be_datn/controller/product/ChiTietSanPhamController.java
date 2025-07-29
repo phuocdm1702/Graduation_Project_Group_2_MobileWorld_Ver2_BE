@@ -6,6 +6,8 @@ import com.example.be_datn.dto.product.response.ChiTietSanPhamDetailResponse;
 import com.example.be_datn.dto.product.response.ChiTietSanPhamResponse;
 import com.example.be_datn.service.product.ChiTietSanPhamService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -21,6 +23,7 @@ import java.util.Map;
 @RequestMapping("/api/chi-tiet-san-pham")
 public class ChiTietSanPhamController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ChiTietSanPhamController.class);
     private final ChiTietSanPhamService chiTietSanPhamService;
 
     public ChiTietSanPhamController(ChiTietSanPhamService chiTietSanPhamService) {
@@ -32,6 +35,7 @@ public class ChiTietSanPhamController {
             @Valid @ModelAttribute ChiTietSanPhamRequest request,
             @RequestParam(value = "images", required = false) List<MultipartFile> images,
             @RequestParam(value = "existingImageUrls", required = false) List<String> existingImageUrls) {
+        logger.info("Creating new ChiTietSanPham with request: {}", request);
         ChiTietSanPhamResponse response = chiTietSanPhamService.createChiTietSanPham(request, images, existingImageUrls);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -42,14 +46,33 @@ public class ChiTietSanPhamController {
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
         }
+        logger.warn("Validation errors: {}", errors);
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+        logger.warn("Illegal argument error: {}", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
     @GetMapping("/{idSanPham}")
     public ResponseEntity<List<ChiTietSanPhamDetailResponse>> getProductDetailsBySanPhamId(
             @PathVariable Integer idSanPham) {
+        logger.info("Fetching product details for idSanPham: {}", idSanPham);
         List<ChiTietSanPhamDetailResponse> responses = chiTietSanPhamService.getProductDetailsBySanPhamId(idSanPham);
         return new ResponseEntity<>(responses, HttpStatus.OK);
+    }
+
+    @GetMapping("/find-by-imei")
+    public ResponseEntity<Map<String, Integer>> findChiTietSanPhamIdByImei(@RequestParam String imei) {
+        logger.info("Finding ChiTietSanPham ID for IMEI: {}", imei);
+        Integer id = chiTietSanPhamService.findChiTietSanPhamIdByImei(imei);
+        Map<String, Integer> response = new HashMap<>();
+        response.put("id", id);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
@@ -58,6 +81,7 @@ public class ChiTietSanPhamController {
             @Valid @ModelAttribute ChiTietSanPhamUpdateRequest request,
             @RequestParam(value = "images", required = false) List<MultipartFile> images,
             @RequestParam(value = "existingImageUrls", required = false) List<String> existingImageUrls) {
+        logger.info("Updating ChiTietSanPham with ID: {} and request: {}", id, request);
         ChiTietSanPhamResponse response = chiTietSanPhamService.updateChiTietSanPham(id, request, images, existingImageUrls);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

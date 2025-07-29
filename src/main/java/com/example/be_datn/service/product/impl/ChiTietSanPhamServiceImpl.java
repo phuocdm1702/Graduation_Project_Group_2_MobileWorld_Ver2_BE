@@ -582,20 +582,4 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
         }
         return chiTietSanPhamOpt.get().getId();
     }
-
-    public List<Object[]> findChiTietSanPhamBySanPhamId(Integer sanPhamId) {
-        return chiTietSanPhamRepository.findChiTietSanPhamBySanPhamId(sanPhamId);
-    }
-
-    public Double findMinPrice() {
-        return chiTietSanPhamRepository.findMinPrice();
-    }
-
-    public Double findMaxPrice() {
-        return chiTietSanPhamRepository.findMaxPrice();
-    }
-
-    public List<String> findDistinctColors() {
-        return chiTietSanPhamRepository.findDistinctColors();
-    }
 }

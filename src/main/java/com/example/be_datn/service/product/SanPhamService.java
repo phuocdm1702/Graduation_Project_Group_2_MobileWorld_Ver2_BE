@@ -47,19 +47,4 @@ public interface SanPhamService {
 
     SanPhamResponse mapToDTO(SanPham sanPham);
 
-    public List<Object[]> findProductsWithLatestVariant(@Param("idNhaSanXuat") Integer idNhaSanXuat);
-
-    public List<Object[]> showNewProduct(@Param("idNhaSanXuat") Integer idNhaSanXuat);
-
-    public List<Object[]> showBestProduct(@Param("sortBy") String sortBy);
-
-    public Page<Object[]> showAllProduct(Pageable pageable);
-
-    public List<Object[]> suggestProductTop6();
-
-    public Page<Object[]> showAllProduct(Pageable pageable,  String sortBy,String useCases, String colors, String brands, double minPrice, double maxPrice);
-
-    public List<Object[]> getProductForCompare();
-
-    public Optional<SanPham> findSanPhamWithDetailsById(Integer id);
 }

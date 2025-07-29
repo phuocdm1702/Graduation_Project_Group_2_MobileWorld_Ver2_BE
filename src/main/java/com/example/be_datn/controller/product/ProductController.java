@@ -1,12 +1,13 @@
 package com.example.be_datn.controller.product;
 
 import com.example.be_datn.entity.product.ChiTietSanPham;
-import com.example.be_datn.service.product.ChiTietSanPhamService;
-import com.example.be_datn.service.product.SanPhamService;
+import com.example.be_datn.service.clientService.ProductService.ProductClientService;
+import com.example.be_datn.service.clientService.impl.Product.ProductDetailClientServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -15,20 +16,18 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000")
+@Controller
 public class ProductController {
-
-    private SanPhamService sanPhamService;
-    private ChiTietSanPhamService chiTietSanPhamService;
+@Autowired
+    private ProductClientService productClientService;
 
     @Autowired
-    public ProductController(SanPhamService sanPhamService, ChiTietSanPhamService chiTietSanPhamService) {
-        this.sanPhamService = sanPhamService;
-        this.chiTietSanPhamService = chiTietSanPhamService;
-    }
+    private ProductDetailClientServiceImpl productDetailClientService;
+
 
     @GetMapping("/chi-tiet-san-pham")
     public List<Map<String, Object>> getProductVariants(@RequestParam("sanPhamId") Integer sanPhamId) {
-        List<Object[]> results = chiTietSanPhamService.findChiTietSanPhamBySanPhamId(sanPhamId);
+        List<Object[]> results = productDetailClientService.findChiTietSanPhamBySanPhamId(sanPhamId);
         return results.stream().map(record -> {
             Map<String, Object> variant = new HashMap<>();
             variant.put("sp_id", record[0]);
@@ -79,7 +78,7 @@ public class ProductController {
     // Get suggested products (top 6)
     @GetMapping("/suggested-products")
     public List<Map<String, Object>> getSuggestedProducts() {
-        List<Object[]> results = sanPhamService.suggestProductTop6();
+        List<Object[]> results = productClientService.suggestProductTop6();
         return results.stream().map(record -> {
             Map<String, Object> product = new HashMap<>();
             product.put("id", record[0]); // sp.id
@@ -95,7 +94,7 @@ public class ProductController {
     // Get product variants
     @GetMapping("/san-pham-with-variants")
     public List<Map<String, Object>> getProductsWithLatestVariant(@RequestParam(required = false) Integer idNhaSanXuat) {
-        List<Object[]> results = sanPhamService.findProductsWithLatestVariant(idNhaSanXuat);
+        List<Object[]> results = productClientService.findProductsWithLatestVariant(idNhaSanXuat);
         return results.stream().map(record -> {
             Map<String, Object> product = new HashMap<>();
             product.put("id", record[0]); // sp.id
@@ -115,7 +114,7 @@ public class ProductController {
 
     @GetMapping("/show-new-product")
     public List<Map<String, Object>> getNewProducts(@RequestParam(required = false) Integer idNhaSanXuat) {
-        List<Object[]> results = sanPhamService.showNewProduct(idNhaSanXuat);
+        List<Object[]> results = productClientService.showNewProduct(idNhaSanXuat);
         return results.stream().map(record -> {
             Map<String, Object> product = new HashMap<>();
             product.put("id", record[0]); // sp.id
@@ -130,7 +129,7 @@ public class ProductController {
 
     @GetMapping("/show-best-product")
     public List<Map<String, Object>> getBestProducts(@RequestParam(required = false) String sortBy) {
-        List<Object[]> results = sanPhamService.showBestProduct(sortBy != null ? sortBy : "RATING");
+        List<Object[]> results = productClientService.showBestProduct(sortBy != null ? sortBy : "RATING");
         return results.stream().map(record -> {
             Map<String, Object> product = new HashMap<>();
             product.put("id", record[0]); // sp.id
@@ -159,7 +158,7 @@ public class ProductController {
             @RequestParam(defaultValue = "0") double minPrice,
             @RequestParam(defaultValue = "0") double maxPrice) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Object[]> productPage = sanPhamService.showAllProduct(pageable, sortBy, useCases, colors, brands, minPrice, maxPrice);
+        Page<Object[]> productPage = productClientService.showAllProduct(pageable, sortBy, useCases, colors, brands, minPrice, maxPrice);
 
         List<Map<String, Object>> products = productPage.getContent().stream().map(record -> {
             Map<String, Object> product = new HashMap<>();
@@ -190,8 +189,8 @@ public class ProductController {
     @GetMapping("/price-range")
     public Map<String, Object> getPriceRange() {
         Map<String, Object> response = new HashMap<>();
-        Double minPrice = chiTietSanPhamService.findMinPrice();
-        Double maxPrice = chiTietSanPhamService.findMaxPrice();
+        Double minPrice = productDetailClientService.findMinPrice();
+        Double maxPrice = productDetailClientService.findMaxPrice();
         response.put("minPrice", minPrice != null ? minPrice : 0);
         response.put("maxPrice", maxPrice != null ? maxPrice : 0);
         return response;
@@ -199,18 +198,17 @@ public class ProductController {
 
     @GetMapping("/colors")
     public Map<String, Object> getColors() {
-        List<String> colors = chiTietSanPhamService.findDistinctColors();
+        List<String> colors = productDetailClientService.findDistinctColors();
         Map<String, Object> response = new HashMap<>();
         response.put("colors", colors);
         return response;
     }
 
-    // New endpoint for fetching products for comparison (combobox)
 
     // New endpoint for fetching products for comparison (combobox)
     @GetMapping("/products/compare")
     public List<Map<String, Object>> getProductsForCompare() {
-        List<Object[]> results = sanPhamService.getProductForCompare();
+        List<Object[]> results = productClientService.getProductForCompare();
         return results.stream().map(record -> {
             Map<String, Object> product = new HashMap<>();
             product.put("id", record[0]); // sp.id
@@ -224,7 +222,7 @@ public class ProductController {
     @GetMapping("/products/details/{id}")
     public Map<String, Object> getProductDetails(@PathVariable Integer id) {
         Map<String, Object> product = new HashMap<>();
-        sanPhamService.findSanPhamWithDetailsById(id).ifPresent(sanPham -> {
+        productClientService.findSanPhamWithDetailsById(id).ifPresent(sanPham -> {
             product.put("tenSanPham", sanPham.getTenSanPham() != null ? sanPham.getTenSanPham() : "Không có thông tin");
             ChiTietSanPham chiTiet = sanPham.getChiTietSanPhams().stream().findFirst().orElse(null);
             product.put("anhSanPhamUrl", chiTiet != null && chiTiet.getIdAnhSanPham() != null ? chiTiet.getIdAnhSanPham().getDuongDan() : "/assets/images/placeholder.jpg");

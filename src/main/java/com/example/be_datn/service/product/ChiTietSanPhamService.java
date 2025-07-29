@@ -16,12 +16,4 @@ public interface ChiTietSanPhamService {
     List<ChiTietSanPhamDetailResponse> getProductDetailsBySanPhamId(Integer idSanPham);
 
     Integer findChiTietSanPhamIdByImei(String imei);
-
-    public List<Object[]> findChiTietSanPhamBySanPhamId(Integer sanPhamId);
-
-    public Double findMinPrice();
-
-    public Double findMaxPrice();
-
-    public List<String> findDistinctColors();
 }

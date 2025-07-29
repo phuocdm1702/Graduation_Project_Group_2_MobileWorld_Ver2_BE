@@ -284,35 +284,4 @@ public class SanPhamServiceImpl implements SanPhamService {
         return sanPhamRepository.save(sanPham);
     }
 
-    public List<Object[]> findProductsWithLatestVariant(@Param("idNhaSanXuat") Integer idNhaSanXuat) {
-        return sanPhamRepository.findProductsWithLatestVariant(idNhaSanXuat);
-    }
-
-    public List<Object[]> showNewProduct(@Param("idNhaSanXuat") Integer idNhaSanXuat) {
-        return sanPhamRepository.showNewProduct(idNhaSanXuat);
-    }
-
-    public List<Object[]> showBestProduct(@Param("sortBy") String sortBy) {
-        return sanPhamRepository.showBestProduct(sortBy);
-    }
-
-    public Page<Object[]> showAllProduct(Pageable pageable){
-        return sanPhamRepository.showAllProduct(pageable);
-    }
-
-    public List<Object[]> suggestProductTop6(){
-        return sanPhamRepository.suggestProductTop6();
-    }
-
-    public Page<Object[]> showAllProduct(Pageable pageable,  String sortBy,String useCases, String colors, String brands, double minPrice, double maxPrice) {
-        return sanPhamRepository.showAllProduct(pageable, sortBy,useCases, colors, brands, minPrice, maxPrice);
-    }
-
-    public List<Object[]> getProductForCompare() {
-        return sanPhamRepository.getProductForCompare();
-    }
-
-    public Optional<SanPham> findSanPhamWithDetailsById(Integer id) {
-        return sanPhamRepository.findSanPhamWithDetailsById(id);
-    }
 }

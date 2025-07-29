@@ -26,8 +26,9 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
     WHERE i.deleted = :deleted
     AND (ctsp.deleted IS NULL OR ctsp.deleted = false)
     AND idb.imel IS NULL
-    """)
-    Page<Imel> getAllImelSP(Pageable pageable, @Param("deleted") Boolean deleted);
+    AND ctsp.id = :chiTietSanPhamId
+""")
+    Page<Imel> getAllImelSP(Pageable pageable, @Param("deleted") Boolean deleted, @Param("chiTietSanPhamId") Integer chiTietSanPhamId);
 
     List<HoaDonChiTiet> findByHoaDonIdAndDeletedFalse(Integer idHD);
 }

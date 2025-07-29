@@ -5,15 +5,12 @@ import com.example.be_datn.common.order.HoaDonMapper;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.entity.order.HoaDon;
-import com.example.be_datn.entity.order.HoaDonChiTiet;
 import com.example.be_datn.entity.order.LichSuHoaDon;
-import com.example.be_datn.entity.pay.HinhThucThanhToan;
 import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
 import com.example.be_datn.repository.order.HoaDonChiTietRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
 import com.example.be_datn.repository.order.LichSuHoaDonRepository;
-import com.example.be_datn.repository.pay.HinhThucThanhToanRepository;
 import com.example.be_datn.service.order.HoaDonService;
 import com.example.be_datn.service.order.XuatDanhSachHoaDon;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,7 +19,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +26,6 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -231,8 +226,8 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public Page<Imel> getAllImelSP(Pageable pageable, Boolean deleted) {
-        return hoaDonChiTietRepository.getAllImelSP(pageable, false);
+    public Page<Imel> getAllImelSP(Pageable pageable, Boolean deleted, Integer chiTietSanPhamId) {
+        return hoaDonChiTietRepository.getAllImelSP(pageable, deleted, chiTietSanPhamId);
     }
 
     // Hàm kiểm tra trạng thái hợp lệ

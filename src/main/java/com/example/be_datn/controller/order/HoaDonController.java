@@ -45,10 +45,11 @@ public class HoaDonController {
     @GetMapping("/hoa-don-chi-tiet/imel")
     public ResponseEntity<Page<Imel>> getImelHoaDonInHDCT(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = true) Integer chiTietSanPhamId
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(hoaDonService.getAllImelSP(pageable,false));
+        return ResponseEntity.ok(hoaDonService.getAllImelSP(pageable, false, chiTietSanPhamId));
     }
 
 

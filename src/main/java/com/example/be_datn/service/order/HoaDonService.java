@@ -23,6 +23,5 @@ public interface HoaDonService {
 
     HoaDonResponse updateHoaDonStatus(Integer id, Short trangThai, Integer idNhanVien);
 
-    Page<Imel> getAllImelSP(Pageable pageable, Boolean deleted);
-
+    Page<Imel> getAllImelSP(Pageable pageable, Boolean deleted, Integer chiTietSanPhamId);
 }

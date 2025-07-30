@@ -582,4 +582,10 @@ public class ChiTietSanPhamServiceImpl implements ChiTietSanPhamService {
         }
         return chiTietSanPhamOpt.get().getId();
     }
+
+    @Override
+    public Integer findIdImelByImei(String imei) {
+        Optional<Imel> imel = imelRepository.findByImel(imei);
+        return imel.map(Imel::getId).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy IMEI: " + imei));
+    }
 }

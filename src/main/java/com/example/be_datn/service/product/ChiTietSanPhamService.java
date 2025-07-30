@@ -16,4 +16,8 @@ public interface ChiTietSanPhamService {
     List<ChiTietSanPhamDetailResponse> getProductDetailsBySanPhamId(Integer idSanPham);
 
     Integer findChiTietSanPhamIdByImei(String imei);
+
+    Integer findIdImelByImei(String imei);
+
+    
 }

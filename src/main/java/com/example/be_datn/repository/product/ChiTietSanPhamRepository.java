@@ -23,22 +23,6 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "AND c.idImel.deleted = false")
     long countByIdSanPhamIdAndDeletedFalse(@Param("idSanPham") Integer idSanPham, @Param("deleted") boolean deleted);
 
-//    @Query("SELECT MIN(sp.ma) AS ma, sp.tenSanPham AS tenSanPham, ms.mauSac AS mauSac, r.dungLuongRam AS dungLuongRam, bnt.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, " +
-//            "COUNT(DISTINCT c.idImel.imel) AS soLuong, COALESCE(MIN(ctdgg.giaSauKhiGiam), MIN(c.giaBan)) AS giaBan, sp.id AS idSanPham " +
-//            "FROM ChiTietSanPham c " +
-//            "JOIN c.idSanPham sp " +
-//            "LEFT JOIN c.idMauSac ms " +
-//            "LEFT JOIN c.idRam r " +
-//            "LEFT JOIN c.idBoNhoTrong bnt " +
-//            "LEFT JOIN ChiTietDotGiamGia ctdgg ON ctdgg.idChiTietSanPham.id = c.id " +
-//            "AND ctdgg.deleted = false " +
-//            "AND ctdgg.idDotGiamGia.trangThai = false " +
-//            "AND ctdgg.idDotGiamGia.deleted = false " +
-//            "WHERE (:sanPhamId IS NULL OR c.idSanPham.id = :sanPhamId) AND c.deleted = false " +
-//            "AND c.idImel.deleted = false " +
-//            "GROUP BY sp.id, sp.tenSanPham, ms.mauSac, r.dungLuongRam, bnt.dungLuongBoNhoTrong")
-//    List<Object[]> findGroupedProductsBySanPhamId(@Param("sanPhamId") Integer sanPhamId);
-
     @Query("SELECT MIN(sp.ma) AS ma, sp.tenSanPham AS tenSanPham, ms.mauSac AS mauSac, r.dungLuongRam AS dungLuongRam, bnt.dungLuongBoNhoTrong AS dungLuongBoNhoTrong, " +
             "COUNT(DISTINCT c.idImel.imel) AS soLuong, COALESCE(MIN(ctdgg.giaSauKhiGiam), MIN(c.giaBan)) AS giaBan, sp.id AS idSanPham " +
             "FROM ChiTietSanPham c " +
@@ -70,8 +54,8 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId AND c.idMauSac.mauSac = :mauSac AND c.idRam.dungLuongRam = :dungLuongRam AND c.idBoNhoTrong.dungLuongBoNhoTrong = :dungLuongBoNhoTrong AND c.deleted = false")
     Optional<ChiTietSanPham> findByIdSanPhamIdAndAttributes();
 
-    @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imei AND c.deleted = false")
-    Optional<ChiTietSanPham> findByIdImelImelAndDeletedFalse(@Param("imei") String imei);
+    @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imel AND c.deleted = false AND c.idImel.deleted = false")
+    Optional<ChiTietSanPham> findByImel(@Param("imel") String imel);
 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId " +
             "AND c.idMauSac.mauSac = :mauSac " +
@@ -79,7 +63,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "AND c.idBoNhoTrong.dungLuongBoNhoTrong = :dungLuongBoNhoTrong " +
             "AND c.deleted = false")
     List<ChiTietSanPham> findByIdSanPhamIdAndAttributes(
-            @Param("sanPhamId") Integer sanPhamId,
+            @Param("sanPhamId") Integer idSanPham,
             @Param("mauSac") String mauSac,
             @Param("dungLuongRam") String dungLuongRam,
             @Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong);
@@ -91,9 +75,6 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "FROM ChiTietSanPham c " +
             "WHERE c.idSanPham.id = :idSanPham")
     List<Object[]> findProductDetailsBySanPhamId(@Param("idSanPham") Integer idSanPham);
-
-    @Query("SELECT c FROM ChiTietSanPham c WHERE c.idImel.imel = :imel AND c.deleted = false")
-    Optional<ChiTietSanPham> findByImel(@Param("imel") String imel);
 
     @Query("SELECT c.idImel.imel FROM ChiTietSanPham c WHERE c.idSanPham.id = :sanPhamId " +
             "AND c.idMauSac.mauSac = :mauSac " +
@@ -212,7 +193,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     LEFT JOIN anh_san_pham asp ON ctsp.id_anh_san_pham = asp.id
     LEFT JOIN chi_tiet_dot_giam_gia ctdgg ON ctsp.id = ctdgg.id_chi_tiet_san_pham AND ctdgg.deleted = 0
     LEFT JOIN dot_giam_gia dgg ON ctdgg.id_dot_giam_gia = dgg.id AND dgg.trang_thai = 0 AND dgg.deleted = 0
-    LEFT JOIN imel i ON ctsp.id_imel = i.id AND i.deleted = 0 -- Chỉ lấy IMEI chưa bị đánh dấu deleted
+    LEFT JOIN imel i ON ctsp.id_imel = i.id AND i.deleted = 0
     WHERE 
         sp.id = :sanPhamId 
         AND sp.deleted = 0
@@ -241,4 +222,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
     @Query("SELECT COUNT(c) FROM ChiTietSanPham c WHERE c.id = :id AND c.deleted = false")
     int countAvailableById(@Param("id") Integer chiTietSanPhamId);
+
+    @Query("SELECT ctsp FROM ChiTietSanPham ctsp WHERE ctsp.idImel.id = :idImel")
+    Optional<ChiTietSanPham> findByIdImelId(@Param("idImel") Integer idImel);
 }

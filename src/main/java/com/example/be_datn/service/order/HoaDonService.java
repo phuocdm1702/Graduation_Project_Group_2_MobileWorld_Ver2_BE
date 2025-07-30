@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.Map;
 
 public interface HoaDonService {
     Page<HoaDonResponse> getHoaDon(Pageable pageable);
@@ -23,5 +24,7 @@ public interface HoaDonService {
 
     HoaDonResponse updateHoaDonStatus(Integer id, Short trangThai, Integer idNhanVien);
 
-    Page<Imel> getAllImelSP(Pageable pageable, Boolean deleted, Integer chiTietSanPhamId);
+    Page<Imel> getAllImelBySanPhamId(Pageable pageable, Boolean deleted, Integer idSanPham, Integer chiTietSanPhamId);
+
+    HoaDonResponse confirmAndAssignIMEI(Integer idHD, Map<Integer, String> imelMap);
 }

@@ -63,11 +63,13 @@ public class TaiKhoanController {
     }
 
     @PostMapping("/dang-nhap")
-    public ResponseEntity<?> dangnhap(@RequestBody TaiKhoanDTO taiKhoanDTO) {
-        String login = taiKhoanDTO.getTenDangNhap() != null && !taiKhoanDTO.getTenDangNhap().trim().isEmpty()
-                ? taiKhoanDTO.getTenDangNhap() : taiKhoanDTO.getEmail();
-        Map<String, Object> response = processLogin(login, taiKhoanDTO.getMatKhau());
-        return ResponseEntity.ok().body(response);
+    public ResponseEntity<?> dangnhap(@RequestBody TaiKhoanDTO userDTO){
+        try {
+            String token = taiKhoanService.dangnhap(userDTO.getTenDangNhap(),userDTO.getMatKhau());
+            return ResponseEntity.ok().body("dang nhap thanh cong. /n Token:" + token);
+        } catch (RuntimeException e){
+            return ResponseEntity.status(400).body(null);
+        }
     }
 
     @PostMapping("/dang-nhap-Web")

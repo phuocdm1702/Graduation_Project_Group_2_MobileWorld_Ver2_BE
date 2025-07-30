@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @Controller
@@ -46,12 +48,12 @@ public class HoaDonController {
     public ResponseEntity<Page<Imel>> getImelHoaDonInHDCT(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = true) Integer idSanPham,
             @RequestParam(required = true) Integer chiTietSanPhamId
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(hoaDonService.getAllImelSP(pageable, false, chiTietSanPhamId));
+        return ResponseEntity.ok(hoaDonService.getAllImelBySanPhamId(pageable, false, idSanPham, chiTietSanPhamId));
     }
-
 
     @GetMapping("/home")
     public ResponseEntity<?> getAllHoaDon(
@@ -64,14 +66,12 @@ public class HoaDonController {
             @RequestParam(required = false) Timestamp endDate,
             @RequestParam(required = false) Short trangThai,
             @RequestParam(required = false) String loaiDon) {
-        // Chuẩn hóa loaiDon
         if (loaiDon != null) {
             loaiDon = loaiDon.toLowerCase();
             if (!loaiDon.equals("trực tiếp") && !loaiDon.equals("online")) {
                 loaiDon = null;
             }
         }
-        // Kiểm tra giá trị lọc không hợp lệ
         if (minAmount != null && maxAmount != null && minAmount > maxAmount) {
             return ResponseEntity.badRequest().body("minAmount phải nhỏ hơn hoặc bằng maxAmount");
         }
@@ -82,22 +82,6 @@ public class HoaDonController {
         Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
         return ResponseEntity.ok(response);
     }
-
-//    @GetMapping("/home")
-//    public ResponseEntity<Page<HoaDonResponse>> getAllHoaDon(
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "0") int size,
-//            @RequestParam(required = false) String keyword,
-//            @RequestParam(required = false) Long minAmount,
-//            @RequestParam(required = false) Long maxAmount,
-//            @RequestParam(required = false) Timestamp startDate,
-//            @RequestParam(required = false) Timestamp endDate,
-//            @RequestParam(required = false) Short trangThai,
-//            @RequestParam(required = false) String loaiDon) {
-//        Pageable pageable = PageRequest.of(page, size);
-//        Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
-//        return ResponseEntity.ok(response); // Trả về Page trống nếu không có dữ liệu
-//    }
 
     @GetMapping("/{id}/detail")
     public ResponseEntity<HoaDonDetailResponse> getHoaDonDetail(@PathVariable Integer id) {
@@ -117,7 +101,6 @@ public class HoaDonController {
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
-    // API lấy hóa đơn theo mã QR
     @GetMapping("/QR-by-ma/{ma}")
     public ResponseEntity<HoaDonResponse> getHoaDonByMa(@PathVariable String maHD) {
         try {
@@ -127,7 +110,6 @@ public class HoaDonController {
         }
     }
 
-    // API xuất danh sách hóa đơn ra Excel
     @GetMapping("/export-excel")
     public void exportHoaDonToExcel(HttpServletResponse response) throws IOException {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -148,5 +130,30 @@ public class HoaDonController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
+    }
+
+    @PostMapping("/xac-nhan-imei/{idHD}")
+    public ResponseEntity<HoaDonResponse> confirmAndAssignIMEI(
+            @PathVariable Integer idHD,
+            @RequestBody Map<Integer, String> imelMap) {
+        try {
+            HoaDonResponse response = hoaDonService.confirmAndAssignIMEI(idHD, imelMap);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Lỗi server: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", "Lỗi server không xác định: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

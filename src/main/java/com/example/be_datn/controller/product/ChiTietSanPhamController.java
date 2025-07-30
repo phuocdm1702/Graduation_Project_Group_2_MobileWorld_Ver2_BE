@@ -4,10 +4,12 @@ import com.example.be_datn.dto.product.request.ChiTietSanPhamRequest;
 import com.example.be_datn.dto.product.request.ChiTietSanPhamUpdateRequest;
 import com.example.be_datn.dto.product.response.ChiTietSanPhamDetailResponse;
 import com.example.be_datn.dto.product.response.ChiTietSanPhamResponse;
+import com.example.be_datn.repository.order.HoaDonChiTietRepository;
 import com.example.be_datn.service.product.ChiTietSanPhamService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -28,6 +30,27 @@ public class ChiTietSanPhamController {
 
     public ChiTietSanPhamController(ChiTietSanPhamService chiTietSanPhamService) {
         this.chiTietSanPhamService = chiTietSanPhamService;
+    }
+
+    @Autowired
+    private HoaDonChiTietRepository hoaDonChiTietRepository;
+
+    @GetMapping("/{chiTietSanPhamId}/id-san-pham")
+    public ResponseEntity<Integer> getIdSanPhamByChiTietSanPhamId(@PathVariable Integer chiTietSanPhamId) {
+        Integer idSanPham = hoaDonChiTietRepository.findIdSanPhamByChiTietSanPhamId(chiTietSanPhamId);
+        if (idSanPham == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(idSanPham);
+    }
+
+    @GetMapping("/find-id-imel-by-imei")
+    public ResponseEntity<Map<String, Integer>> findIdImelByImei(@RequestParam String imei) {
+        logger.info("Finding IdImel for IMEI: {}", imei);
+        Integer idImel = chiTietSanPhamService.findIdImelByImei(imei);
+        Map<String, Integer> response = new HashMap<>();
+        response.put("idImel", idImel);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PostMapping(consumes = {"multipart/form-data"})

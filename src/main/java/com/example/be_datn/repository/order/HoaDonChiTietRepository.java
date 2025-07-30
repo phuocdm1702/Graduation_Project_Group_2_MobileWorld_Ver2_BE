@@ -13,6 +13,11 @@ import java.util.List;
 
 @Repository
 public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, Integer> {
+    // Thêm phương thức để lấy idSanPham dựa trên id của ChiTietSanPham
+    @Query("SELECT ctsp.idSanPham.id FROM ChiTietSanPham ctsp WHERE ctsp.id = :chiTietSanPhamId")
+    Integer findIdSanPhamByChiTietSanPhamId(@Param("chiTietSanPhamId") Integer chiTietSanPhamId);
+
+    // Sửa phương thức getAllImelBySanPhamId để lọc các IMEI có cùng RAM, ROM, giá bán, màu sắc
     @Query("""
     SELECT new com.example.be_datn.entity.product.Imel(
         i.id,
@@ -26,9 +31,15 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
     WHERE i.deleted = :deleted
     AND (ctsp.deleted IS NULL OR ctsp.deleted = false)
     AND idb.imel IS NULL
-    AND ctsp.id = :chiTietSanPhamId
-""")
-    Page<Imel> getAllImelSP(Pageable pageable, @Param("deleted") Boolean deleted, @Param("chiTietSanPhamId") Integer chiTietSanPhamId);
+    AND ctsp.idSanPham.id = :idSanPham
+    AND ctsp.idRam.id = (SELECT ctsp2.idRam.id FROM ChiTietSanPham ctsp2 WHERE ctsp2.id = :chiTietSanPhamId)
+    AND ctsp.idBoNhoTrong.id = (SELECT ctsp2.idBoNhoTrong.id FROM ChiTietSanPham ctsp2 WHERE ctsp2.id = :chiTietSanPhamId)
+    AND ctsp.idMauSac.id = (SELECT ctsp2.idMauSac.id FROM ChiTietSanPham ctsp2 WHERE ctsp2.id = :chiTietSanPhamId)
+    AND ctsp.giaBan = (SELECT ctsp2.giaBan FROM ChiTietSanPham ctsp2 WHERE ctsp2.id = :chiTietSanPhamId)
+    """)
+    Page<Imel> getAllImelBySanPhamId(Pageable pageable, @Param("deleted") Boolean deleted,
+                                     @Param("idSanPham") Integer idSanPham,
+                                     @Param("chiTietSanPhamId") Integer chiTietSanPhamId);
 
     List<HoaDonChiTiet> findByHoaDonIdAndDeletedFalse(Integer idHD);
 }

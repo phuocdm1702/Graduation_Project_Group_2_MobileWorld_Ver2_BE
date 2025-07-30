@@ -12,6 +12,8 @@ import java.util.List;
 @Builder
 public class ChiTietSanPhamResponse {
     private Integer id;
+    private Integer idSanPham;
+    private String maSanPham;
     private String tenSanPham;
     private Integer idNhaSanXuat;
     private Integer idPin;

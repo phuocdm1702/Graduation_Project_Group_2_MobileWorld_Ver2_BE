@@ -27,7 +27,7 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
     )
     FROM Imel i
     LEFT JOIN ChiTietSanPham ctsp ON ctsp.idImel.id = i.id
-    LEFT JOIN ImelDaBan idb ON idb.imel = i.imel
+    LEFT JOIN ImelDaBan idb ON idb.imel = i.imel AND idb.deleted = false
     WHERE i.deleted = :deleted
     AND (ctsp.deleted IS NULL OR ctsp.deleted = false)
     AND idb.imel IS NULL

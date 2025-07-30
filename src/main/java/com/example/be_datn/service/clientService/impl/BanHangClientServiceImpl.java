@@ -537,6 +537,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
     }
 
 
+    @Override
     @Transactional
     public HoaDonDetailResponse xacNhanVaGanImei(Integer idHD, Map<Integer, String> imelMap) {
         // Kiểm tra hóa đơn
@@ -551,42 +552,66 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         for (HoaDonChiTiet chiTiet : chiTietList) {
             // Lấy ID chi tiết sản phẩm
             Integer chiTietId = chiTiet.getIdChiTietSanPham().getId();
-            // Lấy IMEI từ map
-            String imel = imelMap.get(chiTietId);
-            if (imel == null || imel.trim().isEmpty()) {
+            // Lấy IMEI mới từ map
+            String newImel = imelMap.get(chiTietId);
+            if (newImel == null || newImel.trim().isEmpty()) {
                 throw new RuntimeException("IMEI cho sản phẩm ID " + chiTietId + " không được cung cấp!");
             }
 
-            // Kiểm tra IMEI hợp lệ
-            Imel imelEntity = imelRepository.findByImelAndDeleted(imel, false)
-                    .orElseThrow(() -> new RuntimeException("IMEI " + imel + " không tồn tại hoặc đã được sử dụng!"));
-
-            // Kiểm tra xem IMEI có khớp với idImel của ChiTietSanPham không
+            // Lấy chi tiết sản phẩm hiện tại
             ChiTietSanPham chiTietSanPham = chiTiet.getIdChiTietSanPham();
-            if (chiTietSanPham.getIdImel() != null && !chiTietSanPham.getIdImel().getId().equals(imelEntity.getId())) {
-                throw new RuntimeException("IMEI " + imel + " không khớp với thông số sản phẩm đã chọn!");
+
+            // Kiểm tra xem có IMEI cũ được gán trước đó không
+            ImelDaBan oldImelDaBan = chiTiet.getIdImelDaBan();
+            if (oldImelDaBan != null) {
+                // Khôi phục trạng thái IMEI cũ
+                Imel oldImel = imelRepository.findByImelAndDeleted(oldImelDaBan.getImel(), true)
+                        .orElse(null);
+                if (oldImel != null) {
+                    oldImel.setDeleted(false);
+                    imelRepository.save(oldImel);
+                }
+
+                // Xóa bản ghi ImelDaBan cũ
+                imelDaBanRepository.delete(oldImelDaBan);
             }
 
-            // Đánh dấu Imel là đã sử dụng
-            imelEntity.setDeleted(true);
-            imelRepository.save(imelEntity);
+            // Kiểm tra IMEI mới hợp lệ
+            Imel newImelEntity = imelRepository.findByImelAndDeleted(newImel, false)
+                    .orElseThrow(() -> new RuntimeException("IMEI " + newImel + " không tồn tại hoặc đã được sử dụng!"));
 
-            // Tạo ImelDaBan
-            ImelDaBan imelDaBan = new ImelDaBan();
-            imelDaBan.setMa("IMELDB_" + UUID.randomUUID().toString().substring(0, 8));
-            imelDaBan.setImel(imel);
-            imelDaBan.setNgayBan(Date.from(Instant.now()));
-            imelDaBan.setGhiChu("Gán IMEI cho hóa đơn " + hoaDon.getMa());
-            imelDaBan = imelDaBanRepository.save(imelDaBan);
+            // Kiểm tra xem IMEI mới có khớp với thông số sản phẩm không (cùng sản phẩm, RAM, bộ nhớ trong)
+            Optional<ChiTietSanPham> newChiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(newImel);
+            if (newChiTietSanPhamOpt.isEmpty()) {
+                throw new RuntimeException("Không tìm thấy chi tiết sản phẩm cho IMEI " + newImel);
+            }
+            ChiTietSanPham newChiTietSanPham = newChiTietSanPhamOpt.get();
 
-            // Gán IMEI cho chi tiết hóa đơn
-            chiTiet.setIdImelDaBan(imelDaBan);
+            // So sánh thông số sản phẩm
+            if (!newChiTietSanPham.getIdSanPham().getId().equals(chiTietSanPham.getIdSanPham().getId()) ||
+                    !newChiTietSanPham.getIdRam().getId().equals(chiTietSanPham.getIdRam().getId()) ||
+                    !newChiTietSanPham.getIdBoNhoTrong().getId().equals(chiTietSanPham.getIdBoNhoTrong().getId())) {
+                throw new RuntimeException("IMEI " + newImel + " không khớp với thông số sản phẩm (tên sản phẩm, RAM, bộ nhớ trong)!");
+            }
+
+            // Đặt trạng thái deleted của IMEI mới thành true (1)
+            newImelEntity.setDeleted(true);
+            imelRepository.save(newImelEntity);
+
+            // Cập nhật ChiTietSanPham mới (nếu khác với ChiTietSanPham cũ)
+            if (!newChiTietSanPham.getId().equals(chiTietSanPham.getId())) {
+                chiTiet.setIdChiTietSanPham(newChiTietSanPham);
+                newChiTietSanPham.setDeleted(true);
+                chiTietSanPhamRepository.save(newChiTietSanPham);
+            } else {
+                chiTietSanPham.setDeleted(true);
+                chiTietSanPhamRepository.save(chiTietSanPham);
+            }
+
+            // Không gán IdImelDaBan cho chi tiết hóa đơn
+            chiTiet.setIdImelDaBan(null);
             chiTiet.setTrangThai((short) 2); // Đã xác nhận và sẵn sàng giao
             hoaDonChiTietRepository.save(chiTiet);
-
-            // Cập nhật trạng thái deleted của ChiTietSanPham thành true
-            chiTietSanPham.setDeleted(true);
-            chiTietSanPhamRepository.save(chiTietSanPham);
         }
 
         // Cập nhật trạng thái hóa đơn

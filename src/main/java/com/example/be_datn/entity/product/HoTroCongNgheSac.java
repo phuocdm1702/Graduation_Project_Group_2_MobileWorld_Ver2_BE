@@ -20,9 +20,8 @@ public class HoTroCongNgheSac {
     private Integer id;
 
     @Size(max = 255)
-    @NotNull
     @Nationalized
-    @Column(name = "ma", nullable = false)
+    @Column(name = "ma")
     private String ma;
 
     @Size(max = 50)

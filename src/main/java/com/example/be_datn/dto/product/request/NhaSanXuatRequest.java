@@ -11,8 +11,6 @@ import lombok.*;
 @Builder
 public class NhaSanXuatRequest {
 
-    @NotBlank(message = "Mã nhà sản xuất không được để trống")
-    @Size(max = 255, message = "Mã nhà sản xuất không được vượt quá 255 ký tự")
     private String ma;
 
     @NotBlank(message = "Tên nhà sản xuất không được để trống")

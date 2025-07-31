@@ -21,7 +21,6 @@ public interface BanHangService {
 
 
     @Transactional
-    HoaDonDTO taoHD(Integer khachHangId);
 
     GioHangDTO themVaoGH(Integer idHD, ChiTietGioHangDTO chiTietGioHangDTO);
 
@@ -45,4 +44,6 @@ public interface BanHangService {
     List<PhieuGiamGiaCaNhan> findByKhachHangId(Integer idKhachHang);
     Integer getChiTietSanPhamId(Integer sanPhamId, String mauSac, String dungLuongRam, String dungLuongBoNhoTrong);
     Map<String, Object> findProductByBarcodeOrImei(String code);
+
+    HoaDonDTO taoHD(Integer idKhachHangToUse, Integer idNhanVienToUse);
 }

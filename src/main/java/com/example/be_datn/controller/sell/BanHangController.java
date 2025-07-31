@@ -24,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,10 +55,15 @@ public class BanHangController {
     }
 
     @PostMapping("/add/tao-hd-cho")
-    public ResponseEntity<HoaDonDTO> addHD(@RequestParam(required = false) Integer khachHangId) {
-        Integer idKhachHangToUse = (khachHangId != null) ? khachHangId : 1;
-        return ResponseEntity.ok(banHangService.taoHD(idKhachHangToUse));
+    public ResponseEntity<HoaDonDTO> addHD(@RequestBody HoaDonRequest request) {
+        Integer idKhachHangToUse = (request.getIdKhachHang() != null) ? request.getIdKhachHang() : 1;
+        Integer idNhanVienToUse = (request.getIdNhanVien() != null) ? request.getIdNhanVien() : 1;
+        System.out.println("Request body: " + request); // Debug request body
+        return ResponseEntity.ok(banHangService.taoHD(idKhachHangToUse, idNhanVienToUse));
     }
+
+
+
 
     @DeleteMapping("/xoa-hd-cho/{idHD}")
     public ResponseEntity<Void> huyHDCho(@PathVariable Integer idHD) {

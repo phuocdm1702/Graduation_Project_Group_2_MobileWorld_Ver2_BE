@@ -2,14 +2,18 @@ package com.example.be_datn.service.account.impl;
 
 import com.example.be_datn.config.JwtUtil;
 import com.example.be_datn.entity.account.KhachHang;
+import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
+import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -23,8 +27,11 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
 
     private final JwtUtil jwtUtil;
 
-    public TaiKhoanServicesImpl(JwtUtil jwtUtil) {
+    private  final NhanVienRepository nhanVienRepository;
+
+    public TaiKhoanServicesImpl(JwtUtil jwtUtil, NhanVienRepository nhanVienRepository) {
         this.jwtUtil = jwtUtil;
+        this.nhanVienRepository = nhanVienRepository;
     }
 
 
@@ -56,7 +63,7 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         return taiKhoanRepository.save(nv);
     }
     @Override
-    public String dangnhap(String login, String matKhau) {
+    public Map<String, Object> dangnhap(String login, String matKhau) {
         if (login == null || login.trim().isEmpty() || matKhau == null || matKhau.trim().isEmpty()) {
             throw new RuntimeException("Tên đăng nhập hoặc email và mật khẩu không được để trống");
         }
@@ -65,13 +72,28 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         if (taiKhoan == null) {
             throw new RuntimeException("Tên đăng nhập/email hoặc mật khẩu không đúng");
         }
-        if (taiKhoan.getDeleted() == false) {
-            throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
+
+        if (Boolean.FALSE.equals(taiKhoan.getDeleted())) {
+            throw new RuntimeException("Tài khoản đã bị vô hiệu hóa");
         }
-        if (taiKhoan.getIdQuyenHan() == null || taiKhoan.getIdQuyenHan().getId() != 1) {
+
+        if (taiKhoan.getIdQuyenHan() == null ||
+                (taiKhoan.getIdQuyenHan().getId() != 1 && taiKhoan.getIdQuyenHan().getId() != 3)) {
             throw new RuntimeException("Bạn không có quyền để đăng nhập!");
         }
-        return jwtUtil.generateToken(taiKhoan.getTenDangNhap());
+
+        String token = jwtUtil.generateToken(taiKhoan.getTenDangNhap());
+
+        // 👉 Truy vấn nhân viên gắn với tài khoản
+        NhanVien nhanVien = nhanVienRepository.findByIdTaiKhoan(taiKhoan);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Đăng nhập thành công");
+        response.put("token", token);
+        response.put("idTaiKhoan", taiKhoan.getId());
+        response.put("idNhanVien", nhanVien != null ? nhanVien.getId() : null); // ✅ Bổ sung dòng này
+
+        return response;
     }
 
     @Override

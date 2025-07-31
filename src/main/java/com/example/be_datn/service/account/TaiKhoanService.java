@@ -4,6 +4,7 @@ package com.example.be_datn.service.account;
 import com.example.be_datn.entity.account.TaiKhoan;
 
 import java.util.List;
+import java.util.Map;
 
 public interface TaiKhoanService {
     String findById(Integer idTK);
@@ -12,7 +13,6 @@ public interface TaiKhoanService {
 
     TaiKhoan trangthaiNV(Integer id);
 
-    String dangnhap(String tenDangNhap, String matKhau);
 
     String dangnhapWeb(String login, String matKhau);
 
@@ -22,4 +22,5 @@ public interface TaiKhoanService {
   
     TaiKhoan findByUsername(String username);
 
+    Map<String, Object> dangnhap(String tenDangNhap, String matKhau);
 }

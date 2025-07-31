@@ -133,7 +133,7 @@ public class BanHangServiceImpl implements BanHangService {
 
     @Override
     @Transactional
-    public HoaDonDTO taoHD(Integer khachHangId) {
+    public HoaDonDTO taoHD(Integer khachHangId, Integer nhanVienId) {
         Integer khachHangIdToUse = (khachHangId != null) ? khachHangId : 1;
         KhachHang khachHang = khachHangRepository.findById(khachHangIdToUse)
                 .orElseGet(() -> {
@@ -143,9 +143,9 @@ public class BanHangServiceImpl implements BanHangService {
                     return khachHangRepository.save(guest);
                 });
 
-        Integer nhanVienId = 1;
-        NhanVien nhanVien = nhanVienRepository.findById(nhanVienId)
-                .orElseThrow(() -> new RuntimeException("Nhân viên với ID 1 không tồn tại"));
+        Integer nhanVienIdToUse = (nhanVienId != null) ? nhanVienId : 1;
+        NhanVien nhanVien = nhanVienRepository.findById(nhanVienIdToUse)
+                .orElseThrow(() -> new RuntimeException("Nhân viên với ID " + nhanVienIdToUse + " không tồn tại"));
 
         HoaDon hoaDon = HoaDon.builder()
                 .idKhachHang(khachHang)
@@ -165,7 +165,7 @@ public class BanHangServiceImpl implements BanHangService {
                 .trangThai((short) 0)
                 .deleted(true)
                 .createdAt(new Date())
-                .createdBy(nhanVienId)
+                .createdBy(nhanVienIdToUse)
                 .build();
 
         hoaDon = hoaDonRepository.save(hoaDon);
@@ -176,8 +176,10 @@ public class BanHangServiceImpl implements BanHangService {
         gioHangDTO.setChiTietGioHangDTOS(new ArrayList<>());
         gioHangDTO.setTongTien(BigDecimal.ZERO);
         redisTemplate.opsForValue().set(GH_PREFIX + hoaDon.getId(), gioHangDTO, 24, TimeUnit.HOURS);
+
         return mapToHoaDonDto(hoaDon);
     }
+
 
     @Override
     @Transactional

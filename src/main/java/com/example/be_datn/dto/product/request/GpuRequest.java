@@ -11,8 +11,6 @@ import lombok.*;
 @Builder
 public class GpuRequest {
 
-    @NotBlank(message = "Mã GPU không được để trống")
-    @Size(max = 255, message = "Mã GPU không được vượt quá 255 ký tự")
     private String ma;
 
     @NotBlank(message = "Tên GPU không được để trống")

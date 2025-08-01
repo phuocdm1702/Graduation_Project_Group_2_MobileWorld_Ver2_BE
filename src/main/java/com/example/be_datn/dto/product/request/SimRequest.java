@@ -10,8 +10,6 @@ import lombok.*;
 @Builder
 public class SimRequest {
 
-    @NotBlank(message = "Mã SIM không được để trống")
-    @Size(max = 255, message = "Mã SIM không được vượt quá 255 ký tự")
     private String ma;
 
     @NotNull(message = "Số lượng SIM hỗ trợ không được để trống")

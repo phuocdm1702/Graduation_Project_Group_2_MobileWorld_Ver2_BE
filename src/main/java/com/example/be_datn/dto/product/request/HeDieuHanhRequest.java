@@ -11,8 +11,6 @@ import lombok.*;
 @Builder
 public class HeDieuHanhRequest {
 
-    @NotBlank(message = "Mã hệ điều hành không được để trống")
-    @Size(max = 255, message = "Mã hệ điều hành không được vượt quá 255 ký tự")
     private String ma;
 
     @NotBlank(message = "Tên hệ điều hành không được để trống")

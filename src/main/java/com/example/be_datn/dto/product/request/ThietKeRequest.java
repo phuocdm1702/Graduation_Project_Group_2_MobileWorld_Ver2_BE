@@ -11,8 +11,6 @@ import lombok.*;
 @Builder
 public class ThietKeRequest {
 
-    @NotBlank(message = "Mã thiết kế không được để trống")
-    @Size(max = 255, message = "Mã thiết kế không được vượt quá 255 ký tự")
     private String ma;
 
     @Size(max = 255, message = "Chất liệu khung không được vượt quá 255 ký tự")

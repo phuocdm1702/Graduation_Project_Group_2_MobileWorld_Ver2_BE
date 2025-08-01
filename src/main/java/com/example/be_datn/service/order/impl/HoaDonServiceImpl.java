@@ -293,6 +293,44 @@ public class HoaDonServiceImpl implements HoaDonService {
         return hoaDonMapper.mapToDto(hoaDon);
     }
 
+    @Override
+    public HoaDonResponse updateHoaDonKH(Integer id, String tenKH, String sdt, String diaChi, String email) {
+        HoaDon hoaDon = hoaDonRepository.findHoaDonDetailById(id).orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại hoặc đã bị xóa"));
+        hoaDon.setTenKhachHang(tenKH);
+        hoaDon.setSoDienThoaiKhachHang(sdt);
+        hoaDon.setDiaChiKhachHang(diaChi);
+        hoaDon.setEmail(email);
+        //thêm thông tin vào lịch sử hóa đơn
+        LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
+        lichSuHoaDon.setMa("LSHD_" + System.currentTimeMillis());
+        lichSuHoaDon.setHanhDong("Cập nhật thông tin khách hàng: " + tenKH);
+        lichSuHoaDon.setThoiGian(Instant.now());
+        lichSuHoaDon.setHoaDon(hoaDon);
+
+        lichSuHoaDonRepository.save(lichSuHoaDon);
+        hoaDonRepository.save(hoaDon);
+
+        return hoaDonMapper.mapToDto(hoaDon);
+    }
+
+    @Override
+    public HoaDonResponse updateHoaDon(Integer id, String maHD, String loaHD) {
+        HoaDon hoaDon = hoaDonRepository.findHoaDonDetailById(id).orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại hoặc đã bị xóa"));
+        hoaDon.setMa(maHD);
+        hoaDon.setLoaiDon(loaHD);
+        //thêm thông tin vào lịch sử hóa đơn
+        LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
+        lichSuHoaDon.setMa("LSHD_" + System.currentTimeMillis());
+        lichSuHoaDon.setHanhDong("Cập nhật thông tin Hóa Đơn: " + maHD);
+        lichSuHoaDon.setThoiGian(Instant.now());
+        lichSuHoaDon.setHoaDon(hoaDon);
+
+        lichSuHoaDonRepository.save(lichSuHoaDon);
+        hoaDonRepository.save(hoaDon);
+
+        return hoaDonMapper.mapToDto(hoaDon);
+    }
+
     private boolean isValidTrangThai(Short trangThai) {
         return trangThai >= 0 && trangThai <= 4;
     }

@@ -1,6 +1,6 @@
-
 package com.example.be_datn.controller.giao_ca;
 
+import com.example.be_datn.entity.giao_ca.GiaoCa;
 import com.example.be_datn.service.giao_ca.GiaoCaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/giao-ca")
@@ -22,21 +23,26 @@ public class GiaoCaController {
     private GiaoCaService giaoCaService;
 
     @PostMapping("/bat-dau")
-    public ResponseEntity<Map<String, Object>> batDauCa(@RequestParam Integer nhanVienId) {
-        Map<String, Object> previousShiftData = giaoCaService.startShift(nhanVienId);
-        return ResponseEntity.ok(previousShiftData);
+    public ResponseEntity<GiaoCa> batDauCa(@RequestParam Integer nhanVienId, @RequestParam BigDecimal tienMatBanDau) {
+        GiaoCa newShift = giaoCaService.startShift(nhanVienId, tienMatBanDau);
+        return ResponseEntity.ok(newShift);
     }
 
     @PostMapping("/ket-thuc")
-    public ResponseEntity<Map<String, Object>> ketThucCa(
+    public ResponseEntity<GiaoCa> ketThucCa(
             @RequestParam Integer nhanVienId,
-            @RequestParam BigDecimal tienMatCuoiCa,
-            @RequestParam BigDecimal tienMatBanDau) {
-        Map<String, Object> reportData = giaoCaService.endShift(nhanVienId, tienMatCuoiCa, tienMatBanDau);
-        return ResponseEntity.ok(reportData);
+            @RequestParam BigDecimal tienMatCuoiCa) {
+        GiaoCa endedShift = giaoCaService.endShift(nhanVienId, tienMatCuoiCa);
+        return ResponseEntity.ok(endedShift);
     }
 
-    @PostMapping("/xuat-excel")
+    @GetMapping("/active")
+    public ResponseEntity<GiaoCa> getActiveShift(@RequestParam Integer nhanVienId) {
+        Optional<GiaoCa> activeShift = giaoCaService.getActiveShift(nhanVienId);
+        return activeShift.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/xuat-excel")
     public ResponseEntity<InputStreamResource> xuatExcel(@RequestBody Map<String, Object> reportData) {
         ByteArrayInputStream bis = giaoCaService.generateExcelReport(reportData);
 
@@ -47,5 +53,17 @@ public class GiaoCaController {
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(new InputStreamResource(bis));
+    }
+
+    @GetMapping("/pending-orders-count")
+    public ResponseEntity<Long> getPendingOrdersCount() {
+        long count = giaoCaService.getPendingOrdersCount();
+        return ResponseEntity.ok(count);
+    }
+
+    @GetMapping("/last-ended-shift-cash")
+    public ResponseEntity<BigDecimal> getLastEndedShiftCash() {
+        Optional<BigDecimal> cash = giaoCaService.getLastEndedShiftCash();
+        return cash.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 }

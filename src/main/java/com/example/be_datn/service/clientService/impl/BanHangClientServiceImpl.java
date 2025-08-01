@@ -540,31 +540,31 @@ public class BanHangClientServiceImpl implements BanHangClientService {
     @Override
     @Transactional
     public HoaDonDetailResponse xacNhanVaGanImei(Integer idHD, Map<Integer, String> imelMap) {
-        // Kiểm tra hóa đơn
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại!"));
         if (hoaDon.getTrangThai() != 0) {
             throw new RuntimeException("Hóa đơn không ở trạng thái chờ xác nhận IMEI!");
         }
 
-        // Lấy danh sách chi tiết hóa đơn
         List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(idHD);
         for (HoaDonChiTiet chiTiet : chiTietList) {
-            // Lấy ID chi tiết sản phẩm
             Integer chiTietId = chiTiet.getIdChiTietSanPham().getId();
-            // Lấy IMEI mới từ map
             String newImel = imelMap.get(chiTietId);
             if (newImel == null || newImel.trim().isEmpty()) {
                 throw new RuntimeException("IMEI cho sản phẩm ID " + chiTietId + " không được cung cấp!");
             }
 
-            // Lấy chi tiết sản phẩm hiện tại
             ChiTietSanPham chiTietSanPham = chiTiet.getIdChiTietSanPham();
 
-            // Kiểm tra xem có IMEI cũ được gán trước đó không
+            // Kiểm tra và xử lý IMEI cũ
+            // Trong BanHangClientServiceImpl.java
+// Kiểm tra và xử lý IMEI cũ
             ImelDaBan oldImelDaBan = chiTiet.getIdImelDaBan();
             if (oldImelDaBan != null) {
-                // Khôi phục trạng thái IMEI cũ
+                // Gỡ tham chiếu trong HoaDonChiTiet trước khi xóa
+                chiTiet.setIdImelDaBan(null);
+                hoaDonChiTietRepository.save(chiTiet);
+
                 Imel oldImel = imelRepository.findByImelAndDeleted(oldImelDaBan.getImel(), true)
                         .orElse(null);
                 if (oldImel != null) {
@@ -572,7 +572,13 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                     imelRepository.save(oldImel);
                 }
 
-                // Xóa bản ghi ImelDaBan cũ
+                // Khôi phục trạng thái ChiTietSanPham cũ
+                ChiTietSanPham oldChiTietSanPham = chiTiet.getIdChiTietSanPham();
+                if (oldChiTietSanPham != null) {
+                    oldChiTietSanPham.setDeleted(false);
+                    chiTietSanPhamRepository.save(oldChiTietSanPham);
+                }
+
                 imelDaBanRepository.delete(oldImelDaBan);
             }
 
@@ -580,50 +586,50 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             Imel newImelEntity = imelRepository.findByImelAndDeleted(newImel, false)
                     .orElseThrow(() -> new RuntimeException("IMEI " + newImel + " không tồn tại hoặc đã được sử dụng!"));
 
-            // Kiểm tra xem IMEI mới có khớp với thông số sản phẩm không (cùng sản phẩm, RAM, bộ nhớ trong)
             Optional<ChiTietSanPham> newChiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(newImel);
             if (newChiTietSanPhamOpt.isEmpty()) {
                 throw new RuntimeException("Không tìm thấy chi tiết sản phẩm cho IMEI " + newImel);
             }
             ChiTietSanPham newChiTietSanPham = newChiTietSanPhamOpt.get();
 
-            // So sánh thông số sản phẩm
             if (!newChiTietSanPham.getIdSanPham().getId().equals(chiTietSanPham.getIdSanPham().getId()) ||
                     !newChiTietSanPham.getIdRam().getId().equals(chiTietSanPham.getIdRam().getId()) ||
                     !newChiTietSanPham.getIdBoNhoTrong().getId().equals(chiTietSanPham.getIdBoNhoTrong().getId())) {
-                throw new RuntimeException("IMEI " + newImel + " không khớp với thông số sản phẩm (tên sản phẩm, RAM, bộ nhớ trong)!");
+                throw new RuntimeException("IMEI " + newImel + " không khớp với thông số sản phẩm!");
             }
 
-            // Đặt trạng thái deleted của IMEI mới thành true (1)
+            // Đặt trạng thái deleted của IMEI mới
             newImelEntity.setDeleted(true);
             imelRepository.save(newImelEntity);
 
-            // Cập nhật ChiTietSanPham mới (nếu khác với ChiTietSanPham cũ)
-            if (!newChiTietSanPham.getId().equals(chiTietSanPham.getId())) {
-                chiTiet.setIdChiTietSanPham(newChiTietSanPham);
-                newChiTietSanPham.setDeleted(true);
-                chiTietSanPhamRepository.save(newChiTietSanPham);
-            } else {
-                chiTietSanPham.setDeleted(true);
-                chiTietSanPhamRepository.save(chiTietSanPham);
-            }
+            // Tạo và lưu ImelDaBan mới
+            ImelDaBan imelDaBan = ImelDaBan.builder()
+                    .imel(newImel)
+                    .ngayBan(new Date())
+                    .ghiChu("Đã gán cho hóa đơn " + hoaDon.getMa())
+                    .deleted(false)
+                    .build();
+            imelDaBanRepository.save(imelDaBan);
 
-            // Không gán IdImelDaBan cho chi tiết hóa đơn
-            chiTiet.setIdImelDaBan(null);
-            chiTiet.setTrangThai((short) 2); // Đã xác nhận và sẵn sàng giao
+            // Cập nhật ChiTietSanPham mới
+            chiTiet.setIdChiTietSanPham(newChiTietSanPham);
+            newChiTietSanPham.setDeleted(true);
+            chiTietSanPhamRepository.save(newChiTietSanPham);
+
+            // Cập nhật HoaDonChiTiet
+            chiTiet.setIdImelDaBan(imelDaBan);
+            chiTiet.setTrangThai((short) 2);
             hoaDonChiTietRepository.save(chiTiet);
         }
 
-        // Cập nhật trạng thái hóa đơn
-        hoaDon.setTrangThai((short) 1); // Đang giao
+        hoaDon.setTrangThai((short) 1);
         hoaDon = hoaDonRepository.save(hoaDon);
 
-        // Lưu lịch sử
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hoaDon);
         lichSu.setIdNhanVien(nhanVienRepository.findById(1)
                 .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại")));
-        lichSu.setMa("LSHD_" + UUID.randomUUID().toString().substring(0, 8)); // Tạo mã duy nhất
+        lichSu.setMa("LSHD_" + UUID.randomUUID().toString().substring(0, 8));
         lichSu.setHanhDong("Xác nhận và gán IMEI cho hóa đơn " + hoaDon.getMa());
         lichSu.setThoiGian(Instant.now());
         lichSu.setDeleted(false);
@@ -631,8 +637,6 @@ public class BanHangClientServiceImpl implements BanHangClientService {
 
         return mapToHoaDonDetailResponse(hoaDon);
     }
-
-
 
 
     @Override

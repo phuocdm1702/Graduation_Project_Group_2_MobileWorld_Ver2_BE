@@ -1,6 +1,7 @@
 package com.example.be_datn.repository.account.KhachHang;
 
 import com.example.be_datn.entity.account.KhachHang;
+import com.example.be_datn.entity.account.TaiKhoan;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,4 +27,5 @@ public interface KhachHangRepository extends JpaRepository<KhachHang,Integer>,Kh
 
     KhachHang findByIdTaiKhoan_Id(Integer taiKhoanId);
 
+    KhachHang findByIdTaiKhoan(TaiKhoan taiKhoan);
 }

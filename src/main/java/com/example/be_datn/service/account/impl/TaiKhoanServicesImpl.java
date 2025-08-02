@@ -97,7 +97,7 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
     }
 
     @Override
-    public String dangnhapWeb(String login, String matKhau) {
+    public Map<String, Object> dangnhapWeb(String login, String matKhau) {
         if (login == null || login.trim().isEmpty() || matKhau == null || matKhau.trim().isEmpty()) {
             throw new RuntimeException("Tên đăng nhập hoặc email và mật khẩu không được để trống");
         }
@@ -106,11 +106,23 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         if (taiKhoan == null) {
             throw new RuntimeException("Tên đăng nhập/email hoặc mật khẩu không đúng");
         }
-        if (taiKhoan.getDeleted() == false) {
+
+        if (Boolean.FALSE.equals(taiKhoan.getDeleted())) {
             throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
         }
-        return taiKhoan.getTenDangNhap();
+
+        KhachHang khachHang = khachHangRepository.findByIdTaiKhoan(taiKhoan);
+        Integer idKhachHang = khachHang != null ? khachHang.getId() : null;
+
+        // Trả về thông tin cần thiết
+        Map<String, Object> response = new HashMap<>();
+        response.put("tenDangNhap", taiKhoan.getTenDangNhap());
+        response.put("idTaiKhoan", taiKhoan.getId());
+        response.put("idKhachHang", idKhachHang);
+
+        return response;
     }
+
 
     @Override
     public List<TaiKhoan> getall(){

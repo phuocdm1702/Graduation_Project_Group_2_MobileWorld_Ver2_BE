@@ -14,7 +14,6 @@ public interface TaiKhoanService {
     TaiKhoan trangthaiNV(Integer id);
 
 
-    String dangnhapWeb(String login, String matKhau);
 
     List<TaiKhoan> getall();
 
@@ -23,4 +22,6 @@ public interface TaiKhoanService {
     TaiKhoan findByUsername(String username);
 
     Map<String, Object> dangnhap(String tenDangNhap, String matKhau);
+
+    Map<String, Object> dangnhapWeb(String login, String matKhau);
 }

@@ -18,6 +18,7 @@ public interface HoaDonService {
                                              Timestamp startDate, Timestamp endDate, Short trangThai, String loaiDon, Pageable pageable);
 
     HoaDonDetailResponse getHoaDonDetail(Integer id);
+
     HoaDonResponse getHoaDonByMa(String maHD);
 
     void exportHoaDonToExcel(HttpServletResponse response) throws IOException;
@@ -27,4 +28,8 @@ public interface HoaDonService {
     Page<Imel> getAllImelBySanPhamId(Pageable pageable, Boolean deleted, Integer idSanPham, Integer chiTietSanPhamId);
 
     HoaDonResponse confirmAndAssignIMEI(Integer idHD, Map<Integer, String> imelMap);
+
+    HoaDonResponse updateHoaDonKH(Integer id, String tenKH, String sdt, String diaChi, String email);
+
+    HoaDonResponse updateHoaDon(Integer id, String maHD, String loaHD);
 }

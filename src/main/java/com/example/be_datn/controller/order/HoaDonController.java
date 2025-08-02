@@ -150,6 +150,34 @@ public class HoaDonController {
         }
     }
 
+    @PutMapping("/{id}/update-customer-info")
+    public ResponseEntity<HoaDonResponse> updateHoaDonCustomerInfo(
+            @PathVariable Integer id,
+            @RequestParam String tenKhachHang,
+            @RequestParam String soDienThoai,
+            @RequestParam String diaChi,
+            @RequestParam String email) {
+        try {
+            HoaDonResponse response = hoaDonService.updateHoaDonKH(id, tenKhachHang, soDienThoai, diaChi, email);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
+    @PutMapping("/{id}/update-hoa-don")
+    public ResponseEntity<HoaDonResponse> updateHoaDonDetail(
+            @PathVariable Integer id,
+            @RequestParam String maHD,
+            @RequestParam String loaiHD) {
+        try {
+            HoaDonResponse response = hoaDonService.updateHoaDon(id, maHD, loaiHD);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
         Map<String, String> error = new HashMap<>();

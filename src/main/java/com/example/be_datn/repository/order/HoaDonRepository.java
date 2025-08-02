@@ -113,4 +113,9 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     @Query("SELECT h FROM HoaDon h WHERE h.idKhachHang.id = :khachHangId ORDER BY h.ngayTao DESC FETCH FIRST 1 ROW ONLY")
     Optional<HoaDon> findTopByKhachHangIdOrderByNgayTaoDesc(@Param("khachHangId") Integer khachHangId);
 
+    @Query("SELECT COUNT(h) FROM HoaDon h WHERE h.trangThai = :trangThai AND h.deleted = :deleted")
+    long countByTrangThaiAndDeleted(@Param("trangThai") Short trangThai, @Param("deleted") Boolean deleted);
+
+    List<HoaDon> findByTrangThaiAndNgayTaoBetween(Short trangThai, java.util.Date startDate, java.util.Date endDate);
+
 }

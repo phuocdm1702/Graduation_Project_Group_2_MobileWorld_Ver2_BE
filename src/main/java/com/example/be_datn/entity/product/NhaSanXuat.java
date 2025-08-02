@@ -23,12 +23,11 @@ import org.hibernate.annotations.Nationalized;
 public class NhaSanXuat {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private Integer id;
 
     @Size(max = 255)
     @Nationalized
-    @Column(name = "ma", unique = true)
+    @Column(name = "ma")
     private String ma;
 
     @Size(max = 255)

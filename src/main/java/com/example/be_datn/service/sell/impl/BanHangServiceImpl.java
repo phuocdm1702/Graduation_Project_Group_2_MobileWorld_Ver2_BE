@@ -1,6 +1,5 @@
 package com.example.be_datn.service.sell.impl;
 
-import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.dto.sale.GioHangTam;
 import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.pay.request.HinhThucThanhToanDTO;
@@ -14,6 +13,8 @@ import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.discount.ChiTietDotGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
+import com.example.be_datn.entity.giao_ca.GiaoCa;
+import com.example.be_datn.entity.giao_ca.GiaoCaChiTiet;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.order.HoaDonChiTiet;
 import com.example.be_datn.entity.order.LichSuHoaDon;
@@ -27,6 +28,8 @@ import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
 import com.example.be_datn.repository.discount.PhieuGiamGiaCaNhanRepository;
 import com.example.be_datn.repository.discount.PhieuGiamGiaRepository;
+import com.example.be_datn.repository.giao_ca.GiaoCaChiTietRepository;
+import com.example.be_datn.repository.giao_ca.GiaoCaRepository;
 import com.example.be_datn.repository.order.GioHangTamRepository;
 import com.example.be_datn.repository.order.HoaDonChiTietRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
@@ -104,6 +107,12 @@ public class BanHangServiceImpl implements BanHangService {
     @Autowired
     private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
 
+    @Autowired
+    private GiaoCaRepository giaoCaRepository;
+
+    @Autowired
+    private GiaoCaChiTietRepository giaoCaChiTietRepository;
+
     private static final String GH_PREFIX = "gh:hd:";
 
     private String generatedRandomCode() {
@@ -134,6 +143,10 @@ public class BanHangServiceImpl implements BanHangService {
     @Override
     @Transactional
     public HoaDonDTO taoHD(Integer khachHangId, Integer nhanVienId) {
+
+        GiaoCa activeShift = giaoCaRepository.findByidNhanVien_IdAndTrangThai(nhanVienId, (short) 1)
+                .orElseThrow(() -> new IllegalStateException("Nhân viên chưa bắt đầu ca làm việc."));
+
         Integer khachHangIdToUse = (khachHangId != null) ? khachHangId : 1;
         KhachHang khachHang = khachHangRepository.findById(khachHangIdToUse)
                 .orElseGet(() -> {
@@ -150,6 +163,7 @@ public class BanHangServiceImpl implements BanHangService {
         HoaDon hoaDon = HoaDon.builder()
                 .idKhachHang(khachHang)
                 .idNhanVien(nhanVien)
+                .giaoCa(activeShift)
                 .ma(generatedRandomCode())
                 .tienSanPham(BigDecimal.ZERO)
                 .loaiDon("trực tiếp")
@@ -665,6 +679,17 @@ public class BanHangServiceImpl implements BanHangService {
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setDeleted(false);
         hoaDon = hoaDonRepository.save(hoaDon);
+
+        // Thêm vào GiaoCaChiTiet nếu là đơn trực tiếp và đã thanh toán
+        if ("trực tiếp".equals(hoaDon.getLoaiDon()) && hoaDon.getTrangThai() == 3) {
+            GiaoCa giaoCa = hoaDon.getGiaoCa();
+            if (giaoCa != null) {
+                GiaoCaChiTiet giaoCaChiTiet = new GiaoCaChiTiet();
+                giaoCaChiTiet.setGiaoCa(giaoCa);
+                giaoCaChiTiet.setHoaDon(hoaDon);
+                giaoCaChiTietRepository.save(giaoCaChiTiet);
+            }
+        }
 
         // Lưu lịch sử hóa đơn
         LichSuHoaDon lichSu = new LichSuHoaDon();

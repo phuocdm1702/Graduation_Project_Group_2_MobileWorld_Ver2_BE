@@ -4,7 +4,9 @@ import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
+import com.example.be_datn.entity.giao_ca.GiaoCa;
 import com.example.be_datn.entity.pay.HinhThucThanhToan;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -137,4 +139,10 @@ public class HoaDon {
 
     @OneToMany(mappedBy = "hoaDon", fetch = FetchType.LAZY)
     private Set<HinhThucThanhToan> hinhThucThanhToan = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "giao_ca_id")
+    @JsonIgnore
+    private GiaoCa giaoCa;
+
 }

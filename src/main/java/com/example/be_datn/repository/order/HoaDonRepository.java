@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -116,6 +118,10 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     @Query("SELECT COUNT(h) FROM HoaDon h WHERE h.trangThai = :trangThai AND h.deleted = :deleted")
     long countByTrangThaiAndDeleted(@Param("trangThai") Short trangThai, @Param("deleted") Boolean deleted);
 
-    List<HoaDon> findByTrangThaiAndNgayTaoBetween(Short trangThai, java.util.Date startDate, java.util.Date endDate);
+    List<HoaDon> findByTrangThaiInAndNgayTaoBetween(List<Short> trangThai, LocalDateTime startDate, LocalDateTime endDate);
+
+    List<HoaDon> findByGiaoCa_Id(Integer giaoCaId);
+
+    List<HoaDon> findByGiaoCa_IdAndDeletedFalseAndTrangThai(Integer giaoCaId, Short trangThai);
 
 }

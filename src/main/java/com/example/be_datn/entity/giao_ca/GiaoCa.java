@@ -1,6 +1,8 @@
 package com.example.be_datn.entity.giao_ca;
 
 import com.example.be_datn.entity.account.NhanVien;
+import com.example.be_datn.entity.order.HoaDon;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -11,6 +13,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -60,11 +65,15 @@ public class GiaoCa {
     @Column(name = "thoi_gian_ket_thuc")
     private LocalDateTime thoiGianKetThuc;
 
+    @OneToMany(mappedBy = "giaoCa")
+    @JsonManagedReference
+    private List<GiaoCaChiTiet> giaoCaChiTiets;
+
     public GiaoCa() {
 
     }
 
-    public GiaoCa(Integer id, NhanVien idNhanVien, BigDecimal tienMatBanDau, BigDecimal tienMatCuoiCa, BigDecimal tienMatCaTruoc, Integer donHangChoXuLyCaTruoc, BigDecimal tongTienMat, BigDecimal tongTienChuyenKhoan, BigDecimal tongDoanhThu, Short trangThai, LocalDateTime thoiGianBatDau, LocalDateTime thoiGianKetThuc) {
+    public GiaoCa(Integer id, NhanVien idNhanVien, BigDecimal tienMatBanDau, BigDecimal tienMatCuoiCa, BigDecimal tienMatCaTruoc, Integer donHangChoXuLyCaTruoc, BigDecimal tongTienMat, BigDecimal tongTienChuyenKhoan, BigDecimal tongDoanhThu, Short trangThai, LocalDateTime thoiGianBatDau, LocalDateTime thoiGianKetThuc, List<GiaoCaChiTiet> giaoCaChiTiets) {
         this.id = id;
         this.idNhanVien = idNhanVien;
         this.tienMatBanDau = tienMatBanDau;
@@ -77,6 +86,7 @@ public class GiaoCa {
         this.trangThai = trangThai;
         this.thoiGianBatDau = thoiGianBatDau;
         this.thoiGianKetThuc = thoiGianKetThuc;
+        this.giaoCaChiTiets = giaoCaChiTiets;
     }
 
     public Integer getId() {
@@ -174,4 +184,5 @@ public class GiaoCa {
     public void setThoiGianKetThuc(LocalDateTime thoiGianKetThuc) {
         this.thoiGianKetThuc = thoiGianKetThuc;
     }
+
 }

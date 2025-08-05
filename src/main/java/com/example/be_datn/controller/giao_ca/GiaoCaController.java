@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.giao_ca;
 
+import com.example.be_datn.dto.giao_ca.GiaoCaDTO;
 import com.example.be_datn.entity.giao_ca.GiaoCa;
 import com.example.be_datn.service.giao_ca.GiaoCaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,10 +30,9 @@ public class GiaoCaController {
     }
 
     @PostMapping("/ket-thuc")
-    public ResponseEntity<GiaoCa> ketThucCa(
-            @RequestParam Integer nhanVienId,
-            @RequestParam BigDecimal tienMatCuoiCa) {
-        GiaoCa endedShift = giaoCaService.endShift(nhanVienId, tienMatCuoiCa);
+    public ResponseEntity<GiaoCaDTO> ketThucCa(
+            @RequestParam Integer nhanVienId) {
+        GiaoCaDTO endedShift = giaoCaService.endShift(nhanVienId);
         return ResponseEntity.ok(endedShift);
     }
 

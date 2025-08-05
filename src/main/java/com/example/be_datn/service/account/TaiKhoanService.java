@@ -2,6 +2,7 @@ package com.example.be_datn.service.account;
 
 
 import com.example.be_datn.entity.account.TaiKhoan;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ public interface TaiKhoanService {
   
     TaiKhoan findByUsername(String username);
 
-    Map<String, Object> dangnhap(String tenDangNhap, String matKhau);
+    public Map<String, Object> dangnhap(String login, String matKhau, HttpServletRequest request);
 
     Map<String, Object> dangnhapWeb(String login, String matKhau);
 }

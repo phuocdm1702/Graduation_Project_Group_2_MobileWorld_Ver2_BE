@@ -8,6 +8,8 @@ import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.TaiKhoanService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -63,7 +65,7 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         return taiKhoanRepository.save(nv);
     }
     @Override
-    public Map<String, Object> dangnhap(String login, String matKhau) {
+    public Map<String, Object> dangnhap(String login, String matKhau, HttpServletRequest request) {
         if (login == null || login.trim().isEmpty() || matKhau == null || matKhau.trim().isEmpty()) {
             throw new RuntimeException("Tên đăng nhập hoặc email và mật khẩu không được để trống");
         }
@@ -78,23 +80,25 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         }
 
         if (taiKhoan.getIdQuyenHan() == null ||
-                (taiKhoan.getIdQuyenHan().getId() != 1 && taiKhoan.getIdQuyenHan().getId() != 3)) {
+                (taiKhoan.getIdQuyenHan().getId() != 1 && taiKhoan.getIdQuyenHan().getId() != 2)) {
             throw new RuntimeException("Bạn không có quyền để đăng nhập!");
         }
 
-        String token = jwtUtil.generateToken(taiKhoan.getTenDangNhap());
+        // 👉 Lưu tài khoản vào session
+        HttpSession session = request.getSession();
+        session.setAttribute("taiKhoan", taiKhoan); // Hoặc chỉ lưu ID nếu muốn
 
         // 👉 Truy vấn nhân viên gắn với tài khoản
         NhanVien nhanVien = nhanVienRepository.findByIdTaiKhoan(taiKhoan);
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Đăng nhập thành công");
-        response.put("token", token);
         response.put("idTaiKhoan", taiKhoan.getId());
-        response.put("idNhanVien", nhanVien != null ? nhanVien.getId() : null); // ✅ Bổ sung dòng này
+        response.put("idNhanVien", nhanVien != null ? nhanVien.getId() : null);
 
         return response;
     }
+
 
     @Override
     public Map<String, Object> dangnhapWeb(String login, String matKhau) {

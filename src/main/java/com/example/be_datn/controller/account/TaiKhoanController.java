@@ -6,6 +6,7 @@ import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.service.account.KhachHangServices;
 import com.example.be_datn.service.account.TaiKhoanService;
 import jakarta.security.auth.message.AuthException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -70,14 +71,15 @@ public class TaiKhoanController {
 //    }
 
     @PostMapping("/dang-nhap")
-    public ResponseEntity<?> dangnhap(@RequestBody TaiKhoanDTO userDTO){
+    public ResponseEntity<?> dangnhap(@RequestBody TaiKhoanDTO userDTO, HttpServletRequest request) {
         try {
-            Map<String, Object> result = taiKhoanService.dangnhap(userDTO.getTenDangNhap(), userDTO.getMatKhau());
+            Map<String, Object> result = taiKhoanService.dangnhap(userDTO.getTenDangNhap(), userDTO.getMatKhau(), request);
             return ResponseEntity.ok(result);
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
         }
     }
+
 
     @PostMapping("/dang-nhap-Web")
     public ResponseEntity<?> dangnhapWeb(@RequestBody TaiKhoanDTO taiKhoanDTO) {

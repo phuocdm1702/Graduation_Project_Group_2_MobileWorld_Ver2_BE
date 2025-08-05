@@ -271,6 +271,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
                     existingNhanVien.setNgaySinh(khachHangResponse.getNgaySinh());
                     existingNhanVien.setTen(khachHangResponse.getTenKH());
                     existingNhanVien.setGioiTinh(khachHangResponse.getGioiTinh());
+                    existingNhanVien.setUpdatedAt(new Date());
 
                     taiKhoan.setEmail(khachHangResponse.getEmail());
                     taiKhoan.setSoDienThoai(khachHangResponse.getSoDienThoai());
@@ -518,6 +519,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
         response.put("ngaySinh", khachHang.getNgaySinh());
         response.put("diaChiMacDinh", khachHang.getIdDiaChiKhachHang());
         response.put("email", taiKhoan.getEmail());
+        response.put("updateAt", khachHang.getUpdatedAt());
 
         return response;
     }

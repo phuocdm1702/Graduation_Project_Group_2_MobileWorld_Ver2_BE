@@ -17,10 +17,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 @RestController
 @RequestMapping("/khach-hang")
-@CrossOrigin(origins = {"http://localhost:5173"})
 
 public class KhachHangController {
     private final KhachHangServices khachHangServices;

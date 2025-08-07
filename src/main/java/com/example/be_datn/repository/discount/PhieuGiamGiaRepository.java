@@ -24,8 +24,11 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     @Query("SELECT p FROM PhieuGiamGia p WHERE :loaiPhieu IS NULL OR p.loaiPhieuGiamGia = :loaiPhieu AND p.ngayKetThuc >= :currentDate")
     Page<PhieuGiamGia> filterByLoaiPhieu(@Param("loaiPhieu") String loaiPhieu, Date currentDate, Pageable pageable);
 
-    @Query("SELECT p FROM PhieuGiamGia p WHERE :trangThai IS NULL OR p.trangThai = :trangThai AND p.ngayKetThuc >= :currentDate")
+    @Query("SELECT p FROM PhieuGiamGia p WHERE p.trangThai = :trangThai AND p.ngayKetThuc >= :currentDate")
     Page<PhieuGiamGia> filterByTrangThai(@Param("trangThai") Boolean trangThai, Date currentDate, Pageable pageable);
+
+    @Query("SELECT p FROM PhieuGiamGia p WHERE p.ngayBatDau > :currentDate")
+    Page<PhieuGiamGia> filterByChuaDienRa(@Param("currentDate") Date currentDate, Pageable pageable);
 
     @Query("SELECT p FROM PhieuGiamGia p WHERE " +
             "(:ngayBatDau IS NULL OR p.ngayBatDau >= :ngayBatDau) AND " +

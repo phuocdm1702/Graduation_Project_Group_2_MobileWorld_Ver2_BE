@@ -42,7 +42,7 @@ public class GiaoCaController {
         return activeShift.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    @GetMapping("/xuat-excel")
+    @PostMapping ("/xuat-excel")
     public ResponseEntity<InputStreamResource> xuatExcel(@RequestBody Map<String, Object> reportData) {
         ByteArrayInputStream bis = giaoCaService.generateExcelReport(reportData);
 

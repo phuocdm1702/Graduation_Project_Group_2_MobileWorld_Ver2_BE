@@ -1,5 +1,7 @@
 package com.example.be_datn.service.account.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.be_datn.common.Email.EmailServices;
 import com.example.be_datn.dto.account.response.NhanVienResponse;
 import com.example.be_datn.entity.account.NhanVien;
@@ -8,27 +10,33 @@ import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.service.account.NhanVienServices;
+import com.example.be_datn.service.product.impl.ChiTietSanPhamServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.text.Normalizer;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class NhanVienServicesImpl implements NhanVienServices {
-
+    private static final Logger logger = LoggerFactory.getLogger(NhanVienServicesImpl.class);
     private final NhanVienRepository nhanVienRepository;
     private final TaiKhoanRepository taiKhoanRepository;
     private final EmailServices emailServices;
+    private final Cloudinary cloudinary;
+
 
     @Autowired
-    public NhanVienServicesImpl(NhanVienRepository nhanVienRepository, TaiKhoanRepository taiKhoanRepository, EmailServices emailServices) {
+    public NhanVienServicesImpl(NhanVienRepository nhanVienRepository, TaiKhoanRepository taiKhoanRepository, EmailServices emailServices, Cloudinary cloudinary) {
         this.nhanVienRepository = nhanVienRepository;
         this.taiKhoanRepository = taiKhoanRepository;
         this.emailServices = emailServices;
+        this.cloudinary = cloudinary;
     }
 
     @Override
@@ -78,9 +86,56 @@ public class NhanVienServicesImpl implements NhanVienServices {
         return finalCode;
     }
 
+    private String uploadImageToCloudinary(MultipartFile image, String fileName) {
+        try {
+            // Kiểm tra file hợp lệ
+            if (image.isEmpty()) {
+                logger.error("File ảnh rỗng: {}", fileName);
+                throw new IllegalArgumentException("File ảnh không được để trống");
+            }
+            String contentType = image.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                logger.error("Định dạng file không hợp lệ: {}", contentType);
+                throw new IllegalArgumentException("File không phải là ảnh hợp lệ");
+            }
+            if (image.getSize() > 10 * 1024 * 1024) {
+                logger.error("File quá lớn: {} bytes", image.getSize());
+                throw new IllegalArgumentException("File ảnh quá lớn (tối đa 10MB)");
+            }
+
+            // Tạo public_id duy nhất
+            String publicId = "employee_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8);
+            // Tải ảnh lên Cloudinary
+            Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.asMap(
+                    "public_id", publicId,
+                    "resource_type", "image"
+            ));
+            // Lấy URL
+            String imageUrl = (String) uploadResult.get("secure_url");
+            if (imageUrl == null || imageUrl.trim().isEmpty()) {
+                throw new RuntimeException("Cloudinary trả về URL ảnh rỗng");
+            }
+            logger.info("Tải ảnh lên Cloudinary thành công: {} -> {}", fileName, imageUrl);
+            return imageUrl;
+        } catch (IOException e) {
+            logger.error("Lỗi khi tải ảnh {} lên Cloudinary: {}", fileName, e.getMessage());
+            throw new RuntimeException("Lỗi khi tải ảnh " + fileName + " lên Cloudinary: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Lỗi không mong muốn khi tải ảnh {}: {}", fileName, e.getMessage());
+            throw new RuntimeException("Lỗi không mong muốn khi tải ảnh " + fileName + ": " + e.getMessage(), e);
+        }
+    }
+
     //add nhan vien
     @Override
     public NhanVien addNhanVien(NhanVienResponse nhanVienResponse) {
+        String anhNhanVienUrl = null;
+        if (nhanVienResponse.getAnhNhanVien() == null || nhanVienResponse.getAnhNhanVien().isEmpty()) {
+            logger.error("Không có ảnh nhân viên được cung cấp");
+            throw new IllegalArgumentException("Vui lòng upload ảnh nhân viên!");
+        }
+        String fileName = nhanVienResponse.getAnhNhanVien().getOriginalFilename();
+        anhNhanVienUrl = uploadImageToCloudinary(nhanVienResponse.getAnhNhanVien(), fileName);
         if (taiKhoanRepository.findByEmail(nhanVienResponse.getEmail()).isPresent()) {
             throw new RuntimeException("Email đã được sử dụng!");
         }
@@ -94,7 +149,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
         taiKhoan.setMa(MaTaiKhoan());
         taiKhoan.setEmail(nhanVienResponse.getEmail());
         taiKhoan.setSoDienThoai(nhanVienResponse.getSoDienThoai());
-        taiKhoan.setTenDangNhap(nhanVienResponse.getTenDangNhap());
+        taiKhoan.setTenDangNhap(generateMaNhanVien(nhanVienResponse.getTenDangNhap()));
         taiKhoan.setIdQuyenHan(quyenHan);
         taiKhoan.setDeleted(true);
         taiKhoan.setTenDangNhap(nhanVienResponse.getTenDangNhap());
@@ -117,7 +172,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
         nhanVien.setPhuong(nhanVienResponse.getPhuong());
         nhanVien.setDiaChiCuThe(nhanVienResponse.getDiaChiCuThe());
         nhanVien.setCccd(nhanVienResponse.getCccd());
-        nhanVien.setAnhNhanVien(nhanVienResponse.getAnhNhanVien());
+        nhanVien.setAnhNhanVien(anhNhanVienUrl);
         nhanVien.setDeleted(nhanVienResponse.getGioiTinh());
         nhanVien.setDeleted(false);
 
@@ -164,6 +219,18 @@ public class NhanVienServicesImpl implements NhanVienServices {
                             throw new RuntimeException("Số điện thoại đã được sử dụng bởi tài khoản khác!");
                         }
                     }
+                    String anhNhanVienUrl = existingNhanVien.getAnhNhanVien();
+                    if (nhanVienResponse.getAnhNhanVien() != null && !nhanVienResponse.getAnhNhanVien().isEmpty()) {
+                        // Tải ảnh mới lên Cloudinary
+                        String fileName = nhanVienResponse.getAnhNhanVien().getOriginalFilename();
+                        anhNhanVienUrl = uploadImageToCloudinary(nhanVienResponse.getAnhNhanVien(), fileName);
+                    } else if (nhanVienResponse.getExistingAnhNhanVien() != null && !nhanVienResponse.getExistingAnhNhanVien().isEmpty()) {
+                        // Sử dụng URL ảnh hiện có
+                        anhNhanVienUrl = nhanVienResponse.getExistingAnhNhanVien();
+                        logger.info("Sử dụng URL ảnh hiện có cho nhân viên: {}", anhNhanVienUrl);
+                    } else {
+                        logger.warn("Không có ảnh mới hoặc URL hiện có được cung cấp, giữ nguyên ảnh: {}", anhNhanVienUrl);
+                    }
                     //tk
                     taiKhoan.setEmail(nhanVienResponse.getEmail());
                     taiKhoan.setSoDienThoai(nhanVienResponse.getSoDienThoai());
@@ -174,7 +241,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
                     existingNhanVien.setThanhPho(nhanVienResponse.getThanhPho());
                     existingNhanVien.setQuan(nhanVienResponse.getQuan());
                     existingNhanVien.setPhuong(nhanVienResponse.getPhuong());
-                    existingNhanVien.setAnhNhanVien(nhanVienResponse.getAnhNhanVien());
+                    existingNhanVien.setAnhNhanVien(anhNhanVienUrl);
                     existingNhanVien.setDiaChiCuThe(nhanVienResponse.getDiaChiCuThe());
                     existingNhanVien.setCccd(nhanVienResponse.getCccd());
                     existingNhanVien.setUpdatedAt(new Date().toInstant());

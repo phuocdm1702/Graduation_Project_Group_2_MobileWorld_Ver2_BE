@@ -86,16 +86,30 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
     @Override
     public Page<PhieuGiamGia> filterByTrangThai(String trangThai, Pageable pageable) {
         Date now = new Date();
-        Boolean trangThaiBoolean = null;
-        if (trangThai != null && !trangThai.trim().isEmpty()) {
-            if ("Hoạt động".equals(trangThai)) {
-                trangThaiBoolean = true;
-            } else if ("Không hoạt động".equals(trangThai)) {
-                trangThaiBoolean = false;
+        Page<PhieuGiamGia> result;
+
+        // Nếu trạng thái rỗng, trả về tất cả phiếu giảm giá
+        if (trangThai == null || trangThai.trim().isEmpty()) {
+            result = phieuGiamGiaRepository.findAll(pageable);
+        } else {
+            switch (trangThai) {
+                case "Hoạt động":
+                    // Phiếu đang hoạt động: trangThai = true và ngày hiện tại nằm giữa ngày bắt đầu và kết thúc
+                    result = phieuGiamGiaRepository.filterByTrangThai(true, now, pageable);
+                    break;
+                case "Không hoạt động":
+                    // Phiếu không hoạt động: trangThai = false hoặc ngày kết thúc đã qua
+                    result = phieuGiamGiaRepository.filterByTrangThai(false, now, pageable);
+                    break;
+                case "Chưa diễn ra":
+                    // Phiếu chưa diễn ra: ngày bắt đầu lớn hơn ngày hiện tại
+                    result = phieuGiamGiaRepository.filterByChuaDienRa(now, pageable);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Trạng thái không hợp lệ: " + trangThai);
             }
         }
-        System.out.println("Filter by trangThai: " + trangThaiBoolean);
-        Page<PhieuGiamGia> result = phieuGiamGiaRepository.filterByTrangThai(trangThaiBoolean, now, pageable);
+
         logResult(result);
         return result;
     }

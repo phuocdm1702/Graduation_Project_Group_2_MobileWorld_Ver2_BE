@@ -95,6 +95,7 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
         response.put("message", "Đăng nhập thành công");
         response.put("idTaiKhoan", taiKhoan.getId());
         response.put("idNhanVien", nhanVien != null ? nhanVien.getId() : null);
+        response.put("role", taiKhoan.getIdQuyenHan().getCapQuyenHan()); // hoặc .getId()
 
         return response;
     }

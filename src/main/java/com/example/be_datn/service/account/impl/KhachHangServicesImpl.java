@@ -146,7 +146,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             throw new RuntimeException("SDT đã được sử dụng!");
         }
         QuyenHan quyenHan = new QuyenHan();
-        quyenHan.setId(2); // Quyền khách hàng
+        quyenHan.setId(3); // Quyền khách hàng
 
         TaiKhoan taiKhoan = new TaiKhoan();
         taiKhoan.setMa(MaTaiKhoan());
@@ -209,7 +209,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             throw new RuntimeException("SDT đã được sử dụng!");
         }
         QuyenHan quyenHan = new QuyenHan();
-        quyenHan.setId(2); // Quyền khách hàng
+        quyenHan.setId(3); // Quyền khách hàng
 
         // tao tai khoan
         TaiKhoan taiKhoan = new TaiKhoan();

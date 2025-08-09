@@ -5,6 +5,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
@@ -28,6 +29,7 @@ public class EmailServices {
         return password.toString();
     }
 
+    @Async
     public void sendWelcomeEmail(String to, String employeeName, String email, String password) throws MessagingException {
         try {
             // Tạo MimeMessage

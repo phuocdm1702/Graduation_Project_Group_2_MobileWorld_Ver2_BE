@@ -2,6 +2,7 @@ package com.example.be_datn.service.account;
 
 import com.example.be_datn.dto.account.response.NhanVienResponse;
 import com.example.be_datn.entity.account.NhanVien;
+import com.example.be_datn.dto.account.NhanVienLookupDTO;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,5 +22,7 @@ public interface NhanVienServices {
     NhanVien trangthai(Integer id);
 
     void importNhanVien(List<NhanVien> nhanViens);
+
+    List<com.example.be_datn.dto.account.NhanVienLookupDTO> getAllNhanVienLookup();
 }
     

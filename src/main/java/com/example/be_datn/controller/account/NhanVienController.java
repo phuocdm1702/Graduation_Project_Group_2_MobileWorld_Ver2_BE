@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.account;
 
+import com.example.be_datn.dto.account.NhanVienLookupDTO;
 import com.example.be_datn.dto.account.response.NhanVienResponse;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.account.TaiKhoan;
@@ -34,6 +35,12 @@ public class NhanVienController {
     @GetMapping("/home")
     public List<NhanVien> getallNhanVien() {
         return nhanVienServices.getall();
+    }
+
+    @GetMapping("/lookup")
+    public ResponseEntity<List<NhanVienLookupDTO>> getAllNhanVienLookup() {
+        List<NhanVienLookupDTO> nhanViens = nhanVienServices.getAllNhanVienLookup();
+        return ResponseEntity.ok(nhanViens);
     }
 
     //add nhan vien

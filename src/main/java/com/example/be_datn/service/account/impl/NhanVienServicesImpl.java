@@ -3,6 +3,7 @@ package com.example.be_datn.service.account.impl;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.example.be_datn.common.Email.EmailServices;
+import com.example.be_datn.dto.account.NhanVienLookupDTO;
 import com.example.be_datn.dto.account.response.NhanVienResponse;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.account.QuyenHan;
@@ -378,4 +379,14 @@ public class NhanVienServicesImpl implements NhanVienServices {
             }
         }
     }
+
+
+    @Override
+    public List<NhanVienLookupDTO> getAllNhanVienLookup() {
+        return nhanVienRepository.findAll().stream()
+                .map(nhanVien -> new NhanVienLookupDTO(nhanVien.getId(), nhanVien.getTenNhanVien()))
+                .collect(Collectors.toList());
+    }
 }
+
+

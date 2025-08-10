@@ -11,8 +11,6 @@ import lombok.*;
 @Builder
 public class ChiSoKhangBuiVaNuocRequest {
 
-    @NotBlank(message = "Mã chỉ số kháng bụi và nước không được để trống")
-    @Size(max = 255, message = "Mã chỉ số kháng bụi và nước không được vượt quá 255 ký tự")
     private String ma;
 
     @NotBlank(message = "Tên chỉ số không được để trống")

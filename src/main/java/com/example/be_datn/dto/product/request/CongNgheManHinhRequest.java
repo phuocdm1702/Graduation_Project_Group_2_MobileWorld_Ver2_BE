@@ -11,8 +11,6 @@ import lombok.*;
 @Builder
 public class CongNgheManHinhRequest {
 
-    @NotBlank(message = "Mã công nghệ màn hình không được để trống")
-    @Size(max = 255, message = "Mã công nghệ màn hình không được vượt quá 255 ký tự")
     private String ma;
 
     @NotBlank(message = "Tên công nghệ màn hình không được để trống")

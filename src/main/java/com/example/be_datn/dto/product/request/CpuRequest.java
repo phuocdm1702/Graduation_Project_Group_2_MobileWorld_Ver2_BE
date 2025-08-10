@@ -13,8 +13,6 @@ import lombok.*;
 @Builder
 public class CpuRequest {
 
-    @NotBlank(message = "Mã CPU không được để trống")
-    @Size(max = 255, message = "Mã CPU không được vượt quá 255 ký tự")
     private String ma;
 
     @NotBlank(message = "Tên CPU không được để trống")

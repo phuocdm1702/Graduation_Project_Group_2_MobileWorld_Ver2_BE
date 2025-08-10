@@ -45,7 +45,7 @@ public class NhanVienController {
 
     //add nhan vien
     @PostMapping("/add")
-    public ResponseEntity<?> addNhanVien(@RequestBody NhanVienResponse nhanVienResponse) {
+    public ResponseEntity<?> addNhanVien(@ModelAttribute NhanVienResponse nhanVienResponse) {
         try {
             NhanVien nhanVien = nhanVienServices.addNhanVien(nhanVienResponse);
             return new ResponseEntity<>(nhanVien, HttpStatus.CREATED);
@@ -53,6 +53,7 @@ public class NhanVienController {
             return new ResponseEntity<>("Lỗi khi thêm nhân viên: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
     //xoa mem nhan vien
     @PutMapping("/delete/{id}")
     public ResponseEntity<String> softDelete(@PathVariable Integer id) {
@@ -64,15 +65,19 @@ public class NhanVienController {
     }
 
     //update nhan vien
-    @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateNhanVien(@PathVariable Integer id, @RequestBody NhanVienResponse nhanVienResponse) {
+    @PostMapping("/update/{id}")
+    public ResponseEntity<?> updateNhanVien(
+            @PathVariable Integer id,
+            @ModelAttribute NhanVienResponse nhanVienRequest
+    ) {
         try {
-            NhanVien updatedNhanVien = nhanVienServices.updateNhanVien(id, nhanVienResponse);
+            NhanVien updatedNhanVien = nhanVienServices.updateNhanVien(id, nhanVienRequest);
             return ResponseEntity.ok(updatedNhanVien);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
+
 
     //detail nhan vien
     @GetMapping("/detail/{id}")

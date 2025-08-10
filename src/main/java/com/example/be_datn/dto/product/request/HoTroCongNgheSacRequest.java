@@ -11,8 +11,6 @@ import lombok.*;
 @Builder
 public class HoTroCongNgheSacRequest {
 
-    @NotBlank(message = "Mã công nghệ sạc không được để trống")
-    @Size(max = 255, message = "Mã công nghệ sạc không được vượt quá 255 ký tự")
     private String ma;
 
     @Size(max = 50, message = "Cổng sạc không được vượt quá 50 ký tự")

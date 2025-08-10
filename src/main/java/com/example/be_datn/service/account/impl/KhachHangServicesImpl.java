@@ -14,13 +14,13 @@ import com.example.be_datn.repository.account.KhachHang.KhachHangRepository;
 import com.example.be_datn.repository.account.TaiKhoan.TaiKhoanRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
 import com.example.be_datn.service.account.KhachHangServices;
+import jakarta.security.auth.message.AuthException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -146,7 +146,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             throw new RuntimeException("SDT đã được sử dụng!");
         }
         QuyenHan quyenHan = new QuyenHan();
-        quyenHan.setId(2); // Quyền khách hàng
+        quyenHan.setId(3); // Quyền khách hàng
 
         TaiKhoan taiKhoan = new TaiKhoan();
         taiKhoan.setMa(MaTaiKhoan());
@@ -209,7 +209,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             throw new RuntimeException("SDT đã được sử dụng!");
         }
         QuyenHan quyenHan = new QuyenHan();
-        quyenHan.setId(2); // Quyền khách hàng
+        quyenHan.setId(3); // Quyền khách hàng
 
         // tao tai khoan
         TaiKhoan taiKhoan = new TaiKhoan();
@@ -271,6 +271,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
                     existingNhanVien.setNgaySinh(khachHangResponse.getNgaySinh());
                     existingNhanVien.setTen(khachHangResponse.getTenKH());
                     existingNhanVien.setGioiTinh(khachHangResponse.getGioiTinh());
+                    existingNhanVien.setUpdatedAt(new Date());
 
                     taiKhoan.setEmail(khachHangResponse.getEmail());
                     taiKhoan.setSoDienThoai(khachHangResponse.getSoDienThoai());
@@ -500,4 +501,27 @@ public class KhachHangServicesImpl implements KhachHangServices {
                 lastOrderDate
         );
     }
+
+    @Override
+    public Map<String, Object> layThongTinKhachHang(Integer idKhachHang) {
+        KhachHang khachHang = khachHangRepository.findById(idKhachHang)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + idKhachHang));
+
+        TaiKhoan taiKhoan = khachHang.getIdTaiKhoan();
+        if (taiKhoan == null) {
+            throw new RuntimeException("Tài khoản không tồn tại cho khách hàng ID: " + idKhachHang);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("hoTen", khachHang.getTen());
+        response.put("soDienThoai", taiKhoan.getSoDienThoai());
+        response.put("gioiTinh", khachHang.getGioiTinh());
+        response.put("ngaySinh", khachHang.getNgaySinh());
+        response.put("diaChiMacDinh", khachHang.getIdDiaChiKhachHang());
+        response.put("email", taiKhoan.getEmail());
+        response.put("updateAt", khachHang.getUpdatedAt());
+
+        return response;
+    }
+
 }

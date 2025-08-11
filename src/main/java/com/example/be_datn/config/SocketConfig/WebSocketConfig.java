@@ -1,4 +1,3 @@
-// File: backend/src/main/java/com/example/be_datn/config/SocketConfig/WebSocketConfig.java
 package com.example.be_datn.config.SocketConfig;
 
 import org.springframework.context.annotation.Configuration;

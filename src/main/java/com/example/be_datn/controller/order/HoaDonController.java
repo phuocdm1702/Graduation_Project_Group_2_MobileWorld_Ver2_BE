@@ -1,11 +1,11 @@
 package com.example.be_datn.controller.order;
 
+import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.service.order.HoaDonService;
 import com.example.be_datn.service.order.InHoaDonService;
-import com.example.be_datn.service.order.XuatDanhSachHoaDon;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -38,9 +38,9 @@ public class HoaDonController {
     @GetMapping("/home/trang-thai")
     public ResponseEntity<Page<HoaDonResponse>> getHoaDon(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size
-    ) {
+            @RequestParam(defaultValue = "5") int size) {
         Pageable pageable = PageRequest.of(page, size);
+        // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
         return ResponseEntity.ok(hoaDonService.getHoaDon(pageable));
     }
 
@@ -49,8 +49,7 @@ public class HoaDonController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(required = true) Integer idSanPham,
-            @RequestParam(required = true) Integer chiTietSanPhamId
-    ) {
+            @RequestParam(required = true) Integer chiTietSanPhamId) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(hoaDonService.getAllImelBySanPhamId(pageable, false, idSanPham, chiTietSanPhamId));
     }
@@ -79,12 +78,14 @@ public class HoaDonController {
             return ResponseEntity.badRequest().body("startDate phải trước hoặc bằng endDate");
         }
         Pageable pageable = PageRequest.of(page, size);
+        // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
         Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}/detail")
     public ResponseEntity<HoaDonDetailResponse> getHoaDonDetail(@PathVariable Integer id) {
+        // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
         HoaDonDetailResponse response = hoaDonService.getHoaDonDetail(id);
         return ResponseEntity.ok(response);
     }
@@ -104,6 +105,7 @@ public class HoaDonController {
     @GetMapping("/QR-by-ma/{ma}")
     public ResponseEntity<HoaDonResponse> getHoaDonByMa(@PathVariable String maHD) {
         try {
+            // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
             return ResponseEntity.ok(hoaDonService.getHoaDonByMa(maHD));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
@@ -125,6 +127,7 @@ public class HoaDonController {
             @RequestParam Short trangThai,
             @RequestParam(required = false) Integer idNhanVien) {
         try {
+            // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
             HoaDonResponse response = hoaDonService.updateHoaDonStatus(id, trangThai, idNhanVien);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -137,6 +140,7 @@ public class HoaDonController {
             @PathVariable Integer idHD,
             @RequestBody Map<Integer, String> imelMap) {
         try {
+            // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
             HoaDonResponse response = hoaDonService.confirmAndAssignIMEI(idHD, imelMap);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -158,6 +162,7 @@ public class HoaDonController {
             @RequestParam String diaChi,
             @RequestParam String email) {
         try {
+            // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
             HoaDonResponse response = hoaDonService.updateHoaDonKH(id, tenKhachHang, soDienThoai, diaChi, email);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -171,6 +176,7 @@ public class HoaDonController {
             @RequestParam String maHD,
             @RequestParam String loaiHD) {
         try {
+            // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
             HoaDonResponse response = hoaDonService.updateHoaDon(id, maHD, loaiHD);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {

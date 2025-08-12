@@ -31,7 +31,7 @@ public class VNPayService {
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
         vnp_Params.put("vnp_OrderInfo", orderInfor);
         vnp_Params.put("vnp_OrderType", orderType);
-        vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_Returnurl);
+        vnp_Params.put("vnp_ReturnUrl", urlReturn);
         String locate = "vn";
         vnp_Params.put("vnp_Locale", locate);
 

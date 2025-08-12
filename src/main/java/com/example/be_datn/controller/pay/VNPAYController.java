@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/payment")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class VNPAYController {
 
     @Autowired
@@ -18,9 +18,9 @@ public class VNPAYController {
     @PostMapping("/create")
     public ResponseEntity<String> createPayment(HttpServletRequest request,
                                                 @RequestParam("amount") long amount,
-                                                @RequestParam("orderInfo") String orderInfo) {
-        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
-        String paymentUrl = vnPayService.createOrder(request, amount, orderInfo, baseUrl);
+                                                @RequestParam("orderInfo") String orderInfo,
+                                                @RequestParam("returnUrl") String returnUrl) {
+        String paymentUrl = vnPayService.createOrder(request, amount, orderInfo, returnUrl);
         return new ResponseEntity<>(paymentUrl, HttpStatus.OK);
     }
 

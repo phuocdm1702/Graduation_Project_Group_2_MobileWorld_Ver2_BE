@@ -33,12 +33,6 @@ public class LichLamViec {
     @Column(name = "ngay_lam", nullable = false)
     private LocalDate ngayLam;
 
-    @Column(name = "created_at")
-    private LocalDate createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDate updatedAt;
-
     @Column(name = "deleted")
     private Boolean deleted;
 

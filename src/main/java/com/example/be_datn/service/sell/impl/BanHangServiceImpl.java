@@ -41,6 +41,7 @@ import com.example.be_datn.repository.product.ImelDaBanRepository;
 import com.example.be_datn.repository.product.ImelRepository;
 import com.example.be_datn.repository.sale.saleDetail.ChiTietDotGiamGiaRepository;
 import com.example.be_datn.service.sell.BanHangService;
+import com.example.be_datn.service.order.HoaDonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -48,6 +49,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -113,6 +115,12 @@ public class BanHangServiceImpl implements BanHangService {
     @Autowired
     private GiaoCaChiTietRepository giaoCaChiTietRepository;
 
+    @Autowired
+    private HoaDonService hoaDonService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
     private static final String GH_PREFIX = "gh:hd:";
 
     private String generatedRandomCode() {
@@ -127,7 +135,12 @@ public class BanHangServiceImpl implements BanHangService {
 
     @Override
     public List<HoaDon> getHDCho() {
-        return hoaDonRepository.findAllHDNotConfirm();
+        List<HoaDon> hoaDonList = hoaDonRepository.findAllHDNotConfirm();
+
+        // Gửi realtime update cho danh sách hóa đơn chờ
+        sendHoaDonListUpdate(hoaDonList);
+
+        return hoaDonList;
     }
 
     @Override
@@ -138,12 +151,13 @@ public class BanHangServiceImpl implements BanHangService {
         }
         hoaDonRepository.deleteById(idHD);
 
+        // Gửi realtime update sau khi hủy hóa đơn
+        sendHoaDonDeleteUpdate(idHD);
     }
 
     @Override
     @Transactional
     public HoaDonDTO taoHD(Integer khachHangId, Integer nhanVienId) {
-
         GiaoCa activeShift = giaoCaRepository.findByidNhanVien_IdAndTrangThai(nhanVienId, (short) 1)
                 .orElseThrow(() -> new IllegalStateException("Nhân viên chưa bắt đầu ca làm việc."));
 
@@ -191,9 +205,13 @@ public class BanHangServiceImpl implements BanHangService {
         gioHangDTO.setTongTien(BigDecimal.ZERO);
         redisTemplate.opsForValue().set(GH_PREFIX + hoaDon.getId(), gioHangDTO, 24, TimeUnit.HOURS);
 
-        return mapToHoaDonDto(hoaDon);
-    }
+        HoaDonDTO result = mapToHoaDonDto(hoaDon);
 
+        // Gửi realtime update cho hóa đơn mới tạo
+        sendHoaDonCreateUpdate(result);
+
+        return result;
+    }
 
     @Override
     @Transactional
@@ -272,7 +290,7 @@ public class BanHangServiceImpl implements BanHangService {
             }
 
             newItem.setGiaBan(giaSauGiam);
-            newItem.setGiaBanGoc(giaSauGiam); // Sử dụng giá sau giảm làm giá gốc
+            newItem.setGiaBanGoc(giaSauGiam);
             newItem.setGhiChuGia(ghiChuGia);
             newItem.setSoLuong(1);
             newItem.setTongTien(giaSauGiam);
@@ -294,6 +312,7 @@ public class BanHangServiceImpl implements BanHangService {
             }
         }
 
+        // Xử lý phiếu giảm giá
         if (chiTietGioHangDTO.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(chiTietGioHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy mã giảm giá!"));
@@ -315,6 +334,9 @@ public class BanHangServiceImpl implements BanHangService {
         hoaDonRepository.save(hoaDon);
 
         redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
+
+        // Gửi realtime update cho giỏ hàng
+        sendGioHangUpdate(idHD, gh);
 
         return gh;
     }
@@ -441,6 +463,10 @@ public class BanHangServiceImpl implements BanHangService {
         hoaDonRepository.save(hoaDon);
 
         redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
+
+        // Gửi realtime update cho giỏ hàng sau khi xóa
+        sendGioHangUpdate(idHD, gh);
+
         return gh;
     }
 
@@ -476,7 +502,7 @@ public class BanHangServiceImpl implements BanHangService {
                 }
 
                 item.setGiaBan(giaSauGiam);
-                item.setGiaBanGoc(giaSauGiam); // Sử dụng giá sau giảm làm giá gốc
+                item.setGiaBanGoc(giaSauGiam);
                 item.setGhiChuGia(ghiChuGia);
                 item.setTongTien(giaSauGiam);
             }
@@ -485,6 +511,10 @@ public class BanHangServiceImpl implements BanHangService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add));
             redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
         }
+
+        // Gửi realtime update cho giỏ hàng
+        sendGioHangUpdate(idHD, gh);
+
         return gh;
     }
 
@@ -497,7 +527,12 @@ public class BanHangServiceImpl implements BanHangService {
             throw new RuntimeException("Hóa đơn không ở trạng thái chờ!");
         }
 
-        return mapToHoaDonDto(hoaDon);
+        HoaDonDTO result = mapToHoaDonDto(hoaDon);
+
+        // Gửi realtime update cho chi tiết hóa đơn chờ
+        sendHoaDonDetailUpdate(result);
+
+        return result;
     }
 
     @Override
@@ -518,6 +553,7 @@ public class BanHangServiceImpl implements BanHangService {
                 PhieuGiamGia pgg = phieuGiamGiaRepository.findById(idPhieuGiamGia).orElse(null);
                 if (pgg != null) {
                     pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
+                    pgg.setTrangThai(true);
                     phieuGiamGiaRepository.save(pgg);
                 }
             }
@@ -525,6 +561,9 @@ public class BanHangServiceImpl implements BanHangService {
 
         redisTemplate.delete(ghKey);
         gioHangTamRepository.markAsDeletedByIdHoaDon(idHD);
+
+        // Gửi realtime update khi xóa giỏ hàng
+        sendGioHangDeleteUpdate(idHD);
     }
 
     private String generateUniqueMaHinhThucThanhToan() {
@@ -589,7 +628,7 @@ public class BanHangServiceImpl implements BanHangService {
                 ? hoaDonRequest.getTongTienSauGiam()
                 : tienSanPham.add(phiVanChuyen);
 
-        // Xử lý phiếu giảm giá (chỉ để gán idPhieuGiamGia, không tính lại giamGia)
+        // Xử lý phiếu giảm giá
         if (hoaDonRequest.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá với ID " + hoaDonRequest.getIdPhieuGiamGia() + " không tồn tại"));
@@ -704,7 +743,12 @@ public class BanHangServiceImpl implements BanHangService {
 
         xoaGioHang(idHD);
 
-        return mapToHoaDonDto(hoaDon);
+        HoaDonDTO result = mapToHoaDonDto(hoaDon);
+
+        // Gửi realtime update cho thanh toán thành công
+        sendPaymentSuccessUpdate(hoaDon.getId(), result);
+
+        return result;
     }
 
     @Override
@@ -769,7 +813,6 @@ public class BanHangServiceImpl implements BanHangService {
         return chiTietSanPham.orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm với IMEI: " + imei));
     }
 
-
     private HoaDonDTO mapToHoaDonDto(HoaDon hoaDon) {
         GioHangDTO gh = layGioHang(hoaDon.getId());
         List<ChiTietGioHangDTO> chiTietGioHangDTOS = gh.getChiTietGioHangDTOS();
@@ -806,7 +849,26 @@ public class BanHangServiceImpl implements BanHangService {
 
     @Override
     public List<PhieuGiamGiaCaNhan> findByKhachHangId(Integer idKhachHang) {
-        return phieuGiamGiaCaNhanRepository.findByIdKhachHangId(idKhachHang);
+        List<PhieuGiamGiaCaNhan> result = phieuGiamGiaCaNhanRepository.findByIdKhachHangId(idKhachHang);
+
+        // Gửi realtime update cho thông tin khách hàng
+        sendKhachHangUpdate(idKhachHang, result);
+
+        return result;
+    }
+
+    // Thêm phương thức mới để lấy 1 hóa đơn cụ thể
+    @Override
+    public HoaDonDTO getSingleHoaDon(Integer idHD) {
+        HoaDon hoaDon = hoaDonRepository.findById(idHD)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
+
+        HoaDonDTO result = mapToHoaDonDto(hoaDon);
+
+        // Gửi realtime update cho hóa đơn đơn lẻ
+        sendSingleHoaDonUpdate(hoaDon);
+
+        return result;
     }
 
     @Override
@@ -875,4 +937,116 @@ public class BanHangServiceImpl implements BanHangService {
         dto.setGiaBanBanDau(giaBan); // Giá ban đầu từ ChiTietSanPham
         return dto;
     }
+
+    // WebSocket realtime methods
+    private void sendHoaDonListUpdate(List<HoaDon> hoaDonList) {
+        try {
+            messagingTemplate.convertAndSend("/topic/hoa-don-list", hoaDonList);
+            System.out.println("Đã gửi danh sách hóa đơn qua WebSocket: " + hoaDonList.size() + " hóa đơn");
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi danh sách hóa đơn qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void sendHoaDonCreateUpdate(HoaDonDTO hoaDonDTO) {
+        try {
+            messagingTemplate.convertAndSend("/topic/hoa-don-create", hoaDonDTO);
+            System.out.println("Đã gửi hóa đơn mới tạo qua WebSocket: " + hoaDonDTO.getMa());
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi hóa đơn mới tạo qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void sendHoaDonDeleteUpdate(Integer hoaDonId) {
+        try {
+            Map<String, Object> deleteInfo = new HashMap<>();
+            deleteInfo.put("action", "DELETE");
+            deleteInfo.put("hoaDonId", hoaDonId);
+            deleteInfo.put("timestamp", Instant.now());
+            messagingTemplate.convertAndSend("/topic/hoa-don-delete", deleteInfo);
+            System.out.println("Đã gửi thông báo xóa hóa đơn qua WebSocket: " + hoaDonId);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông báo xóa hóa đơn qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void sendGioHangUpdate(Integer hoaDonId, GioHangDTO gioHangDTO) {
+        try {
+            Map<String, Object> gioHangUpdate = new HashMap<>();
+            gioHangUpdate.put("hoaDonId", hoaDonId);
+            gioHangUpdate.put("gioHang", gioHangDTO);
+            gioHangUpdate.put("timestamp", Instant.now());
+            messagingTemplate.convertAndSend("/topic/gio-hang-update", gioHangUpdate);
+            System.out.println("Đã gửi cập nhật giỏ hàng qua WebSocket cho hóa đơn: " + hoaDonId);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi cập nhật giỏ hàng qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void sendGioHangDeleteUpdate(Integer hoaDonId) {
+        try {
+            Map<String, Object> deleteInfo = new HashMap<>();
+            deleteInfo.put("action", "DELETE_CART");
+            deleteInfo.put("hoaDonId", hoaDonId);
+            deleteInfo.put("timestamp", Instant.now());
+            messagingTemplate.convertAndSend("/topic/gio-hang-delete", deleteInfo);
+            System.out.println("Đã gửi thông báo xóa giỏ hàng qua WebSocket: " + hoaDonId);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông báo xóa giỏ hàng qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void sendHoaDonDetailUpdate(HoaDonDTO hoaDonDTO) {
+        try {
+            messagingTemplate.convertAndSend("/topic/hoa-don-detail", hoaDonDTO);
+            System.out.println("Đã gửi chi tiết hóa đơn qua WebSocket: " + hoaDonDTO.getMa());
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi chi tiết hóa đơn qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void sendPaymentSuccessUpdate(Integer hoaDonId, HoaDonDTO hoaDonDTO) {
+        try {
+            Map<String, Object> paymentInfo = new HashMap<>();
+            paymentInfo.put("action", "PAYMENT_SUCCESS");
+            paymentInfo.put("hoaDonId", hoaDonId);
+            paymentInfo.put("hoaDon", hoaDonDTO);
+            paymentInfo.put("timestamp", Instant.now());
+            messagingTemplate.convertAndSend("/topic/payment-success", paymentInfo);
+            System.out.println("Đã gửi thông báo thanh toán thành công qua WebSocket: " + hoaDonDTO.getMa());
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông báo thanh toán thành công qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void sendSingleHoaDonUpdate(HoaDon hoaDon) {
+        try {
+            HoaDonDTO hoaDonDTO = mapToHoaDonDto(hoaDon);
+            Map<String, Object> singleHoaDonUpdate = new HashMap<>();
+            singleHoaDonUpdate.put("action", "GET_SINGLE_HOADON");
+            singleHoaDonUpdate.put("hoaDon", hoaDonDTO);
+            singleHoaDonUpdate.put("timestamp", Instant.now());
+            messagingTemplate.convertAndSend("/topic/single-hoa-don", singleHoaDonUpdate);
+            System.out.println("Đã gửi thông tin hóa đơn đơn lẻ qua WebSocket: " + hoaDon.getMa());
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông tin hóa đơn đơn lẻ qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    // 2. WebSocket cho thông tin khách hàng
+    private void sendKhachHangUpdate(Integer khachHangId, List<PhieuGiamGiaCaNhan> phieuGiamGias) {
+        try {
+            Map<String, Object> khachHangUpdate = new HashMap<>();
+            khachHangUpdate.put("action", "CUSTOMER_VOUCHERS");
+            khachHangUpdate.put("khachHangId", khachHangId);
+            khachHangUpdate.put("phieuGiamGias", phieuGiamGias);
+            khachHangUpdate.put("count", phieuGiamGias.size());
+            khachHangUpdate.put("timestamp", Instant.now());
+            messagingTemplate.convertAndSend("/topic/khach-hang-update", khachHangUpdate);
+            System.out.println("Đã gửi thông tin khách hàng qua WebSocket - KH ID: " + khachHangId + ", Số phiếu: " + phieuGiamGias.size());
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông tin khách hàng qua WebSocket: " + e.getMessage());
+        }
+    }
+
 }

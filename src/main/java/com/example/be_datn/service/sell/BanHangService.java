@@ -19,7 +19,6 @@ public interface BanHangService {
 
     void huyHD(Integer idHD);
 
-
     @Transactional
 
     GioHangDTO themVaoGH(Integer idHD, ChiTietGioHangDTO chiTietGioHangDTO);
@@ -42,7 +41,12 @@ public interface BanHangService {
     ChiTietSanPham getChiTietSanPhamByIMEI(String imei);
 
     List<PhieuGiamGiaCaNhan> findByKhachHangId(Integer idKhachHang);
+
     Integer getChiTietSanPhamId(Integer sanPhamId, String mauSac, String dungLuongRam, String dungLuongBoNhoTrong);
+
+    // Thêm phương thức mới để lấy 1 hóa đơn cụ thể
+    HoaDonDTO getSingleHoaDon(Integer idHD);
+
     Map<String, Object> findProductByBarcodeOrImei(String code);
 
     HoaDonDTO taoHD(Integer idKhachHangToUse, Integer idNhanVienToUse);

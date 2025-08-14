@@ -26,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -67,19 +66,10 @@ public class HoaDonServiceImpl implements HoaDonService {
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
-
     @Override
     @Cacheable(value = "hoaDonPage", key = "#loaiDon + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<HoaDonResponse> getHoaDon(Pageable pageable) {
-        Page<HoaDonResponse> page = hoaDonRepository.getHoaDon("Tại quầy", pageable);
-        // Gửi thông báo danh sách hóa đơn khi truy vấn (tùy chọn)
-        page.getContent().forEach(hoaDon -> {
-            HoaDonDetailResponse detail = getHoaDonDetail(hoaDon.getId()); // Lấy chi tiết
-            sendHoaDonDetailUpdate(detail);
-        });
-        return page;
+        return hoaDonRepository.getHoaDon("Tại quầy", pageable);
     }
 
     @Override
@@ -87,13 +77,8 @@ public class HoaDonServiceImpl implements HoaDonService {
     public Page<HoaDonResponse> getHoaDonAndFilters(String keyword, Long minAmount, Long maxAmount,
                                                     Timestamp startDate, Timestamp endDate, Short trangThai,
                                                     String loaiDon, Pageable pageable) {
-        Page<HoaDonResponse> page = hoaDonRepository.getHoaDonAndFilters(keyword, minAmount, maxAmount,
+        return hoaDonRepository.getHoaDonAndFilters(keyword, minAmount, maxAmount,
                 startDate, endDate, trangThai, false, loaiDon, pageable);
-        page.getContent().forEach(hoaDon -> {
-            HoaDonDetailResponse detail = getHoaDonDetail(hoaDon.getId());
-            sendHoaDonDetailUpdate(detail);
-        });
-        return page;
     }
 
     @Override
@@ -116,26 +101,19 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .map(hoaDonDetailMapper::mapToLichSuHoaDonInfo)
                 .collect(Collectors.toList());
 
-        HoaDonDetailResponse response = new HoaDonDetailResponse.Builder()
+        return new HoaDonDetailResponse.Builder()
                 .withHoaDonInfo(hoaDon, hoaDon.getIdPhieuGiamGia())
                 .withNhanVienInfo(hoaDon.getIdNhanVien())
                 .withThanhToanInfos(thanhToanInfos)
                 .withSanPhamChiTietInfos(sanPhamChiTietInfos)
                 .withLichSuHoaDonInfos(lichSuHoaDonInfos)
                 .build();
-
-        // Gửi thông báo chi tiết hóa đơn
-        sendHoaDonDetailUpdate(response);
-        return response;
     }
 
     @Override
     public HoaDonResponse getHoaDonByMa(String maHD) {
-        HoaDonResponse response = hoaDonRepository.findByMa(maHD)
+        return hoaDonRepository.findByMa(maHD)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại"));
-        HoaDonDetailResponse detail = getHoaDonDetail(response.getId()); // Lấy detail
-        sendHoaDonDetailUpdate(detail);
-        return response;
     }
 
     @Override
@@ -191,8 +169,6 @@ public class HoaDonServiceImpl implements HoaDonService {
         lichSuHoaDonRepository.save(lichSuHoaDon);
         hoaDonRepository.save(hoaDon);
 
-        HoaDonDetailResponse detail = getHoaDonDetail(id); // Lấy detail sau cập nhật
-        sendHoaDonDetailUpdate(detail); // Gửi realtime
         return hoaDonMapper.mapToDto(hoaDon);
     }
 
@@ -275,10 +251,6 @@ public class HoaDonServiceImpl implements HoaDonService {
             throw new RuntimeException("Lỗi khi ánh xạ hóa đơn sang DTO");
         }
 
-        // Gửi chi tiết hóa đơn qua WebSocket
-        HoaDonDetailResponse detailResponse = getHoaDonDetail(idHD);
-        sendHoaDonDetailUpdate(detailResponse);
-
         return response;
     }
 
@@ -309,10 +281,6 @@ public class HoaDonServiceImpl implements HoaDonService {
             throw new RuntimeException("Lỗi khi ánh xạ hóa đơn sang DTO");
         }
 
-        // Gửi chi tiết hóa đơn qua WebSocket
-        HoaDonDetailResponse detailResponse = getHoaDonDetail(id);
-        sendHoaDonDetailUpdate(detailResponse);
-
         return response;
     }
 
@@ -341,15 +309,7 @@ public class HoaDonServiceImpl implements HoaDonService {
             throw new RuntimeException("Lỗi khi ánh xạ hóa đơn sang DTO");
         }
 
-        // Gửi chi tiết hóa đơn qua WebSocket
-        HoaDonDetailResponse detailResponse = getHoaDonDetail(id);
-        sendHoaDonDetailUpdate(detailResponse);
-
         return response;
-    }
-
-    private void sendHoaDonDetailUpdate(HoaDonDetailResponse hoaDonDetail) {
-        messagingTemplate.convertAndSend("/topic/hoa-don", hoaDonDetail);
     }
 
     private boolean isValidTrangThai(Short trangThai) {

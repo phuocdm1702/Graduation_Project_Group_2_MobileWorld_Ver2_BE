@@ -14,11 +14,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +31,8 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
     private KhachHangRepository khachHangRepository;
 
     private final PhieuGiamGiaCaNhanRepository phieuGiamGiaCaNhanRepository;
+    @Autowired
+    private SimpMessagingTemplate brokerMessagingTemplate;
 
     public PhieuGiamGiaServiceImpl(PhieuGiamGiaCaNhanRepository phieuGiamGiaCaNhanRepository) {
         this.phieuGiamGiaCaNhanRepository = phieuGiamGiaCaNhanRepository;
@@ -290,7 +292,28 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
 
     @Override
     public List<PhieuGiamGia> getallPGG() {
-        return phieuGiamGiaRepository.findAll();
+
+        List<PhieuGiamGia> result = phieuGiamGiaRepository.findAll();
+
+        // Gửi realtime update cho danh sách tất cả phiếu giảm giá
+        sendAllPhieuGiamGiaUpdate(result);
+
+        return result;
+    }
+
+    // Thêm WebSocket method
+    private void sendAllPhieuGiamGiaUpdate(List<PhieuGiamGia> phieuGiamGias) {
+        try {
+            Map<String, Object> allPggUpdate = new HashMap<>();
+            allPggUpdate.put("action", "GET_ALL_PGG");
+            allPggUpdate.put("phieuGiamGias", phieuGiamGias);
+            allPggUpdate.put("count", phieuGiamGias.size());
+            allPggUpdate.put("timestamp", Instant.now());
+            brokerMessagingTemplate.convertAndSend("/topic/all-pgg", allPggUpdate);
+            System.out.println("Đã gửi danh sách tất cả phiếu giảm giá qua WebSocket: " + phieuGiamGias.size() + " phiếu");
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi danh sách tất cả phiếu giảm giá qua WebSocket: " + e.getMessage());
+        }
     }
 
     private void logResult(Page<PhieuGiamGia> result) {

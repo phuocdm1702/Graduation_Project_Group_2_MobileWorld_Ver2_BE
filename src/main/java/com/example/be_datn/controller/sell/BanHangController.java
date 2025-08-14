@@ -51,6 +51,7 @@ public class BanHangController {
 
     @GetMapping("/hoa-don-cho")
     public ResponseEntity<List<HoaDon>> getHD() {
+        // Service sẽ tự động gửi realtime update
         return ResponseEntity.ok(banHangService.getHDCho());
     }
 
@@ -59,32 +60,46 @@ public class BanHangController {
         Integer idKhachHangToUse = (request.getIdKhachHang() != null) ? request.getIdKhachHang() : 1;
         Integer idNhanVienToUse = (request.getIdNhanVien() != null) ? request.getIdNhanVien() : 1;
         System.out.println("Request body: " + request); // Debug request body
+
+        // Service sẽ tự động gửi realtime update khi tạo hóa đơn
         return ResponseEntity.ok(banHangService.taoHD(idKhachHangToUse, idNhanVienToUse));
     }
 
-
-
-
     @DeleteMapping("/xoa-hd-cho/{idHD}")
     public ResponseEntity<Void> huyHDCho(@PathVariable Integer idHD) {
+        // Service sẽ tự động gửi realtime update khi xóa hóa đơn
         banHangService.huyHD(idHD);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/add/gio-hang")
     public ResponseEntity<GioHangDTO> addGioHang(@RequestParam Integer idHD, @RequestBody ChiTietGioHangDTO chiTietGioHangDTO) {
+        // Service sẽ tự động gửi realtime update khi thêm vào giỏ hàng
         GioHangDTO gh = banHangService.themVaoGH(idHD, chiTietGioHangDTO);
         return ResponseEntity.ok(gh);
     }
 
     @GetMapping("/gio-hang/data/{idHD}")
     public ResponseEntity<GioHangDTO> getGioHang(@PathVariable Integer idHD) {
+        // Service sẽ tự động gửi realtime update khi lấy giỏ hàng
         GioHangDTO gh = banHangService.layGioHang(idHD);
         return ResponseEntity.ok(gh);
     }
 
+    @GetMapping("/hoa-don/{idHD}")
+    public ResponseEntity<HoaDonDTO> getSingleHoaDon(@PathVariable Integer idHD) {
+        try {
+            // Service sẽ tự động gửi realtime update khi lấy hóa đơn đơn lẻ
+            HoaDonDTO hoaDon = banHangService.getSingleHoaDon(idHD);
+            return ResponseEntity.ok(hoaDon);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
     @GetMapping("/gio-hang-chi-tiet/data/{idHD}")
     public ResponseEntity<HoaDonDTO> getHoaDonDetail(@PathVariable Integer idHD) {
+        // Service sẽ tự động gửi realtime update khi lấy chi tiết hóa đơn
         HoaDonDTO hd = banHangService.layChiTietHoaDonCho(idHD);
         return ResponseEntity.ok(hd);
     }
@@ -94,12 +109,14 @@ public class BanHangController {
             @RequestParam Integer hdId,
             @RequestParam Integer spId,
             @RequestParam(required = false) String maImel) {
+        // Service sẽ tự động gửi realtime update khi xóa sản phẩm khỏi giỏ hàng
         GioHangDTO updatedGioHang = banHangService.xoaSanPhamKhoiGioHang(hdId, spId, maImel);
         return ResponseEntity.ok(updatedGioHang);
     }
 
     @PostMapping("/thanh-toan/{idHD}")
     public ResponseEntity<HoaDonDTO> thanhToan(@PathVariable Integer idHD, @RequestBody HoaDonRequest hoaDonRequest) {
+        // Service sẽ tự động gửi realtime update khi thanh toán thành công
         HoaDonDTO hoaDonDTO = banHangService.thanhToan(idHD, hoaDonRequest);
         return ResponseEntity.ok(hoaDonDTO);
     }
@@ -124,29 +141,63 @@ public class BanHangController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
     @GetMapping("/PGG-canhan")
-    public List<PhieuGiamGiaCaNhan> getall(){
-        return phieuGiamGiaCaNhanService.getall();
+    public ResponseEntity<List<PhieuGiamGiaCaNhan>> getall() {
+        try {
+            // Service sẽ tự động gửi realtime update cho danh sách phiếu giảm giá cá nhân
+            List<PhieuGiamGiaCaNhan> result = phieuGiamGiaCaNhanService.getall();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @GetMapping("/PGG-all")
-    public List<PhieuGiamGia> getallPGG(){
-        return
-                phieuGiamGiaService.getallPGG();
+    public ResponseEntity<List<PhieuGiamGia>> getallPGG() {
+        try {
+            // Service sẽ tự động gửi realtime update cho danh sách phiếu giảm giá
+            List<PhieuGiamGia> result = phieuGiamGiaService.getallPGG();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
+    // 2. Cập nhật endpoint lấy thông tin khách hàng với WebSocket
     @GetMapping("/by-khach-hang/{idKhachHang}")
     public ResponseEntity<List<PhieuGiamGiaCaNhan>> getByKhachHang(@PathVariable Integer idKhachHang) {
+        // Service sẽ tự động gửi realtime update cho thông tin khách hàng
         List<PhieuGiamGiaCaNhan> phieuGiamGias = banHangService.findByKhachHangId(idKhachHang);
         return ResponseEntity.ok(phieuGiamGias);
     }
-    @GetMapping("/pgg/check")
-    public ResponseEntity<PhieuGiamGiaCaNhan> checkDiscountCode(@RequestParam("ma") String ma) {
-        Optional<PhieuGiamGiaCaNhan> optional = phieuGiamGiaCaNhanService.checkDiscountCode(ma);
-        return optional.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
 
+    // 3. Cập nhật endpoint kiểm tra mã giảm giá với WebSocket
+    @GetMapping("/pgg/check")
+    public ResponseEntity<Map<String, Object>> checkDiscountCode(@RequestParam("ma") String ma) {
+        try {
+            Optional<PhieuGiamGiaCaNhan> optional = phieuGiamGiaCaNhanService.checkDiscountCode(ma);
+
+            Map<String, Object> response = new HashMap<>();
+            if (optional.isPresent()) {
+                response.put("isValid", true);
+                response.put("phieuGiamGia", optional.get());
+                response.put("message", "Mã giảm giá hợp lệ");
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("isValid", false);
+                response.put("phieuGiamGia", null);
+                response.put("message", "Mã giảm giá không hợp lệ hoặc đã hết hạn");
+                return ResponseEntity.ok(response); // Vẫn trả về OK với thông tin lỗi
+            }
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("isValid", false);
+            errorResponse.put("phieuGiamGia", null);
+            errorResponse.put("message", "Lỗi khi kiểm tra mã giảm giá: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 
     @GetMapping("/chi-tiet-san-pham/id")
     public ResponseEntity<Integer> getChiTietSanPhamId(
@@ -189,7 +240,4 @@ public class BanHangController {
         Map<String, Object> product = banHangService.findProductByBarcodeOrImei(code);
         return ResponseEntity.ok(product);
     }
-
-
 }
-

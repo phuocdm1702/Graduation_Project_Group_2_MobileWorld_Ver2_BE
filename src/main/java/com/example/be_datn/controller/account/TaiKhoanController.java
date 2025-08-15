@@ -82,13 +82,19 @@ public class TaiKhoanController {
 
 
     @PostMapping("/dang-nhap-Web")
-    public ResponseEntity<?> dangnhapWeb(@RequestBody TaiKhoanDTO taiKhoanDTO) {
+    public ResponseEntity<?> dangnhapWeb(@RequestBody TaiKhoanDTO taiKhoanDTO, HttpServletRequest request) {
         String login = taiKhoanDTO.getTenDangNhap() != null && !taiKhoanDTO.getTenDangNhap().trim().isEmpty()
-                ? taiKhoanDTO.getTenDangNhap() : taiKhoanDTO.getEmail();
+                ? taiKhoanDTO.getTenDangNhap()
+                : taiKhoanDTO.getEmail();
 
-        Map<String, Object> response = taiKhoanService.dangnhapWeb(login, taiKhoanDTO.getMatKhau());
-        return ResponseEntity.ok().body(response);
+        try {
+            Map<String, Object> result = taiKhoanService.dangnhapWeb(login, taiKhoanDTO.getMatKhau(), request);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
     }
+
 
     @GetMapping("/thong-tin-khach-hang/{idKhachHang}")
     public ResponseEntity<?> getThongTinKhachHang(@PathVariable Integer idKhachHang) {

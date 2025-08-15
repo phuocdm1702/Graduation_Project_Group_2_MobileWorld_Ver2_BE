@@ -102,31 +102,37 @@ public class TaiKhoanServicesImpl implements TaiKhoanService {
 
 
     @Override
-    public Map<String, Object> dangnhapWeb(String login, String matKhau) {
+    public Map<String, Object> dangnhapWeb(String login, String matKhau, HttpServletRequest request) {
         if (login == null || login.trim().isEmpty() || matKhau == null || matKhau.trim().isEmpty()) {
             throw new RuntimeException("Tên đăng nhập hoặc email và mật khẩu không được để trống");
         }
-
         TaiKhoan taiKhoan = taiKhoanRepository.findByTenDangNhapOrEmailAndMatKhau(login, matKhau);
         if (taiKhoan == null) {
             throw new RuntimeException("Tên đăng nhập/email hoặc mật khẩu không đúng");
         }
-
         if (Boolean.FALSE.equals(taiKhoan.getDeleted())) {
             throw new RuntimeException("Tài khoản " + login + " đã bị vô hiệu hóa");
         }
+        if (taiKhoan.getIdQuyenHan() == null ||
+                (taiKhoan.getIdQuyenHan().getId() != 3)) { // Ví dụ quyền 3 là khách hàng
+            throw new RuntimeException("Bạn không có quyền đăng nhập web khách hàng");
+        }
+        HttpSession session = request.getSession();
+        session.setAttribute("taiKhoan", taiKhoan);
 
         KhachHang khachHang = khachHangRepository.findByIdTaiKhoan(taiKhoan);
         Integer idKhachHang = khachHang != null ? khachHang.getId() : null;
 
-        // Trả về thông tin cần thiết
         Map<String, Object> response = new HashMap<>();
+        response.put("message", "Đăng nhập thành công");
         response.put("tenDangNhap", taiKhoan.getTenDangNhap());
         response.put("idTaiKhoan", taiKhoan.getId());
         response.put("idKhachHang", idKhachHang);
+        response.put("role", taiKhoan.getIdQuyenHan().getCapQuyenHan());
 
         return response;
     }
+
 
 
     @Override

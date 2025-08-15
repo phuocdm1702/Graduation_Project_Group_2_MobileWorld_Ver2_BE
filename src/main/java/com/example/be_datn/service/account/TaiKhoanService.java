@@ -24,5 +24,6 @@ public interface TaiKhoanService {
 
     public Map<String, Object> dangnhap(String login, String matKhau, HttpServletRequest request);
 
-    Map<String, Object> dangnhapWeb(String login, String matKhau);
+
+    Map<String, Object> dangnhapWeb(String login, String matKhau, HttpServletRequest request);
 }

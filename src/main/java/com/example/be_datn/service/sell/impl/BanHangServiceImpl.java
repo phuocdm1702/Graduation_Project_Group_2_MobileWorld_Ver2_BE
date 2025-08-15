@@ -324,6 +324,8 @@ public class BanHangServiceImpl implements BanHangService {
                 phieuGiamGia.setTrangThai(false);
             }
             phieuGiamGiaRepository.save(phieuGiamGia);
+            // Gửi realtime update cho phiếu giảm giá
+            sendVoucherUpdate(phieuGiamGia, "VOUCHER_USED");
         }
 
         gh.setTongTien(gh.getChiTietGioHangDTOS().stream()
@@ -446,6 +448,8 @@ public class BanHangServiceImpl implements BanHangService {
                     pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
                     pgg.setTrangThai(true); // Đảm bảo phiếu giảm giá được kích hoạt lại
                     phieuGiamGiaRepository.save(pgg);
+                    // Gửi realtime update cho phiếu giảm giá
+                    sendVoucherUpdate(pgg, "VOUCHER_RESTORED");
                     System.out.println("Đã khôi phục số lượng dùng cho phiếu giảm giá ID: " + idPhieuGiamGia);
                 }
             }
@@ -555,6 +559,8 @@ public class BanHangServiceImpl implements BanHangService {
                     pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
                     pgg.setTrangThai(true);
                     phieuGiamGiaRepository.save(pgg);
+                    // Gửi realtime update cho phiếu giảm giá
+                    sendVoucherUpdate(pgg, "VOUCHER_RESTORED");
                 }
             }
         }
@@ -633,6 +639,8 @@ public class BanHangServiceImpl implements BanHangService {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá với ID " + hoaDonRequest.getIdPhieuGiamGia() + " không tồn tại"));
             hoaDon.setIdPhieuGiamGia(phieuGiamGia);
+            // Gửi realtime update cho phiếu giảm giá
+            sendVoucherUpdate(phieuGiamGia, "VOUCHER_USED");
         }
 
         // Cập nhật thông tin hóa đơn
@@ -1033,7 +1041,6 @@ public class BanHangServiceImpl implements BanHangService {
         }
     }
 
-    // 2. WebSocket cho thông tin khách hàng
     private void sendKhachHangUpdate(Integer khachHangId, List<PhieuGiamGiaCaNhan> phieuGiamGias) {
         try {
             Map<String, Object> khachHangUpdate = new HashMap<>();
@@ -1049,4 +1056,19 @@ public class BanHangServiceImpl implements BanHangService {
         }
     }
 
+    private void sendVoucherUpdate(PhieuGiamGia phieuGiamGia, String action) {
+        try {
+            Map<String, Object> voucherUpdate = new HashMap<>();
+            voucherUpdate.put("action", action);
+            voucherUpdate.put("phieuGiamGiaId", phieuGiamGia.getId());
+            voucherUpdate.put("maPhieu", phieuGiamGia.getMa());
+            voucherUpdate.put("soLuongDung", phieuGiamGia.getSoLuongDung());
+            voucherUpdate.put("trangThai", phieuGiamGia.getTrangThai());
+            voucherUpdate.put("timestamp", Instant.now());
+            messagingTemplate.convertAndSend("/topic/voucher-update", voucherUpdate);
+            System.out.println("Đã gửi cập nhật phiếu giảm giá qua WebSocket: " + phieuGiamGia.getMa() + " - Action: " + action);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi cập nhật phiếu giảm giá qua WebSocket: " + e.getMessage());
+        }
+    }
 }

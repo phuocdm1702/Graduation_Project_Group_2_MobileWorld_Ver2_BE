@@ -8,10 +8,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatMessageService {
@@ -22,8 +21,9 @@ public class ChatMessageService {
     @Autowired
     private KhachHangRepository khachHangRepository;
 
-    // Lưu trữ tin nhắn tạm thời (chỉ dùng cho demo, không đồng bộ trên nhiều instance)
     private final Map<Integer, List<ChatMessage>> messageStore = new HashMap<>();
+    private final Set<Integer> activeCustomerIds = ConcurrentHashMap.newKeySet();
+
 
     public void sendMessageToCustomer(ChatMessage message) {
         if (message == null || message.getCustomerId() == null) {
@@ -31,6 +31,15 @@ public class ChatMessageService {
         }
 
         Integer customerId = message.getCustomerId();
+        boolean isNewCustomer = !activeCustomerIds.contains(customerId);
+
+        if ("customer".equals(message.getSender()) && isNewCustomer) {
+            activeCustomerIds.add(customerId);
+            khachHangRepository.findById(customerId).ifPresent(customer -> {
+                messagingTemplate.convertAndSend("/topic/new-customer", customer);
+            });
+        }
+
         if (!messageStore.containsKey(customerId)) {
             messageStore.put(customerId, new ArrayList<>());
         }
@@ -39,13 +48,10 @@ public class ChatMessageService {
         storedMessage.setSender(message.getSender());
         storedMessage.setText(message.getText());
         storedMessage.setType(message.getType());
-        storedMessage.setTime(Instant.parse(Instant.now().toString())); // Đảm bảo thời gian đồng bộ từ server
+        storedMessage.setTime(Instant.parse(Instant.now().toString()));
         messageStore.get(customerId).add(storedMessage);
 
-        // Gửi tin nhắn tới client
         messagingTemplate.convertAndSend("/topic/customer/" + customerId, storedMessage);
-
-        // Gửi tin nhắn tới admin
         messagingTemplate.convertAndSend("/topic/admin/" + customerId, storedMessage);
     }
 
@@ -56,11 +62,18 @@ public class ChatMessageService {
         return new ArrayList<>(messageStore.getOrDefault(customerId, new ArrayList<>()));
     }
 
+    public List<KhachHang> getActiveCustomers() {
+        return activeCustomerIds.stream()
+                .map(id -> khachHangRepository.findById(id))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+    }
+
     public List<KhachHang> getAllCustomers() {
         return khachHangRepository.findAll();
     }
 
-    // Phương thức hỗ trợ AI (tùy chọn)
     public ChatMessage processAIResponse(String inputMessage, Integer customerId) {
         if (inputMessage == null || inputMessage.trim().isEmpty() || customerId == null) {
             return null;
@@ -71,7 +84,7 @@ public class ChatMessageService {
         response.setText("AI: Tôi nhận được tin nhắn của bạn: " + inputMessage);
         response.setType("text");
         response.setTime(Instant.parse(Instant.now().toString()));
-        sendMessageToCustomer(response); // Lưu và gửi ngay
+        sendMessageToCustomer(response);
         return response;
     }
 }

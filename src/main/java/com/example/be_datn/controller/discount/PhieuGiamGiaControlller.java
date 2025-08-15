@@ -288,21 +288,12 @@ public class PhieuGiamGiaControlller {
                                 emailSend.sendDiscountEmail(
                                         email,
                                         dtoPGG.getMa(),
+                                        updatedPgg.getTenPhieuGiamGia(),
                                         dateFormat.format(updatedPgg.getNgayKetThuc()),
                                         updatedPgg.getPhanTramGiamGia(),
                                         updatedPgg.getSoTienGiamToiDa(),
-                                        "🎉 Cảm ơn bạn! Phiếu giảm giá từ MobileWorld",
-                                        """
-                                        <div class="thank-you-section">
-                                            <h2>Cảm ơn!</h2>
-                                            <p>Quý khách đã đăng ký nhận tin email từ MobileWorld</p>
-                                        </div>
-                                        """,
-                                        """
-                                        Cảm ơn bạn đã đăng ký nhận tin từ MobileWorld!
-    
-                                        Dưới đây là thông tin phiếu giảm giá của bạn:
-                                        """
+                                        updatedPgg.getHoaDonToiThieu(),
+                                        updatedPgg.getMoTa()
                                 );
                             }
                         }
@@ -312,21 +303,12 @@ public class PhieuGiamGiaControlller {
                                 emailSend.sendDiscountEmail(
                                         email,
                                         dtoPGG.getMa(),
+                                        updatedPgg.getTenPhieuGiamGia(),
                                         dateFormat.format(updatedPgg.getNgayKetThuc()),
                                         updatedPgg.getPhanTramGiamGia(),
                                         updatedPgg.getSoTienGiamToiDa(),
-                                        "🎉 Phiếu giảm giá của bạn đã được khôi phục từ MobileWorld",
-                                        """
-                                        <div class="thank-you-section">
-                                            <h2>Khôi phục!</h2>
-                                            <p>Phiếu giảm giá của bạn đã được khôi phục bởi MobileWorld.</p>
-                                        </div>
-                                        """,
-                                        """
-                                        Thông báo từ MobileWorld!
-    
-                                        Phiếu giảm giá của bạn đã được khôi phục:
-                                        """
+                                        updatedPgg.getHoaDonToiThieu(),
+                                        updatedPgg.getMoTa()
                                 );
                             }
                         }

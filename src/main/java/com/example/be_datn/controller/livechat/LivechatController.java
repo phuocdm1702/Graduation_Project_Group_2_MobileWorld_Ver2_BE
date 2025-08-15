@@ -37,7 +37,7 @@ public class LivechatController {
 
     @GetMapping("/api/customers")
     public List<KhachHang> getAllCustomers() {
-        return chatMessageService.getAllCustomers();
+        return chatMessageService.getActiveCustomers();
     }
 
     @GetMapping("/api/messages/{customerId}")

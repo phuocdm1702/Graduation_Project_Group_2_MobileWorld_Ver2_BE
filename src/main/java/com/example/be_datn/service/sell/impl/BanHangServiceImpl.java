@@ -49,6 +49,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -313,6 +315,7 @@ public class BanHangServiceImpl implements BanHangService {
         }
 
         // Xử lý phiếu giảm giá
+        // Xử lý phiếu giảm giá
         if (chiTietGioHangDTO.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(chiTietGioHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy mã giảm giá!"));
@@ -324,8 +327,8 @@ public class BanHangServiceImpl implements BanHangService {
                 phieuGiamGia.setTrangThai(false);
             }
             phieuGiamGiaRepository.save(phieuGiamGia);
-            // Gửi realtime update cho phiếu giảm giá
-            sendVoucherUpdate(phieuGiamGia, "VOUCHER_USED");
+            // Sửa: Gửi thông tin phiếu giảm giá cụ thể được sử dụng cho hóa đơn
+            sendVoucherUsedInOrder(idHD, phieuGiamGia, "VOUCHER_USED");
         }
 
         gh.setTongTien(gh.getChiTietGioHangDTOS().stream()
@@ -446,10 +449,10 @@ public class BanHangServiceImpl implements BanHangService {
                 PhieuGiamGia pgg = phieuGiamGiaRepository.findById(idPhieuGiamGia).orElse(null);
                 if (pgg != null) {
                     pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
-                    pgg.setTrangThai(true); // Đảm bảo phiếu giảm giá được kích hoạt lại
+                    pgg.setTrangThai(true);
                     phieuGiamGiaRepository.save(pgg);
-                    // Gửi realtime update cho phiếu giảm giá
-                    sendVoucherUpdate(pgg, "VOUCHER_RESTORED");
+                    // Sửa: Gửi thông tin phiếu giảm giá cụ thể được khôi phục cho hóa đơn
+                    sendVoucherUsedInOrder(idHD, pgg, "VOUCHER_RESTORED");
                     System.out.println("Đã khôi phục số lượng dùng cho phiếu giảm giá ID: " + idPhieuGiamGia);
                 }
             }
@@ -559,8 +562,8 @@ public class BanHangServiceImpl implements BanHangService {
                     pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
                     pgg.setTrangThai(true);
                     phieuGiamGiaRepository.save(pgg);
-                    // Gửi realtime update cho phiếu giảm giá
-                    sendVoucherUpdate(pgg, "VOUCHER_RESTORED");
+                    // Sửa: Gửi thông tin phiếu giảm giá cụ thể được khôi phục cho hóa đơn
+                    sendVoucherUsedInOrder(idHD, pgg, "VOUCHER_RESTORED");
                 }
             }
         }
@@ -640,7 +643,7 @@ public class BanHangServiceImpl implements BanHangService {
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá với ID " + hoaDonRequest.getIdPhieuGiamGia() + " không tồn tại"));
             hoaDon.setIdPhieuGiamGia(phieuGiamGia);
             // Gửi realtime update cho phiếu giảm giá
-            sendVoucherUpdate(phieuGiamGia, "VOUCHER_USED");
+            sendVoucherUsedInOrder(idHD, phieuGiamGia, "VOUCHER_USED");
         }
 
         // Cập nhật thông tin hóa đơn
@@ -860,7 +863,7 @@ public class BanHangServiceImpl implements BanHangService {
         List<PhieuGiamGiaCaNhan> result = phieuGiamGiaCaNhanRepository.findByIdKhachHangId(idKhachHang);
 
         // Gửi realtime update cho thông tin khách hàng
-        sendKhachHangUpdate(idKhachHang, result);
+        sendKhachHangUpdate(idKhachHang);
 
         return result;
     }
@@ -1041,34 +1044,76 @@ public class BanHangServiceImpl implements BanHangService {
         }
     }
 
-    private void sendKhachHangUpdate(Integer khachHangId, List<PhieuGiamGiaCaNhan> phieuGiamGias) {
+    private void sendKhachHangUpdate(Integer khachHangId) {
         try {
-            Map<String, Object> khachHangUpdate = new HashMap<>();
-            khachHangUpdate.put("action", "CUSTOMER_VOUCHERS");
-            khachHangUpdate.put("khachHangId", khachHangId);
-            khachHangUpdate.put("phieuGiamGias", phieuGiamGias);
-            khachHangUpdate.put("count", phieuGiamGias.size());
-            khachHangUpdate.put("timestamp", Instant.now());
-            messagingTemplate.convertAndSend("/topic/khach-hang-update", khachHangUpdate);
-            System.out.println("Đã gửi thông tin khách hàng qua WebSocket - KH ID: " + khachHangId + ", Số phiếu: " + phieuGiamGias.size());
+            // Lấy thông tin khách hàng từ database
+            Optional<KhachHang> khachHangOpt = khachHangRepository.findById(khachHangId);
+            if (khachHangOpt.isPresent()) {
+                KhachHang khachHang = khachHangOpt.get();
+
+                Map<String, Object> khachHangUpdate = new HashMap<>();
+                khachHangUpdate.put("action", "CUSTOMER_UPDATE");
+                khachHangUpdate.put("khachHangId", khachHang.getId());
+                khachHangUpdate.put("ten", khachHang.getTen());
+                khachHangUpdate.put("soDienThoai", khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : null);
+                khachHangUpdate.put("email", khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getEmail() : null);
+                khachHangUpdate.put("timestamp", Instant.now());
+
+                messagingTemplate.convertAndSend("/topic/khach-hang-update", khachHangUpdate);
+                System.out.println("Đã gửi thông tin khách hàng qua WebSocket - KH ID: " + khachHangId + ", Tên: " + khachHang.getTen());
+            } else {
+                System.out.println("Không tìm thấy khách hàng với ID: " + khachHangId);
+            }
         } catch (Exception e) {
             System.err.println("Lỗi khi gửi thông tin khách hàng qua WebSocket: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    private void sendVoucherUpdate(PhieuGiamGia phieuGiamGia, String action) {
+    private void sendVoucherUsedInOrder(Integer hoaDonId, PhieuGiamGia phieuGiamGia, String action) {
         try {
             Map<String, Object> voucherUpdate = new HashMap<>();
             voucherUpdate.put("action", action);
+            voucherUpdate.put("hoaDonId", hoaDonId); // Thêm ID hóa đơn để biết phiếu được dùng cho đơn nào
             voucherUpdate.put("phieuGiamGiaId", phieuGiamGia.getId());
             voucherUpdate.put("maPhieu", phieuGiamGia.getMa());
+            voucherUpdate.put("tenPhieu", phieuGiamGia.getTenPhieuGiamGia()); // Thêm tên phiếu nếu có
+            voucherUpdate.put("giaTriGiam", phieuGiamGia.getSoTienGiamToiDa()); // Thêm giá trị giảm
             voucherUpdate.put("soLuongDung", phieuGiamGia.getSoLuongDung());
             voucherUpdate.put("trangThai", phieuGiamGia.getTrangThai());
             voucherUpdate.put("timestamp", Instant.now());
-            messagingTemplate.convertAndSend("/topic/voucher-update", voucherUpdate);
-            System.out.println("Đã gửi cập nhật phiếu giảm giá qua WebSocket: " + phieuGiamGia.getMa() + " - Action: " + action);
+            messagingTemplate.convertAndSend("/topic/voucher-order-update", voucherUpdate);
+            System.out.println("Đã gửi cập nhật phiếu giảm giá cho hóa đơn " + hoaDonId + " qua WebSocket: " + phieuGiamGia.getMa() + " - Action: " + action);
         } catch (Exception e) {
-            System.err.println("Lỗi khi gửi cập nhật phiếu giảm giá qua WebSocket: " + e.getMessage());
+            System.err.println("Lỗi khi gửi cập nhật phiếu giảm giá cho hóa đơn qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    // WebSocket message handling for order selection
+    @MessageMapping("/select-order")
+    @SendTo("/topic/selected-order")
+    public Map<String, Object> handleOrderSelection(Map<String, Object> message) {
+        try {
+            Integer orderId = (Integer) message.get("orderId");
+            if (orderId == null) {
+                throw new RuntimeException("Order ID is required!");
+            }
+
+            HoaDon hoaDon = hoaDonRepository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + orderId));
+
+            HoaDonDTO hoaDonDTO = mapToHoaDonDto(hoaDon);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("action", "SELECT_ORDER");
+            response.put("hoaDon", hoaDonDTO);
+            response.put("timestamp", Instant.now());
+
+            System.out.println("Đã gửi thông tin hóa đơn được chọn qua WebSocket: " + hoaDon.getMa());
+            return response;
+        } catch (Exception e) {
+            System.err.println("Lỗi khi xử lý chọn hóa đơn qua WebSocket: " + e.getMessage());
+            throw e;
         }
     }
 }

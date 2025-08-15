@@ -127,7 +127,7 @@ public class AddPhieuGiamGiaController {
                             String ngayHH = dateFormat.format(pgg.getNgayKetThuc());
                             Double TinhSTGTD = pgg.getPhanTramGiamGia() * pgg.getHoaDonToiThieu() / 100;
 
-                            emailSend.sendDiscountEmail(email, pggcn.getMa(), ngayHH, pgg.getPhanTramGiamGia(), TinhSTGTD);
+                            emailSend.sendDiscountEmail(email, pggcn.getMa(), pgg.getTenPhieuGiamGia(), ngayHH, pgg.getPhanTramGiamGia(), pgg.getSoTienGiamToiDa(), pgg.getHoaDonToiThieu(), pgg.getMoTa());
                         } catch (Exception e) {
                             System.err.println("Failed to send email to " + email + ": " + e.getMessage());
                         }

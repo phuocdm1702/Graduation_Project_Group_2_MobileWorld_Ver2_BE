@@ -139,6 +139,10 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 // Reuse hóa đơn chờ đầu tiên, tránh spam
                 return mapToHoaDonDetailResponse(pendingHoaDons.get(0));
             }
+        } else {
+            // Gán mặc định khách lẻ với id = 1
+            khachHang = khachHangRepository.findById(1)
+                    .orElseThrow(() -> new RuntimeException("Khách lẻ không tồn tại với ID: 1"));
         }
 
         // Lấy nhân viên mặc định (ID = 1)
@@ -156,7 +160,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 .tongTien(BigDecimal.ZERO)
                 .tongTienSauGiam(BigDecimal.ZERO)
                 .ghiChu("Hóa đơn chờ từ client")
-                .tenKhachHang(khachHang.getTen())
+                .tenKhachHang(khachHang.getTen() != null ? khachHang.getTen() : "Khách lẻ")
                 .diaChiKhachHang("N/A")
                 .soDienThoaiKhachHang(khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : "N/A")
                 .email("N/A")
@@ -204,7 +208,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
 
         if (hoaDon.getTrangThai() != 0) {
-            throw new RuntimeException("Hóa đơn này không phải hóa đơn chờ!");
+            throw new RuntimeException("Hóa đơn này không phải hóa đơn chờ! Trạng thái hiện tại: " + getTrangThaiText(hoaDon.getTrangThai()));
         }
 
         ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTietGioHangDTO.getChiTietSanPhamId())
@@ -215,7 +219,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         if (gh == null) {
             gh = new GioHangDTO();
             gh.setGioHangId(ghKey);
-            gh.setKhachHangId(hoaDon.getIdKhachHang() != null ? hoaDon.getIdKhachHang().getId() : null);
+            gh.setKhachHangId(hoaDon.getIdKhachHang() != null ? hoaDon.getIdKhachHang().getId() : 1);
             gh.setChiTietGioHangDTOS(new ArrayList<>());
             gh.setTongTien(BigDecimal.ZERO);
         }

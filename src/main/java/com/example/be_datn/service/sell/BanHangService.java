@@ -44,9 +44,6 @@ public interface BanHangService {
 
     Integer getChiTietSanPhamId(Integer sanPhamId, String mauSac, String dungLuongRam, String dungLuongBoNhoTrong);
 
-    // Thêm phương thức mới để lấy 1 hóa đơn cụ thể
-    HoaDonDTO getSingleHoaDon(Integer idHD);
-
     Map<String, Object> findProductByBarcodeOrImei(String code);
 
     HoaDonDTO taoHD(Integer idKhachHangToUse, Integer idNhanVienToUse);

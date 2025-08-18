@@ -27,6 +27,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -121,7 +123,7 @@ public class DotGiamGiaService {
 
 
     @Transactional
-    public void addDotGiamGia(DotGiamGiaDTO dotGiamGiaDTO, List<Integer> idSanPham, List<ViewCTSPDTO> dsCTSP) {
+    public void addDotGiamGia(DotGiamGiaDTO dotGiamGiaDTO, List<Integer> idSanPham, List<ViewCTSPDTO> dsCTSP) throws ParseException {
         try {
             Date ngayBatDau = new Date(dotGiamGiaDTO.getNgayBatDau().getTime());
             Date ngayKetThuc = new Date(dotGiamGiaDTO.getNgayKetThuc().getTime());
@@ -133,9 +135,15 @@ public class DotGiamGiaService {
             dotGiamGia.setNgayBatDau(ngayBatDau);
             dotGiamGia.setNgayKetThuc(ngayKetThuc);
             dotGiamGia.setDeleted(false);
-            dotGiamGia.setTrangThai(ngayBatDau.after(Date.valueOf(LocalDate.now())));
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date ngayBatDauChuanHoa;
+            try {
+                ngayBatDauChuanHoa = new java.sql.Date(sdf.parse(sdf.format(ngayBatDau)).getTime());
+            } catch (ParseException e) {
+                throw new RuntimeException("Lỗi khi parse ngày: " + e.getMessage());
+            }
+            dotGiamGia.setTrangThai(ngayBatDauChuanHoa.after(Date.valueOf(LocalDate.now())));
             repository.save(dotGiamGia);
-
             List<SanPham> dsSanPham = sanPhamRepository.findAllById(idSanPham);
             Map<Integer, ViewCTSPDTO> selectedCTSPMap = dsCTSP.stream()
                     .filter(ctsp -> ctsp.getSelected() != null && ctsp.getSelected())

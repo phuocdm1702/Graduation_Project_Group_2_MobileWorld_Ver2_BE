@@ -628,10 +628,23 @@ public class BanHangServiceImpl implements BanHangService {
         if (hoaDonRequest.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá với ID " + hoaDonRequest.getIdPhieuGiamGia() + " không tồn tại"));
+
+            // Giảm số lượng phiếu giảm giá
+            if (phieuGiamGia.getSoLuongDung() != null && phieuGiamGia.getSoLuongDung() > 0) {
+                phieuGiamGia.setSoLuongDung(phieuGiamGia.getSoLuongDung() - 1);
+            } else if (phieuGiamGia.getSoLuongDung() == -1) {
+                // -1 nghĩa là không giới hạn, không cần trừ
+            } else {
+                throw new RuntimeException("Phiếu giảm giá đã hết số lượng!");
+            }
+            phieuGiamGiaRepository.save(phieuGiamGia);
+
             hoaDon.setIdPhieuGiamGia(phieuGiamGia);
+
             // Gửi realtime update cho phiếu giảm giá
             sendVoucherUsedInOrder(idHD, phieuGiamGia, "VOUCHER_USED");
         }
+
 
         // Cập nhật thông tin hóa đơn
         hoaDon.setTienSanPham(tienSanPham);

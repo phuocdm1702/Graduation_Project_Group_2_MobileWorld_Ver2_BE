@@ -128,18 +128,17 @@ public class BanHangClientServiceImpl implements BanHangClientService {
     @Override
     @Transactional
     public HoaDonDetailResponse taoHoaDonCho(Integer khachHangId) {
-        // Xử lý khách vãng lai
-        KhachHang khachHang;
+        // Xử lý khách hàng
+        KhachHang khachHang = null;
         if (khachHangId != null) {
             khachHang = khachHangRepository.findById(khachHangId)
                     .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với ID: " + khachHangId));
-        } else {
-            khachHang = khachHangRepository.findByTen("Khách lẻ")
-                    .orElseGet(() -> {
-                        KhachHang guest = new KhachHang();
-                        guest.setTen("Khách lẻ");
-                        return khachHangRepository.save(guest);
-                    });
+
+            List<HoaDon> pendingHoaDons = hoaDonRepository.findByIdKhachHangAndTrangThai(khachHang, (short) 0);
+            if (!pendingHoaDons.isEmpty()) {
+                // Reuse hóa đơn chờ đầu tiên, tránh spam
+                return mapToHoaDonDetailResponse(pendingHoaDons.get(0));
+            }
         }
 
         // Lấy nhân viên mặc định (ID = 1)
@@ -162,8 +161,8 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 .soDienThoaiKhachHang(khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : "N/A")
                 .email("N/A")
                 .ngayTao(new Date())
-                .trangThai((short) 0) // Chờ thanh toán
-                .deleted(true) // Hóa đơn chờ, sẽ được cập nhật khi thanh toán
+                .trangThai((short) 0)
+                .deleted(true)
                 .createdAt(new Date())
                 .createdBy(1)
                 .build();
@@ -179,6 +178,18 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         redisTemplate.opsForValue().set(GH_PREFIX + hoaDon.getId(), gioHangDTO, 24, TimeUnit.HOURS);
 
         return mapToHoaDonDetailResponse(hoaDon);
+    }
+
+    @Override
+    public List<HoaDonDetailResponse> getPendingInvoicesByCustomer(Integer khachHangId) {
+        KhachHang khachHang = khachHangRepository.findById(khachHangId)
+                .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với ID: " + khachHangId));
+
+        List<HoaDon> pendingHoaDons = hoaDonRepository.findByIdKhachHangAndTrangThai(khachHang, (short) 0);
+
+        return pendingHoaDons.stream()
+                .map(this::mapToHoaDonDetailResponse)  // Sử dụng method mapToHoaDonDetailResponse đã có
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -435,14 +446,36 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             }
         }
 
-        // Xử lý khách hàng
-        KhachHang khachHang = khachHangRepository.findById(1)
-                .orElseThrow(() -> new RuntimeException("Khách hàng mặc định (ID = 1) không tồn tại!"));
-        hoaDon.setIdKhachHang(khachHang);
-        hoaDon.setTenKhachHang(hoaDonRequest.getTenKhachHang());
-        hoaDon.setSoDienThoaiKhachHang(hoaDonRequest.getSoDienThoaiKhachHang());
-        hoaDon.setDiaChiKhachHang(hoaDonRequest.getDiaChiKhachHang().getDiaChiCuThe());
-        hoaDon.setEmail(hoaDonRequest.getEmail());
+        // Xử lý khách hàng và địa chỉ
+        KhachHang khachHang = null;
+        if (hoaDonRequest.getIdKhachHang() != null && hoaDonRequest.getIdKhachHang() > 0) {
+            khachHang = khachHangRepository.findById(hoaDonRequest.getIdKhachHang())
+                    .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với ID: " + hoaDonRequest.getIdKhachHang()));
+            hoaDon.setIdKhachHang(khachHang);
+            // Đồng bộ thông tin khách hàng từ KhachHang nếu có, trừ khi được cung cấp trong request
+            hoaDon.setTenKhachHang(hoaDonRequest.getTenKhachHang() != null ? hoaDonRequest.getTenKhachHang() : khachHang.getTen());
+            hoaDon.setSoDienThoaiKhachHang(hoaDonRequest.getSoDienThoaiKhachHang() != null ? hoaDonRequest.getSoDienThoaiKhachHang() :
+                    (khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : "N/A"));
+            hoaDon.setEmail(hoaDonRequest.getEmail() != null ? hoaDonRequest.getEmail() : "N/A");
+        } else {
+            // Khách vãng lai
+            hoaDon.setIdKhachHang(khachHangRepository.findById(1)
+                    .orElseThrow(() -> new RuntimeException("Khách hàng mặc định không tồn tại!")));
+            hoaDon.setTenKhachHang(hoaDonRequest.getTenKhachHang());
+            hoaDon.setSoDienThoaiKhachHang(hoaDonRequest.getSoDienThoaiKhachHang());
+            hoaDon.setEmail(hoaDonRequest.getEmail());
+        }
+
+        // Xử lý địa chỉ
+        String diaChiCuThe = hoaDonRequest.getDiaChiKhachHang().getDiaChiCuThe();
+        if ("online".equals(hoaDonRequest.getLoaiDon())) {
+            diaChiCuThe = String.format("%s, %s, %s, %s",
+                    hoaDonRequest.getDiaChiKhachHang().getDiaChiCuThe(),
+                    hoaDonRequest.getDiaChiKhachHang().getPhuong(),
+                    hoaDonRequest.getDiaChiKhachHang().getQuan(),
+                    hoaDonRequest.getDiaChiKhachHang().getThanhPho());
+        }
+        hoaDon.setDiaChiKhachHang(diaChiCuThe);
 
         // Tính tổng tiền sản phẩm
         BigDecimal tienSanPham = gioHangDTO.getChiTietGioHangDTOS().stream()
@@ -509,7 +542,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         hinhThucThanhToanRepository.save(hinhThuc);
 
         // Cập nhật trạng thái hóa đơn
-        hoaDon.setLoaiDon("online");
+        hoaDon.setLoaiDon(hoaDonRequest.getLoaiDon());
         hoaDon.setTrangThai((short) 0); // Đã thanh toán, chờ xác nhận IMEI
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setDeleted(false);

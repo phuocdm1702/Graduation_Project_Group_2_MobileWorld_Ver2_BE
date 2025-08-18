@@ -1,6 +1,7 @@
 package com.example.be_datn.repository.order;
 
 import com.example.be_datn.dto.order.response.HoaDonResponse;
+import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.order.HoaDon;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -124,4 +125,5 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     List<HoaDon> findByGiaoCa_IdAndDeletedFalseAndTrangThai(Integer giaoCaId, Short trangThai);
 
+    List<HoaDon> findByIdKhachHangAndTrangThai(KhachHang khachHang, short i);
 }

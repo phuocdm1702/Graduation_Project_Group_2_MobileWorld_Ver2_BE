@@ -27,4 +27,5 @@ public interface BanHangClientService {
     void guiEmailThongTinDonHang(HoaDonDetailResponse hoaDonDetailResponse, String email);
     void xoaHoaDonCho(Integer idHD);
     HoaDonDetailResponse xacNhanVaGanImei(Integer idHD, Map<Integer, String> imelMap);
+    List<HoaDonDetailResponse> getPendingInvoicesByCustomer(Integer khachHangId);
 }

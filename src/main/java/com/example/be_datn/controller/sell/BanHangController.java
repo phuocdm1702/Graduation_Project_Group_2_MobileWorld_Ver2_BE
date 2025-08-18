@@ -86,17 +86,6 @@ public class BanHangController {
         return ResponseEntity.ok(gh);
     }
 
-    @GetMapping("/hoa-don/{idHD}")
-    public ResponseEntity<HoaDonDTO> getSingleHoaDon(@PathVariable Integer idHD) {
-        try {
-            // Service sẽ tự động gửi realtime update khi lấy hóa đơn đơn lẻ
-            HoaDonDTO hoaDon = banHangService.getSingleHoaDon(idHD);
-            return ResponseEntity.ok(hoaDon);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
-
     @GetMapping("/gio-hang-chi-tiet/data/{idHD}")
     public ResponseEntity<HoaDonDTO> getHoaDonDetail(@PathVariable Integer idHD) {
         // Service sẽ tự động gửi realtime update khi lấy chi tiết hóa đơn

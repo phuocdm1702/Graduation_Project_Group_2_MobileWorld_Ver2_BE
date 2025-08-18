@@ -855,15 +855,6 @@ public class BanHangServiceImpl implements BanHangService {
         return result;
     }
 
-    // Thêm phương thức mới để lấy 1 hóa đơn cụ thể
-    @Override
-    public HoaDonDTO getSingleHoaDon(Integer idHD) {
-        HoaDon hoaDon = hoaDonRepository.findById(idHD)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
-
-        return mapToHoaDonDto(hoaDon);
-    }
-
     @Override
     public Map<String, Object> findProductByBarcodeOrImei(String code) {
         if (code == null || code.trim().isEmpty()) {

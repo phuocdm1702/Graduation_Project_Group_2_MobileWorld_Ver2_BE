@@ -1088,32 +1088,4 @@ public class BanHangServiceImpl implements BanHangService {
             System.err.println("Lỗi khi gửi cập nhật phiếu giảm giá cho hóa đơn qua WebSocket: " + e.getMessage());
         }
     }
-
-    // WebSocket message handling for order selection
-    @MessageMapping("/select-order")
-    @SendTo("/topic/selected-order")
-    public Map<String, Object> handleOrderSelection(Map<String, Object> message) {
-        try {
-            Integer orderId = (Integer) message.get("orderId");
-            if (orderId == null) {
-                throw new RuntimeException("Order ID is required!");
-            }
-
-            HoaDon hoaDon = hoaDonRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + orderId));
-
-            HoaDonDTO hoaDonDTO = mapToHoaDonDto(hoaDon);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("action", "SELECT_ORDER");
-            response.put("hoaDon", hoaDonDTO);
-            response.put("timestamp", Instant.now());
-
-            System.out.println("Đã gửi thông tin hóa đơn được chọn qua WebSocket: " + hoaDon.getMa());
-            return response;
-        } catch (Exception e) {
-            System.err.println("Lỗi khi xử lý chọn hóa đơn qua WebSocket: " + e.getMessage());
-            throw e;
-        }
-    }
 }

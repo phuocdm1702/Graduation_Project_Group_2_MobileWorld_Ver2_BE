@@ -152,9 +152,6 @@ public class BanHangServiceImpl implements BanHangService {
             throw new RuntimeException("Không tìm thấy hoá đơn có id: " + idHD);
         }
         hoaDonRepository.deleteById(idHD);
-
-        // Gửi realtime update sau khi hủy hóa đơn
-        sendHoaDonDeleteUpdate(idHD);
     }
 
     @Override
@@ -207,12 +204,7 @@ public class BanHangServiceImpl implements BanHangService {
         gioHangDTO.setTongTien(BigDecimal.ZERO);
         redisTemplate.opsForValue().set(GH_PREFIX + hoaDon.getId(), gioHangDTO, 24, TimeUnit.HOURS);
 
-        HoaDonDTO result = mapToHoaDonDto(hoaDon);
-
-        // Gửi realtime update cho hóa đơn mới tạo
-        sendHoaDonCreateUpdate(result);
-
-        return result;
+        return mapToHoaDonDto(hoaDon);
     }
 
     @Override
@@ -536,9 +528,6 @@ public class BanHangServiceImpl implements BanHangService {
 
         HoaDonDTO result = mapToHoaDonDto(hoaDon);
 
-        // Gửi realtime update cho chi tiết hóa đơn chờ
-        sendHoaDonDetailUpdate(result);
-
         return result;
     }
 
@@ -571,8 +560,6 @@ public class BanHangServiceImpl implements BanHangService {
         redisTemplate.delete(ghKey);
         gioHangTamRepository.markAsDeletedByIdHoaDon(idHD);
 
-        // Gửi realtime update khi xóa giỏ hàng
-        sendGioHangDeleteUpdate(idHD);
     }
 
     private String generateUniqueMaHinhThucThanhToan() {
@@ -874,12 +861,7 @@ public class BanHangServiceImpl implements BanHangService {
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
 
-        HoaDonDTO result = mapToHoaDonDto(hoaDon);
-
-        // Gửi realtime update cho hóa đơn đơn lẻ
-        sendSingleHoaDonUpdate(hoaDon);
-
-        return result;
+        return mapToHoaDonDto(hoaDon);
     }
 
     @Override
@@ -959,60 +941,17 @@ public class BanHangServiceImpl implements BanHangService {
         }
     }
 
-    private void sendHoaDonCreateUpdate(HoaDonDTO hoaDonDTO) {
-        try {
-            messagingTemplate.convertAndSend("/topic/hoa-don-create", hoaDonDTO);
-            System.out.println("Đã gửi hóa đơn mới tạo qua WebSocket: " + hoaDonDTO.getMa());
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi hóa đơn mới tạo qua WebSocket: " + e.getMessage());
-        }
-    }
-
-    private void sendHoaDonDeleteUpdate(Integer hoaDonId) {
-        try {
-            Map<String, Object> deleteInfo = new HashMap<>();
-            deleteInfo.put("action", "DELETE");
-            deleteInfo.put("hoaDonId", hoaDonId);
-            deleteInfo.put("timestamp", Instant.now());
-            messagingTemplate.convertAndSend("/topic/hoa-don-delete", deleteInfo);
-            System.out.println("Đã gửi thông báo xóa hóa đơn qua WebSocket: " + hoaDonId);
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi thông báo xóa hóa đơn qua WebSocket: " + e.getMessage());
-        }
-    }
-
     private void sendGioHangUpdate(Integer hoaDonId, GioHangDTO gioHangDTO) {
         try {
+            HoaDon hoaDon = hoaDonRepository.findById(hoaDonId).orElse(null);
             Map<String, Object> gioHangUpdate = new HashMap<>();
             gioHangUpdate.put("hoaDonId", hoaDonId);
+            gioHangUpdate.put("maHoaDon", hoaDon != null ? hoaDon.getMa() : ""); // THÊM DÒNG NÀY
             gioHangUpdate.put("gioHang", gioHangDTO);
             gioHangUpdate.put("timestamp", Instant.now());
             messagingTemplate.convertAndSend("/topic/gio-hang-update", gioHangUpdate);
-            System.out.println("Đã gửi cập nhật giỏ hàng qua WebSocket cho hóa đơn: " + hoaDonId);
         } catch (Exception e) {
-            System.err.println("Lỗi khi gửi cập nhật giỏ hàng qua WebSocket: " + e.getMessage());
-        }
-    }
-
-    private void sendGioHangDeleteUpdate(Integer hoaDonId) {
-        try {
-            Map<String, Object> deleteInfo = new HashMap<>();
-            deleteInfo.put("action", "DELETE_CART");
-            deleteInfo.put("hoaDonId", hoaDonId);
-            deleteInfo.put("timestamp", Instant.now());
-            messagingTemplate.convertAndSend("/topic/gio-hang-delete", deleteInfo);
-            System.out.println("Đã gửi thông báo xóa giỏ hàng qua WebSocket: " + hoaDonId);
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi thông báo xóa giỏ hàng qua WebSocket: " + e.getMessage());
-        }
-    }
-
-    private void sendHoaDonDetailUpdate(HoaDonDTO hoaDonDTO) {
-        try {
-            messagingTemplate.convertAndSend("/topic/hoa-don-detail", hoaDonDTO);
-            System.out.println("Đã gửi chi tiết hóa đơn qua WebSocket: " + hoaDonDTO.getMa());
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi chi tiết hóa đơn qua WebSocket: " + e.getMessage());
+            // ...
         }
     }
 
@@ -1027,20 +966,6 @@ public class BanHangServiceImpl implements BanHangService {
             System.out.println("Đã gửi thông báo thanh toán thành công qua WebSocket: " + hoaDonDTO.getMa());
         } catch (Exception e) {
             System.err.println("Lỗi khi gửi thông báo thanh toán thành công qua WebSocket: " + e.getMessage());
-        }
-    }
-
-    private void sendSingleHoaDonUpdate(HoaDon hoaDon) {
-        try {
-            HoaDonDTO hoaDonDTO = mapToHoaDonDto(hoaDon);
-            Map<String, Object> singleHoaDonUpdate = new HashMap<>();
-            singleHoaDonUpdate.put("action", "GET_SINGLE_HOADON");
-            singleHoaDonUpdate.put("hoaDon", hoaDonDTO);
-            singleHoaDonUpdate.put("timestamp", Instant.now());
-            messagingTemplate.convertAndSend("/topic/single-hoa-don", singleHoaDonUpdate);
-            System.out.println("Đã gửi thông tin hóa đơn đơn lẻ qua WebSocket: " + hoaDon.getMa());
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi thông tin hóa đơn đơn lẻ qua WebSocket: " + e.getMessage());
         }
     }
 
@@ -1083,7 +1008,7 @@ public class BanHangServiceImpl implements BanHangService {
             voucherUpdate.put("trangThai", phieuGiamGia.getTrangThai());
             voucherUpdate.put("timestamp", Instant.now());
             messagingTemplate.convertAndSend("/topic/voucher-order-update", voucherUpdate);
-            System.out.println("Đã gửi cập nhật phiếu giảm giá cho hóa đơn " + hoaDonId + " qua WebSocket: " + phieuGiamGia.getMa() + " - Action: " + action);
+            System.out.println("Đã gửi cập nhật phiếu giảm giá cho hóa đơn " + hoaDonId + " qua WebSocket: " + phieuGiamGia.getMa() + " - giá trị giảm: " + phieuGiamGia.getSoTienGiamToiDa());
         } catch (Exception e) {
             System.err.println("Lỗi khi gửi cập nhật phiếu giảm giá cho hóa đơn qua WebSocket: " + e.getMessage());
         }

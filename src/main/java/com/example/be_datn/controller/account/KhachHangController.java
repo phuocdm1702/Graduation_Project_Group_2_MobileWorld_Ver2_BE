@@ -9,6 +9,7 @@ import com.example.be_datn.entity.account.TaiKhoan;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.service.account.KhachHangServices;
 import com.example.be_datn.service.account.TaiKhoanService;
+import com.example.be_datn.service.order.HoaDonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +26,13 @@ import java.util.Optional;
 public class KhachHangController {
     private final KhachHangServices khachHangServices;
     private final TaiKhoanService taiKhoanService;
+    private final HoaDonService hoaDonService;
 
     @Autowired
-    public KhachHangController(KhachHangServices khachHangServices, TaiKhoanService taiKhoanService) {
+    public KhachHangController(KhachHangServices khachHangServices, TaiKhoanService taiKhoanService, HoaDonService hoaDonService) {
         this.khachHangServices = khachHangServices;
         this.taiKhoanService = taiKhoanService;
+        this.hoaDonService = hoaDonService;
     }
 
     //hien thi du lieu
@@ -126,7 +129,6 @@ public class KhachHangController {
         HoaDon hoaDon = khachHangServices.searchKhachHangAndUpdateHoaDon(keyword, hoaDonId);
         return ResponseEntity.ok(hoaDon);
     }
-
     //import khach hang ra excel
     @PostMapping("/import")
     public ResponseEntity<String> importKhachHangFromExcel(@RequestBody List<KhachHangResponse> khachHangResponses) {

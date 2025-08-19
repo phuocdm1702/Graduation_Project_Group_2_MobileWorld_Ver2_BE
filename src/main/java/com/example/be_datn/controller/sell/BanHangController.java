@@ -15,6 +15,7 @@ import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.repository.product.ImelRepository;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;
+import com.example.be_datn.service.order.HoaDonService;
 import com.example.be_datn.service.sell.BanHangService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,15 +39,18 @@ public class BanHangController {
     private BanHangService banHangService;
     private final PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService;
     private final PhieuGiamGiaService phieuGiamGiaService;
+    private final HoaDonService hoaDonService;
+
     @Autowired
     private ImelRepository imelRepository;
 
     @Autowired
     private VNPayService vnPayService;
 
-    public BanHangController(PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService, PhieuGiamGiaService phieuGiamGiaService) {
+    public BanHangController(PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService, PhieuGiamGiaService phieuGiamGiaService, HoaDonService hoaDonService) {
         this.phieuGiamGiaCaNhanService = phieuGiamGiaCaNhanService;
         this.phieuGiamGiaService = phieuGiamGiaService;
+        this.hoaDonService = hoaDonService;
     }
 
     @GetMapping("/hoa-don-cho")
@@ -228,5 +232,12 @@ public class BanHangController {
     public ResponseEntity<Map<String, Object>> getProductByBarcodeOrImei(@RequestParam String code) {
         Map<String, Object> product = banHangService.findProductByBarcodeOrImei(code);
         return ResponseEntity.ok(product);
+    }
+    @PutMapping("/updatePhieuGiamGia")
+    public ResponseEntity<HoaDon> updatePhieuGiamGia(
+            @RequestParam("hoaDonId") Integer hoaDonId,
+            @RequestParam(value = "idPhieuGiamGia", required = false) Integer idPhieuGiamGia) {
+        HoaDon updatedHoaDon = hoaDonService.updatePhieuGiamGia(hoaDonId, idPhieuGiamGia);
+        return ResponseEntity.ok(updatedHoaDon);
     }
 }

@@ -4,6 +4,7 @@ import com.example.be_datn.common.order.HoaDonDetailMapper;
 import com.example.be_datn.common.order.HoaDonMapper;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
+import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.order.HoaDonChiTiet;
 import com.example.be_datn.entity.order.LichSuHoaDon;
@@ -11,6 +12,7 @@ import com.example.be_datn.entity.product.ChiTietSanPham;
 import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.entity.product.ImelDaBan;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
+import com.example.be_datn.repository.discount.PhieuGiamGiaRepository;
 import com.example.be_datn.repository.order.HoaDonChiTietRepository;
 import com.example.be_datn.repository.order.HoaDonRepository;
 import com.example.be_datn.repository.order.LichSuHoaDonRepository;
@@ -29,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
@@ -44,6 +47,8 @@ public class HoaDonServiceImpl implements HoaDonService {
 
     @Autowired
     private HoaDonMapper hoaDonMapper;
+
+    private final PhieuGiamGiaRepository phieuGiamGiaRepository;
 
     @Autowired
     private HoaDonDetailMapper hoaDonDetailMapper;
@@ -65,6 +70,10 @@ public class HoaDonServiceImpl implements HoaDonService {
 
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
+    public HoaDonServiceImpl(PhieuGiamGiaRepository phieuGiamGiaRepository) {
+        this.phieuGiamGiaRepository = phieuGiamGiaRepository;
+    }
 
     @Override
     @Cacheable(value = "hoaDonPage", key = "#loaiDon + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
@@ -326,4 +335,51 @@ public class HoaDonServiceImpl implements HoaDonService {
             default: return "N/A";
         }
     }
+    public HoaDon updatePhieuGiamGia(Integer hoaDonId, Integer idPhieuGiamGia) {
+        if (hoaDonId == null) {
+            throw new IllegalArgumentException("ID hóa đơn không được để trống");
+        }
+
+        HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn với ID: " + hoaDonId));
+
+        if (idPhieuGiamGia != null) {
+            PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(idPhieuGiamGia)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu giảm giá với ID: " + idPhieuGiamGia));
+
+            if (!phieuGiamGia.getTrangThai() || phieuGiamGia.getSoLuongDung() <= 0) {
+                throw new IllegalArgumentException("Phiếu giảm giá không hợp lệ hoặc đã hết số lượng sử dụng");
+            }
+
+            // Gán phiếu giảm giá cho hóa đơn
+            hoaDon.setIdPhieuGiamGia(phieuGiamGia);
+
+            // Tính tiền giảm
+            BigDecimal giamGia = BigDecimal.ZERO;
+            if (phieuGiamGia.getPhanTramGiamGia() != null) {
+                BigDecimal phanTram = BigDecimal.valueOf(phieuGiamGia.getPhanTramGiamGia() / 100.0);
+                giamGia = hoaDon.getTienSanPham().multiply(phanTram);
+
+                // Giới hạn theo số tiền giảm tối đa
+                if (phieuGiamGia.getSoTienGiamToiDa() != null) {
+                    BigDecimal toiDa = BigDecimal.valueOf(phieuGiamGia.getSoTienGiamToiDa());
+                    if (giamGia.compareTo(toiDa) > 0) {
+                        giamGia = toiDa;
+                    }
+                }
+            }
+
+            // Cập nhật tổng tiền sau giảm
+            hoaDon.setTongTienSauGiam(hoaDon.getTienSanPham().subtract(giamGia));
+
+        } else {
+            // Không có phiếu giảm giá
+            hoaDon.setIdPhieuGiamGia(null);
+            hoaDon.setTongTienSauGiam(hoaDon.getTienSanPham());
+        }
+
+        hoaDon.setUpdatedAt(new Date());
+        return hoaDonRepository.save(hoaDon);
+    }
+
 }

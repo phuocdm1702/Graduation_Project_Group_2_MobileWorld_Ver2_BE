@@ -2,6 +2,7 @@ package com.example.be_datn.service.order;
 
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
+import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.product.Imel;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
@@ -32,4 +33,6 @@ public interface HoaDonService {
     HoaDonResponse updateHoaDonKH(Integer id, String tenKH, String sdt, String diaChi, String email);
 
     HoaDonResponse updateHoaDon(Integer id, String maHD, String loaHD);
+
+    HoaDon updatePhieuGiamGia(Integer hoaDonId, Integer idPhieuGiamGia);
 }

@@ -36,6 +36,12 @@ public class BanHangClientController {
         return ResponseEntity.ok(hoaDonDetailResponse);
     }
 
+    @GetMapping("/hoa-don-cho/khach-hang/{khachHangId}")
+    public ResponseEntity<List<HoaDonDetailResponse>> getPendingInvoicesByCustomer(@PathVariable Integer khachHangId) {
+        List<HoaDonDetailResponse> pendingInvoices = banHangClientService.getPendingInvoicesByCustomer(khachHangId);
+        return ResponseEntity.ok(pendingInvoices);
+    }
+
     @PostMapping("/gio-hang/them")
     public ResponseEntity<GioHangDTO> themSanPhamVaoGioHang(@RequestParam Integer idHD, @RequestBody ChiTietGioHangDTO chiTietGioHangDTO) {
         GioHangDTO gioHangDTO = banHangClientService.themSanPhamVaoGioHang(idHD, chiTietGioHangDTO);

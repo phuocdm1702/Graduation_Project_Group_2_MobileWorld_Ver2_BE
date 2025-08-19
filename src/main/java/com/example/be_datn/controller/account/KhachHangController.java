@@ -6,6 +6,7 @@ import com.example.be_datn.entity.account.DiaChiKhachHang;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.account.TaiKhoan;
+import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.service.account.KhachHangServices;
 import com.example.be_datn.service.account.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,6 +118,13 @@ public class KhachHangController {
     public ResponseEntity<List<KhachHang>> searchKhachHang(@RequestParam("query") String keyword) {
         List<KhachHang> result = khachHangServices.searchKhachHang(keyword);
         return ResponseEntity.ok(result);
+    }
+    @GetMapping("/searchKhachHangHD")
+    public ResponseEntity<HoaDon> searchKhachHangAndUpdateHoaDon(
+            @RequestParam("query") String keyword,
+            @RequestParam("hoaDonId") Integer hoaDonId) {
+        HoaDon hoaDon = khachHangServices.searchKhachHangAndUpdateHoaDon(keyword, hoaDonId);
+        return ResponseEntity.ok(hoaDon);
     }
 
     //import khach hang ra excel

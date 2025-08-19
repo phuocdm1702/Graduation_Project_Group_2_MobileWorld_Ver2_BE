@@ -5,6 +5,7 @@ import com.example.be_datn.dto.account.response.KhachHangDTO;
 import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.entity.account.DiaChiKhachHang;
 import com.example.be_datn.entity.account.KhachHang;
+import com.example.be_datn.entity.order.HoaDon;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -49,4 +50,6 @@ public interface KhachHangServices {
     DiaChiKhachHang addDiaChi(DiaChiKhachHangResponse khachHangDTO);
 
     Map<String, Object> layThongTinKhachHang(Integer idKhachHang);
+
+    HoaDon searchKhachHangAndUpdateHoaDon(String keyword, Integer hoaDonId);
 }

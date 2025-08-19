@@ -524,4 +524,27 @@ public class KhachHangServicesImpl implements KhachHangServices {
         return response;
     }
 
+    public HoaDon searchKhachHangAndUpdateHoaDon(String keyword, Integer hoaDonId) {
+        if (hoaDonId == null) {
+            throw new IllegalArgumentException("ID hóa đơn không được để trống");
+        }
+
+        List<KhachHang> khachHangs = searchKhachHang(keyword);
+        if (khachHangs.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy khách hàng với từ khóa: " + keyword);
+        }
+
+        KhachHang khachHang = khachHangs.get(0);
+
+        HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn với ID: " + hoaDonId));
+
+        hoaDon.setIdKhachHang(khachHang);
+        hoaDon.setTenKhachHang(khachHang.getTen());
+        hoaDon.setSoDienThoaiKhachHang(khachHang.getIdTaiKhoan().getSoDienThoai());
+        hoaDon.setUpdatedAt(new Date());
+
+        return hoaDonRepository.save(hoaDon);
+    }
+
 }

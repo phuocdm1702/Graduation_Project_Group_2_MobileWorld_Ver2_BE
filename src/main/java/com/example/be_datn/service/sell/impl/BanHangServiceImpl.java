@@ -135,12 +135,7 @@ public class BanHangServiceImpl implements BanHangService {
 
     @Override
     public List<HoaDon> getHDCho() {
-        List<HoaDon> hoaDonList = hoaDonRepository.findAllHDNotConfirm();
-
-        // Gửi realtime update cho danh sách hóa đơn chờ
-        sendHoaDonListUpdate(hoaDonList);
-
-        return hoaDonList;
+        return hoaDonRepository.findAllHDNotConfirm();
     }
 
     @Override
@@ -924,27 +919,35 @@ public class BanHangServiceImpl implements BanHangService {
         return dto;
     }
 
-    // WebSocket realtime methods
-    private void sendHoaDonListUpdate(List<HoaDon> hoaDonList) {
-        try {
-            messagingTemplate.convertAndSend("/topic/hoa-don-list", hoaDonList);
-            System.out.println("Đã gửi danh sách hóa đơn qua WebSocket: " + hoaDonList.size() + " hóa đơn");
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi danh sách hóa đơn qua WebSocket: " + e.getMessage());
-        }
-    }
-
     private void sendGioHangUpdate(Integer hoaDonId, GioHangDTO gioHangDTO) {
         try {
             HoaDon hoaDon = hoaDonRepository.findById(hoaDonId).orElse(null);
             Map<String, Object> gioHangUpdate = new HashMap<>();
             gioHangUpdate.put("hoaDonId", hoaDonId);
-            gioHangUpdate.put("maHoaDon", hoaDon != null ? hoaDon.getMa() : ""); // THÊM DÒNG NÀY
+            gioHangUpdate.put("maHoaDon", hoaDon != null ? hoaDon.getMa() : "");
             gioHangUpdate.put("gioHang", gioHangDTO);
+
+            // Thêm thông tin phiếu giảm giá
+            if (hoaDon != null && hoaDon.getIdPhieuGiamGia() != null) {
+                PhieuGiamGia phieuGiamGia = hoaDon.getIdPhieuGiamGia();
+                gioHangUpdate.put("idPhieuGiamGia", phieuGiamGia.getId());
+                gioHangUpdate.put("maPhieuGiamGia", phieuGiamGia.getMa());
+                gioHangUpdate.put("soTienGiam", phieuGiamGia.getSoTienGiamToiDa());
+            } else {
+                gioHangUpdate.put("idPhieuGiamGia", null);
+                gioHangUpdate.put("maPhieuGiamGia", null);
+                gioHangUpdate.put("soTienGiam", null);
+            }
+
             gioHangUpdate.put("timestamp", Instant.now());
             messagingTemplate.convertAndSend("/topic/gio-hang-update", gioHangUpdate);
+
+            System.out.println("Đã gửi cập nhật giỏ hàng qua WebSocket - Hóa đơn: " + hoaDonId +
+                    (hoaDon != null && hoaDon.getIdPhieuGiamGia() != null ?
+                            ", Phiếu giảm giá: " + hoaDon.getIdPhieuGiamGia().getMa() : ", Không có phiếu giảm giá"));
         } catch (Exception e) {
-            // ...
+            System.err.println("Lỗi khi gửi cập nhật giỏ hàng qua WebSocket: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

@@ -125,31 +125,90 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 : "0 VND";
     }
 
+    //    @Override
+//    @Transactional
+//    public HoaDonDetailResponse taoHoaDonCho(Integer khachHangId) {
+//        // Xử lý khách hàng
+//        KhachHang khachHang = null;
+//        if (khachHangId != null) {
+//            khachHang = khachHangRepository.findById(khachHangId)
+//                    .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với ID: " + khachHangId));
+//
+//            List<HoaDon> pendingHoaDons = hoaDonRepository.findByIdKhachHangAndTrangThai(khachHang, (short) 6);
+//            if (!pendingHoaDons.isEmpty()) {
+//                // Reuse hóa đơn chờ đầu tiên, tránh spam
+//                return mapToHoaDonDetailResponse(pendingHoaDons.get(0));
+//            }
+//        } else {
+//            // Gán mặc định khách lẻ với id = 1
+//            khachHang = khachHangRepository.findById(1)
+//                    .orElseThrow(() -> new RuntimeException("Khách lẻ không tồn tại với ID: 1"));
+//        }
+//
+//        // Lấy nhân viên mặc định (ID = 1)
+//        NhanVien nhanVien = nhanVienRepository.findById(1)
+//                .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại"));
+//
+//        // Tạo hóa đơn
+//        HoaDon hoaDon = HoaDon.builder()
+//                .idKhachHang(khachHang)
+//                .idNhanVien(nhanVien)
+//                .ma(generateRandomCode())
+//                .tienSanPham(BigDecimal.ZERO)
+//                .loaiDon("online")
+//                .phiVanChuyen(BigDecimal.ZERO)
+//                .tongTien(BigDecimal.ZERO)
+//                .tongTienSauGiam(BigDecimal.ZERO)
+//                .ghiChu("Hóa đơn chờ từ client")
+//                .tenKhachHang(khachHang.getTen() != null ? khachHang.getTen() : "Khách lẻ")
+//                .diaChiKhachHang("N/A")
+//                .soDienThoaiKhachHang(khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : "N/A")
+//                .email("N/A")
+//                .ngayTao(new Date())
+//                .trangThai((short) 6)
+//                .deleted(true)
+//                .createdAt(new Date())
+//                .createdBy(1)
+//                .build();
+//
+//        hoaDon = hoaDonRepository.save(hoaDon);
+//
+//        // Tạo giỏ hàng trong Redis
+//        GioHangDTO gioHangDTO = new GioHangDTO();
+//        gioHangDTO.setGioHangId(GH_PREFIX + hoaDon.getId());
+//        gioHangDTO.setKhachHangId(khachHang.getId());
+//        gioHangDTO.setChiTietGioHangDTOS(new ArrayList<>());
+//        gioHangDTO.setTongTien(BigDecimal.ZERO);
+//        redisTemplate.opsForValue().set(GH_PREFIX + hoaDon.getId(), gioHangDTO, 24, TimeUnit.HOURS);
+//
+//        return mapToHoaDonDetailResponse(hoaDon);
+//    }
     @Override
     @Transactional
     public HoaDonDetailResponse taoHoaDonCho(Integer khachHangId) {
         // Xử lý khách hàng
-        KhachHang khachHang = null;
+        KhachHang khachHang;
         if (khachHangId != null) {
             khachHang = khachHangRepository.findById(khachHangId)
                     .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với ID: " + khachHangId));
-
-            List<HoaDon> pendingHoaDons = hoaDonRepository.findByIdKhachHangAndTrangThai(khachHang, (short) 0);
-            if (!pendingHoaDons.isEmpty()) {
-                // Reuse hóa đơn chờ đầu tiên, tránh spam
-                return mapToHoaDonDetailResponse(pendingHoaDons.get(0));
-            }
         } else {
-            // Gán mặc định khách lẻ với id = 1
+            // Gán mặc định khách lẻ với id = 1 nếu không có khachHangId
             khachHang = khachHangRepository.findById(1)
                     .orElseThrow(() -> new RuntimeException("Khách lẻ không tồn tại với ID: 1"));
+        }
+
+        // Kiểm tra hóa đơn chờ hiện có cho khách hàng
+        List<HoaDon> pendingHoaDons = hoaDonRepository.findByIdKhachHangAndTrangThai(khachHang, (short) 6);
+        if (!pendingHoaDons.isEmpty()) {
+            // Reuse hóa đơn chờ đầu tiên
+            return mapToHoaDonDetailResponse(pendingHoaDons.get(0));
         }
 
         // Lấy nhân viên mặc định (ID = 1)
         NhanVien nhanVien = nhanVienRepository.findById(1)
                 .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại"));
 
-        // Tạo hóa đơn
+        // Tạo hóa đơn mới
         HoaDon hoaDon = HoaDon.builder()
                 .idKhachHang(khachHang)
                 .idNhanVien(nhanVien)
@@ -165,7 +224,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 .soDienThoaiKhachHang(khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : "N/A")
                 .email("N/A")
                 .ngayTao(new Date())
-                .trangThai((short) 0)
+                .trangThai((short) 6)
                 .deleted(true)
                 .createdAt(new Date())
                 .createdBy(1)
@@ -183,6 +242,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
 
         return mapToHoaDonDetailResponse(hoaDon);
     }
+
 
     @Override
     public List<HoaDonDetailResponse> getPendingInvoicesByCustomer(Integer khachHangId) {
@@ -207,7 +267,8 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
 
-        if (hoaDon.getTrangThai() != 0) {
+        // Kiểm tra trạng thái hóa đơn
+        if (hoaDon.getTrangThai() != 6) {
             throw new RuntimeException("Hóa đơn này không phải hóa đơn chờ! Trạng thái hiện tại: " + getTrangThaiText(hoaDon.getTrangThai()));
         }
 
@@ -219,7 +280,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         if (gh == null) {
             gh = new GioHangDTO();
             gh.setGioHangId(ghKey);
-            gh.setKhachHangId(hoaDon.getIdKhachHang() != null ? hoaDon.getIdKhachHang().getId() : 1);
+            gh.setKhachHangId(hoaDon.getIdKhachHang() != null ? hoaDon.getIdKhachHang().getId() : null);
             gh.setChiTietGioHangDTOS(new ArrayList<>());
             gh.setTongTien(BigDecimal.ZERO);
         }
@@ -342,7 +403,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
     public GioHangDTO xoaSanPhamKhoiGioHang(Integer idHD, Integer spId, String maImel) {
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại!"));
-        if (hoaDon.getTrangThai() != 0) {
+        if (hoaDon.getTrangThai() != 6) {
             throw new RuntimeException("Hóa đơn không ở trạng thái chờ!");
         }
 
@@ -411,7 +472,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         // Kiểm tra hóa đơn
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại!"));
-        if (hoaDon.getTrangThai() != 0) {
+        if (hoaDon.getTrangThai() != 6) {
             throw new RuntimeException("Hóa đơn không ở trạng thái chờ thanh toán!");
         }
 
@@ -858,12 +919,18 @@ public class BanHangClientServiceImpl implements BanHangClientService {
 
     private String getTrangThaiText(Short trangThai) {
         switch (trangThai) {
-            case 0: return "Chờ thanh toán";
-            case 1: return "Đã thanh toán";
-            case 2: return "Đang giao";
-            case 3: return "Đã giao";
-            case 4: return "Đã hủy";
-            default: return "Không xác định";
+            case 0:
+                return "Chờ thanh toán";
+            case 1:
+                return "Đã thanh toán";
+            case 2:
+                return "Đang giao";
+            case 3:
+                return "Đã giao";
+            case 4:
+                return "Đã hủy";
+            default:
+                return "Không xác định";
         }
     }
 
@@ -943,34 +1010,34 @@ public class BanHangClientServiceImpl implements BanHangClientService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)  // Đảm bảo rollback nếu lỗi
     public void xoaHoaDonCho(Integer idHD) {
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
-                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại!"));
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + idHD));
 
         if (hoaDon.getTrangThai() != 0) {
-            throw new RuntimeException("Chỉ có thể xóa hóa đơn ở trạng thái chờ!");
+            throw new RuntimeException("Chỉ có thể xóa hóa đơn ở trạng thái chờ (0)!");
         }
 
-        // Kiểm tra giỏ hàng
+        // Kiểm tra giỏ rỗng qua Redis
         String ghKey = GH_PREFIX + idHD;
         GioHangDTO gioHangDTO = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
         if (gioHangDTO != null && !gioHangDTO.getChiTietGioHangDTOS().isEmpty()) {
             throw new RuntimeException("Giỏ hàng chưa trống, không thể xóa hóa đơn!");
         }
 
-        // Khôi phục trạng thái IMEI và phiếu giảm giá nếu có
+        // Kiểm tra và xóa gio_hang_tam (đánh dấu deleted và khôi phục IMEI/phiểu giảm)
         List<GioHangTam> gioHangTamList = gioHangTamRepository.findByIdHoaDonAndDeletedFalse(idHD);
         for (GioHangTam gioHangTam : gioHangTamList) {
-            Imel imel = imelRepository.findByImelAndDeleted(gioHangTam.getImei(), true)
-                    .orElse(null);
+            // Khôi phục IMEI
+            Imel imel = imelRepository.findByImelAndDeleted(gioHangTam.getImei(), true).orElse(null);
             if (imel != null && !imelDaBanRepository.existsByMa(gioHangTam.getImei())) {
                 imel.setDeleted(false);
                 imelRepository.save(imel);
             }
+            // Khôi phục phiếu giảm
             if (gioHangTam.getIdPhieuGiamGia() != null) {
-                PhieuGiamGia pgg = phieuGiamGiaRepository.findById(gioHangTam.getIdPhieuGiamGia())
-                        .orElse(null);
+                PhieuGiamGia pgg = phieuGiamGiaRepository.findById(gioHangTam.getIdPhieuGiamGia()).orElse(null);
                 if (pgg != null) {
                     pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
                     pgg.setTrangThai(true);
@@ -978,14 +1045,28 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 }
             }
         }
+        gioHangTamRepository.markAsDeletedByIdHoaDon(idHD);  // Đánh dấu deleted
 
-        // Đánh dấu các bản ghi GioHangTam là đã xóa
-        gioHangTamRepository.markAsDeletedByIdHoaDon(idHD);
+        // Xóa các bảng phụ thuộc để tránh FK conflict
+        // Xóa hoa_don_chi_tiet (nếu có, dù logic không nên có)
+        List<HoaDonChiTiet> chiTiets = hoaDonChiTietRepository.findByHoaDonId(hoaDon.getId());
+        if (!chiTiets.isEmpty()) {
+            hoaDonChiTietRepository.deleteAll(chiTiets);
+            // Hoặc tối ưu: hoaDonChiTietRepository.deleteByHoaDonId(hoaDon.getId());
+        }
 
-        // Xóa giỏ hàng khỏi Redis
+        // Xóa lich_su_hoa_don
+        lichSuHoaDonRepository.deleteByHoaDon(hoaDon);  // Giả sử có method deleteByHoaDon
+
+        // Xóa hinh_thuc_thanh_toan
+        hinhThucThanhToanRepository.deleteByHoaDon(hoaDon);  // Tương tự
+
+        // Xóa Redis
         redisTemplate.delete(ghKey);
 
-        // Xóa hóa đơn
+        // Cuối cùng xóa hóa đơn
         hoaDonRepository.delete(hoaDon);
     }
+
+
 }

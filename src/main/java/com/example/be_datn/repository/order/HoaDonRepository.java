@@ -139,6 +139,25 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     @Query("SELECT hd FROM HoaDon hd WHERE hd.ma = :ma")
     Optional<HoaDonResponse> findByMa(@Param("ma") String ma);
 
+    @Query("""
+            SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
+                h.id, 
+                h.ma, 
+                h.idNhanVien.ma,
+                h.tenKhachHang,
+                h.soDienThoaiKhachHang, 
+                h.tongTienSauGiam,
+                h.phiVanChuyen, 
+                h.ngayTao, 
+                h.loaiDon, 
+                h.trangThai,
+                h.deleted
+            )
+            FROM HoaDon h
+            WHERE h.ma = :ma
+            """)
+    Optional<HoaDonResponse> findByMaForLookup(@Param("ma") String ma);
+
     @Query("SELECT COUNT(h) FROM HoaDon h WHERE h.idKhachHang.id = :khachHangId")
     Long countByKhachHangId(@Param("khachHangId") Integer khachHangId);
 

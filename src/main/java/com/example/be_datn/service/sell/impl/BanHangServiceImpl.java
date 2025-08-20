@@ -49,8 +49,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -137,12 +135,7 @@ public class BanHangServiceImpl implements BanHangService {
 
     @Override
     public List<HoaDon> getHDCho() {
-        List<HoaDon> hoaDonList = hoaDonRepository.findAllHDNotConfirm();
-
-        // Gửi realtime update cho danh sách hóa đơn chờ
-        sendHoaDonListUpdate(hoaDonList);
-
-        return hoaDonList;
+        return hoaDonRepository.findAllHDNotConfirm();
     }
 
     @Override
@@ -319,8 +312,6 @@ public class BanHangServiceImpl implements BanHangService {
                 phieuGiamGia.setTrangThai(false);
             }
             phieuGiamGiaRepository.save(phieuGiamGia);
-            // Sửa: Gửi thông tin phiếu giảm giá cụ thể được sử dụng cho hóa đơn
-            sendVoucherUsedInOrder(idHD, phieuGiamGia, "VOUCHER_USED");
         }
 
         gh.setTongTien(gh.getChiTietGioHangDTOS().stream()
@@ -443,8 +434,6 @@ public class BanHangServiceImpl implements BanHangService {
                     pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
                     pgg.setTrangThai(true);
                     phieuGiamGiaRepository.save(pgg);
-                    // Sửa: Gửi thông tin phiếu giảm giá cụ thể được khôi phục cho hóa đơn
-                    sendVoucherUsedInOrder(idHD, pgg, "VOUCHER_RESTORED");
                     System.out.println("Đã khôi phục số lượng dùng cho phiếu giảm giá ID: " + idPhieuGiamGia);
                 }
             }
@@ -551,8 +540,6 @@ public class BanHangServiceImpl implements BanHangService {
                     pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
                     pgg.setTrangThai(true);
                     phieuGiamGiaRepository.save(pgg);
-                    // Sửa: Gửi thông tin phiếu giảm giá cụ thể được khôi phục cho hóa đơn
-                    sendVoucherUsedInOrder(idHD, pgg, "VOUCHER_RESTORED");
                 }
             }
         }
@@ -640,9 +627,6 @@ public class BanHangServiceImpl implements BanHangService {
             phieuGiamGiaRepository.save(phieuGiamGia);
 
             hoaDon.setIdPhieuGiamGia(phieuGiamGia);
-
-            // Gửi realtime update cho phiếu giảm giá
-            sendVoucherUsedInOrder(idHD, phieuGiamGia, "VOUCHER_USED");
         }
 
 
@@ -935,27 +919,35 @@ public class BanHangServiceImpl implements BanHangService {
         return dto;
     }
 
-    // WebSocket realtime methods
-    private void sendHoaDonListUpdate(List<HoaDon> hoaDonList) {
-        try {
-            messagingTemplate.convertAndSend("/topic/hoa-don-list", hoaDonList);
-            System.out.println("Đã gửi danh sách hóa đơn qua WebSocket: " + hoaDonList.size() + " hóa đơn");
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi danh sách hóa đơn qua WebSocket: " + e.getMessage());
-        }
-    }
-
     private void sendGioHangUpdate(Integer hoaDonId, GioHangDTO gioHangDTO) {
         try {
             HoaDon hoaDon = hoaDonRepository.findById(hoaDonId).orElse(null);
             Map<String, Object> gioHangUpdate = new HashMap<>();
             gioHangUpdate.put("hoaDonId", hoaDonId);
-            gioHangUpdate.put("maHoaDon", hoaDon != null ? hoaDon.getMa() : ""); // THÊM DÒNG NÀY
+            gioHangUpdate.put("maHoaDon", hoaDon != null ? hoaDon.getMa() : "");
             gioHangUpdate.put("gioHang", gioHangDTO);
+
+            // Thêm thông tin phiếu giảm giá
+            if (hoaDon != null && hoaDon.getIdPhieuGiamGia() != null) {
+                PhieuGiamGia phieuGiamGia = hoaDon.getIdPhieuGiamGia();
+                gioHangUpdate.put("idPhieuGiamGia", phieuGiamGia.getId());
+                gioHangUpdate.put("maPhieuGiamGia", phieuGiamGia.getMa());
+                gioHangUpdate.put("soTienGiam", phieuGiamGia.getSoTienGiamToiDa());
+            } else {
+                gioHangUpdate.put("idPhieuGiamGia", null);
+                gioHangUpdate.put("maPhieuGiamGia", null);
+                gioHangUpdate.put("soTienGiam", null);
+            }
+
             gioHangUpdate.put("timestamp", Instant.now());
             messagingTemplate.convertAndSend("/topic/gio-hang-update", gioHangUpdate);
+
+            System.out.println("Đã gửi cập nhật giỏ hàng qua WebSocket - Hóa đơn: " + hoaDonId +
+                    (hoaDon != null && hoaDon.getIdPhieuGiamGia() != null ?
+                            ", Phiếu giảm giá: " + hoaDon.getIdPhieuGiamGia().getMa() : ", Không có phiếu giảm giá"));
         } catch (Exception e) {
-            // ...
+            System.err.println("Lỗi khi gửi cập nhật giỏ hàng qua WebSocket: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -996,25 +988,6 @@ public class BanHangServiceImpl implements BanHangService {
         } catch (Exception e) {
             System.err.println("Lỗi khi gửi thông tin khách hàng qua WebSocket: " + e.getMessage());
             e.printStackTrace();
-        }
-    }
-
-    private void sendVoucherUsedInOrder(Integer hoaDonId, PhieuGiamGia phieuGiamGia, String action) {
-        try {
-            Map<String, Object> voucherUpdate = new HashMap<>();
-            voucherUpdate.put("action", action);
-            voucherUpdate.put("hoaDonId", hoaDonId); // Thêm ID hóa đơn để biết phiếu được dùng cho đơn nào
-            voucherUpdate.put("phieuGiamGiaId", phieuGiamGia.getId());
-            voucherUpdate.put("maPhieu", phieuGiamGia.getMa());
-            voucherUpdate.put("tenPhieu", phieuGiamGia.getTenPhieuGiamGia()); // Thêm tên phiếu nếu có
-            voucherUpdate.put("giaTriGiam", phieuGiamGia.getSoTienGiamToiDa()); // Thêm giá trị giảm
-            voucherUpdate.put("soLuongDung", phieuGiamGia.getSoLuongDung());
-            voucherUpdate.put("trangThai", phieuGiamGia.getTrangThai());
-            voucherUpdate.put("timestamp", Instant.now());
-            messagingTemplate.convertAndSend("/topic/voucher-order-update", voucherUpdate);
-            System.out.println("Đã gửi cập nhật phiếu giảm giá cho hóa đơn " + hoaDonId + " qua WebSocket: " + phieuGiamGia.getMa() + " - giá trị giảm: " + phieuGiamGia.getSoTienGiamToiDa());
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi cập nhật phiếu giảm giá cho hóa đơn qua WebSocket: " + e.getMessage());
         }
     }
 }

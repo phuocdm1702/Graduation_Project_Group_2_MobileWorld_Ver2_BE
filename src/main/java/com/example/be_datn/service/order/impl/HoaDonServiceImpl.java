@@ -28,16 +28,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -70,6 +68,9 @@ public class HoaDonServiceImpl implements HoaDonService {
 
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     public HoaDonServiceImpl(PhieuGiamGiaRepository phieuGiamGiaRepository) {
         this.phieuGiamGiaRepository = phieuGiamGiaRepository;
@@ -371,6 +372,7 @@ public class HoaDonServiceImpl implements HoaDonService {
 
             // Cập nhật tổng tiền sau giảm
             hoaDon.setTongTienSauGiam(hoaDon.getTienSanPham().subtract(giamGia));
+            sendVoucherUsedInOrder(hoaDonId, phieuGiamGia, "VOUCHER_USED");
 
         } else {
             // Không có phiếu giảm giá
@@ -380,6 +382,25 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         hoaDon.setUpdatedAt(new Date());
         return hoaDonRepository.save(hoaDon);
+    }
+
+    private void sendVoucherUsedInOrder(Integer hoaDonId, PhieuGiamGia phieuGiamGia, String action) {
+        try {
+            Map<String, Object> voucherUpdate = new HashMap<>();
+            voucherUpdate.put("action", action);
+            voucherUpdate.put("hoaDonId", hoaDonId); // Thêm ID hóa đơn để biết phiếu được dùng cho đơn nào
+            voucherUpdate.put("phieuGiamGiaId", phieuGiamGia.getId());
+            voucherUpdate.put("maPhieu", phieuGiamGia.getMa());
+            voucherUpdate.put("tenPhieu", phieuGiamGia.getTenPhieuGiamGia()); // Thêm tên phiếu nếu có
+            voucherUpdate.put("giaTriGiam", phieuGiamGia.getSoTienGiamToiDa()); // Thêm giá trị giảm
+            voucherUpdate.put("soLuongDung", phieuGiamGia.getSoLuongDung());
+            voucherUpdate.put("trangThai", phieuGiamGia.getTrangThai());
+            voucherUpdate.put("timestamp", Instant.now());
+            messagingTemplate.convertAndSend("/topic/voucher-order-update", voucherUpdate);
+            System.out.println("Đã gửi cập nhật phiếu giảm giá cho hóa đơn " + hoaDonId + " qua WebSocket: " + phieuGiamGia.getMa() + " - giá trị giảm: " + phieuGiamGia.getSoTienGiamToiDa());
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi cập nhật phiếu giảm giá cho hóa đơn qua WebSocket: " + e.getMessage());
+        }
     }
 
 }

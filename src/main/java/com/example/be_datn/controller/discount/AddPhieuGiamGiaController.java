@@ -6,6 +6,7 @@ import com.example.be_datn.dto.discount.request.PhieuGiamGiaRequest;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
+import com.example.be_datn.service.EmailNotificationService;
 import com.example.be_datn.service.account.KhachHangServices;
 import com.example.be_datn.service.account.TaiKhoanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
@@ -40,6 +41,9 @@ public class AddPhieuGiamGiaController {
 
     @Autowired
     private EmailSend emailSend;
+
+    @Autowired
+    private EmailNotificationService emailNotificationService;
 
     @GetMapping("/data-kh")
     public List<KhachHangDTO> fetchDataKH() {
@@ -120,18 +124,7 @@ public class AddPhieuGiamGiaController {
 
                     phieuGiamGiaCaNhanService.addPGGCN(pggcn);
 
-                    String email = taiKhoanServices.findById(khachHangID);
-                    if (email != null && !email.trim().isEmpty()) {
-                        try {
-                            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-                            String ngayHH = dateFormat.format(pgg.getNgayKetThuc());
-                            Double TinhSTGTD = pgg.getPhanTramGiamGia() * pgg.getHoaDonToiThieu() / 100;
-
-                            emailSend.sendDiscountEmail(email, pggcn.getMa(), pgg.getTenPhieuGiamGia(), ngayHH, pgg.getPhanTramGiamGia(), pgg.getSoTienGiamToiDa(), pgg.getHoaDonToiThieu(), pgg.getMoTa());
-                        } catch (Exception e) {
-                            System.err.println("Failed to send email to " + email + ": " + e.getMessage());
-                        }
-                    }
+                    emailNotificationService.sendVoucherEmailAsync(khachHangID, pgg.getId());
                 }
             }
         }

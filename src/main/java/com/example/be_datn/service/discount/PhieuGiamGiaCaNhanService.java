@@ -1,5 +1,7 @@
 package com.example.be_datn.service.discount;
 
+import com.example.be_datn.entity.account.KhachHang;
+import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,4 +22,6 @@ public interface PhieuGiamGiaCaNhanService {
     List<PhieuGiamGiaCaNhan> getall();
 
     Optional<PhieuGiamGiaCaNhan> checkDiscountCode(String ma);
+
+    PhieuGiamGiaCaNhan findByKhachHangAndPhieuGiamGia(KhachHang khachHang, PhieuGiamGia phieuGiamGia);
 }

@@ -1,5 +1,6 @@
 package com.example.be_datn.repository.discount;
 
+import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -26,6 +27,8 @@ public interface PhieuGiamGiaCaNhanRepository extends JpaRepository<PhieuGiamGia
     List<PhieuGiamGiaCaNhan> findByIdKhachHangId(Integer idKhachHang);
 
     Optional<PhieuGiamGiaCaNhan> findByMa(String ma);
+
+    PhieuGiamGiaCaNhan findByIdKhachHangAndIdPhieuGiamGia(KhachHang khachHang, PhieuGiamGia phieuGiamGia);
 
     @Query("SELECT pc FROM PhieuGiamGiaCaNhan pc JOIN pc.idPhieuGiamGia p " +
             "WHERE pc.idKhachHang.id = :idKhachHang " +

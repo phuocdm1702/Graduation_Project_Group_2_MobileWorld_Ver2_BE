@@ -92,6 +92,11 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
+    public Page<HoaDonResponse> getHoaDonOfCustomerAndFilters(Integer idKhachHang, Timestamp startDate, Timestamp endDate, Short trangThai, Pageable pageable) {
+        return hoaDonRepository.getHoaDonOfCustomerAndFilters(idKhachHang, startDate, endDate, trangThai, pageable);
+    }
+
+    @Override
     public HoaDonDetailResponse getHoaDonDetail(Integer id) {
         HoaDon hoaDon = hoaDonRepository.findHoaDonDetailById(id)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại hoặc đã bị xóa"));

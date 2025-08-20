@@ -17,9 +17,11 @@ import com.example.be_datn.service.account.KhachHangServices;
 import jakarta.security.auth.message.AuthException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,9 @@ public class KhachHangServicesImpl implements KhachHangServices {
 
     private final HoaDonRepository hoaDonRepository;
     private final EmailServices emailServices;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
 
     @Autowired
@@ -529,41 +534,48 @@ public class KhachHangServicesImpl implements KhachHangServices {
             throw new IllegalArgumentException("ID hóa đơn không được để trống");
         }
 
-        KhachHang khachHang;
-
-        if (keyword == null || keyword.trim().isEmpty()) {
-            // Nếu không nhập keyword → dùng khách hàng mặc định id = 1
-            khachHang = khachHangRepository.findById(1)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng mặc định với ID = 1"));
-        } else {
-            // Nếu có keyword thì tìm kiếm
-            List<KhachHang> khachHangs = searchKhachHang(keyword);
-
-            if (khachHangs.isEmpty()) {
-                // Không tìm thấy kết quả thì cũng gán mặc định id = 1
-                khachHang = khachHangRepository.findById(1)
-                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng mặc định với ID = 1"));
-            } else {
-                khachHang = khachHangs.get(0);
-            }
+        List<KhachHang> khachHangs = searchKhachHang(keyword);
+        if (khachHangs.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy khách hàng với từ khóa: " + keyword);
         }
+
+        KhachHang khachHang = khachHangs.get(0);
 
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn với ID: " + hoaDonId));
 
         hoaDon.setIdKhachHang(khachHang);
         hoaDon.setTenKhachHang(khachHang.getTen());
-
-        if (khachHang.getIdTaiKhoan() != null) {
-            hoaDon.setSoDienThoaiKhachHang(khachHang.getIdTaiKhoan().getSoDienThoai());
-        } else {
-            hoaDon.setSoDienThoaiKhachHang(null);
-        }
-
+        hoaDon.setSoDienThoaiKhachHang(khachHang.getIdTaiKhoan().getSoDienThoai());
         hoaDon.setUpdatedAt(new Date());
 
+        sendKhachHangUpdate(khachHang.getId());
         return hoaDonRepository.save(hoaDon);
     }
 
+    private void sendKhachHangUpdate(Integer khachHangId) {
+        try {
+            // Lấy thông tin khách hàng từ database
+            Optional<KhachHang> khachHangOpt = khachHangRepository.findById(khachHangId);
+            if (khachHangOpt.isPresent()) {
+                KhachHang khachHang = khachHangOpt.get();
 
+                Map<String, Object> khachHangUpdate = new HashMap<>();
+                khachHangUpdate.put("action", "CUSTOMER_UPDATE");
+                khachHangUpdate.put("khachHangId", khachHang.getId());
+                khachHangUpdate.put("ten", khachHang.getTen());
+                khachHangUpdate.put("soDienThoai", khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : null);
+                khachHangUpdate.put("email", khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getEmail() : null);
+                khachHangUpdate.put("timestamp", Instant.now());
+
+                messagingTemplate.convertAndSend("/topic/khach-hang-update", khachHangUpdate);
+                System.out.println("Đã gửi thông tin khách hàng qua WebSocket - KH ID: " + khachHangId + ", Tên: " + khachHang.getTen());
+            } else {
+                System.out.println("Không tìm thấy khách hàng với ID: " + khachHangId);
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông tin khách hàng qua WebSocket: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }

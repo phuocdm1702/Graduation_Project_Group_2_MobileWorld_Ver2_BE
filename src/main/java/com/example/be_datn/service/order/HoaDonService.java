@@ -18,6 +18,8 @@ public interface HoaDonService {
     Page<HoaDonResponse> getHoaDonAndFilters(String keyword, Long minAmount, Long maxAmount,
                                              Timestamp startDate, Timestamp endDate, Short trangThai, String loaiDon, Pageable pageable);
 
+    Page<HoaDonResponse> getHoaDonOfCustomerAndFilters(Integer idKhachHang, Timestamp startDate, Timestamp endDate, Short trangThai, Pageable pageable);
+
     HoaDonDetailResponse getHoaDonDetail(Integer id);
 
     HoaDonResponse getHoaDonByMa(String maHD);

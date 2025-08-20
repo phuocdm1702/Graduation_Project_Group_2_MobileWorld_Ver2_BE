@@ -34,12 +34,10 @@ public class HoaDon {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_khach_hang", nullable = false)
     private KhachHang idKhachHang;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_nhan_vien", nullable = false)
     private NhanVien idNhanVien;
@@ -53,7 +51,6 @@ public class HoaDon {
     @Column(name = "ma")
     private String ma;
 
-    @NotNull
     @Column(name = "tien_san_pham", nullable = false, precision = 18, scale = 2)
     private BigDecimal tienSanPham;
 
@@ -63,7 +60,6 @@ public class HoaDon {
     @Column(name = "loai_don", nullable = false)
     private String loaiDon;
 
-    @NotNull
     @ColumnDefault("0")
     @Column(name = "phi_van_chuyen", nullable = false, precision = 18, scale = 2)
     private BigDecimal phiVanChuyen;
@@ -85,8 +81,6 @@ public class HoaDon {
     @Column(name = "ten_khach_hang", nullable = false)
     private String tenKhachHang;
 
-    @Size(max = 255)
-    @NotNull
     @Nationalized
     @Column(name = "dia_chi_khach_hang", nullable = false)
     private String diaChiKhachHang;

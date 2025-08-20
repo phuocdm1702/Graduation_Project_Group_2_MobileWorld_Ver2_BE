@@ -129,8 +129,12 @@ public class BanHangClientController {
 
     @DeleteMapping("/hoa-don-cho/{idHD}")
     public ResponseEntity<Void> xoaHoaDonCho(@PathVariable Integer idHD) {
-        banHangClientService.xoaHoaDonCho(idHD);
-        return ResponseEntity.ok().build();
+        try {
+            banHangClientService.xoaHoaDonCho(idHD);
+            return ResponseEntity.noContent().build();  // 204 Success
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(null);  // 400 với message nếu cần
+        }
     }
 
     @PostMapping("/hoa-don/xac-nhan-imei/{idHD}")

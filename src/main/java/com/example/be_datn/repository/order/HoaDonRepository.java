@@ -67,6 +67,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             AND (:trangThai IS NULL OR h.trangThai = :trangThai)
             AND (:deleted IS NULL OR h.deleted = :deleted)
             AND (:loaiDon IS NULL OR h.loaiDon = :loaiDon)
+            AND (:idKhachHang IS NULL OR h.idKhachHang.id = :idKhachHang)
             ORDER BY h.id DESC
             """)
     Page<HoaDonResponse> getHoaDonAndFilters(
@@ -78,6 +79,35 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             @Param("trangThai") Short trangThai,
             @Param("deleted") Boolean deleted,
             @Param("loaiDon") String loaiDon,
+            Pageable pageable);
+
+    @Query("""
+            SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
+                h.id, 
+                h.ma, 
+                h.idNhanVien.ma,
+                h.tenKhachHang,
+                h.soDienThoaiKhachHang, 
+                h.tongTienSauGiam,
+                h.phiVanChuyen, 
+                h.ngayTao, 
+                h.loaiDon, 
+                h.trangThai,
+                h.deleted
+            )
+            FROM HoaDon h
+            WHERE h.idKhachHang.id = :idKhachHang
+            AND (:startDate IS NULL OR h.ngayTao >= :startDate)
+            AND (:endDate IS NULL OR h.ngayTao <= :endDate)
+            AND (:trangThai IS NULL OR h.trangThai = :trangThai)
+            AND h.deleted = false
+            ORDER BY h.id DESC
+            """)
+    Page<HoaDonResponse> getHoaDonOfCustomerAndFilters(
+            @Param("idKhachHang") Integer idKhachHang,
+            @Param("startDate") Timestamp startDate,
+            @Param("endDate") Timestamp endDate,
+            @Param("trangThai") Short trangThai,
             Pageable pageable);
 
 

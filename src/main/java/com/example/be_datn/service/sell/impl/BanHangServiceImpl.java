@@ -844,12 +844,7 @@ public class BanHangServiceImpl implements BanHangService {
 
     @Override
     public List<PhieuGiamGiaCaNhan> findByKhachHangId(Integer idKhachHang) {
-        List<PhieuGiamGiaCaNhan> result = phieuGiamGiaCaNhanRepository.findByIdKhachHangId(idKhachHang);
-
-        // Gửi realtime update cho thông tin khách hàng
-        sendKhachHangUpdate(idKhachHang);
-
-        return result;
+        return phieuGiamGiaCaNhanRepository.findByIdKhachHangId(idKhachHang);
     }
 
     @Override
@@ -927,6 +922,23 @@ public class BanHangServiceImpl implements BanHangService {
             gioHangUpdate.put("maHoaDon", hoaDon != null ? hoaDon.getMa() : "");
             gioHangUpdate.put("gioHang", gioHangDTO);
 
+            // Thêm thông tin khách hàng
+            if (hoaDon != null && hoaDon.getIdKhachHang() != null) {
+                KhachHang khachHang = hoaDon.getIdKhachHang();
+                gioHangUpdate.put("idKhachHang", khachHang.getId());
+                gioHangUpdate.put("tenKhachHang", khachHang.getTen());
+                gioHangUpdate.put("soDienThoaiKhachHang",
+                        khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : null);
+                gioHangUpdate.put("emailKhachHang",
+                        khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getEmail() : null);
+            } else {
+                // Trường hợp khách lẻ hoặc không có thông tin khách hàng
+                gioHangUpdate.put("idKhachHang", null);
+                gioHangUpdate.put("tenKhachHang", hoaDon != null ? hoaDon.getTenKhachHang() : "Khách lẻ");
+                gioHangUpdate.put("soDienThoaiKhachHang", hoaDon != null ? hoaDon.getSoDienThoaiKhachHang() : null);
+                gioHangUpdate.put("emailKhachHang", hoaDon != null ? hoaDon.getEmail() : null);
+            }
+
             // Thêm thông tin phiếu giảm giá
             if (hoaDon != null && hoaDon.getIdPhieuGiamGia() != null) {
                 PhieuGiamGia phieuGiamGia = hoaDon.getIdPhieuGiamGia();
@@ -943,6 +955,7 @@ public class BanHangServiceImpl implements BanHangService {
             messagingTemplate.convertAndSend("/topic/gio-hang-update", gioHangUpdate);
 
             System.out.println("Đã gửi cập nhật giỏ hàng qua WebSocket - Hóa đơn: " + hoaDonId +
+                    ", Khách hàng: " + gioHangUpdate.get("tenKhachHang") +
                     (hoaDon != null && hoaDon.getIdPhieuGiamGia() != null ?
                             ", Phiếu giảm giá: " + hoaDon.getIdPhieuGiamGia().getMa() : ", Không có phiếu giảm giá"));
         } catch (Exception e) {
@@ -962,32 +975,6 @@ public class BanHangServiceImpl implements BanHangService {
             System.out.println("Đã gửi thông báo thanh toán thành công qua WebSocket: " + hoaDonDTO.getMa());
         } catch (Exception e) {
             System.err.println("Lỗi khi gửi thông báo thanh toán thành công qua WebSocket: " + e.getMessage());
-        }
-    }
-
-    private void sendKhachHangUpdate(Integer khachHangId) {
-        try {
-            // Lấy thông tin khách hàng từ database
-            Optional<KhachHang> khachHangOpt = khachHangRepository.findById(khachHangId);
-            if (khachHangOpt.isPresent()) {
-                KhachHang khachHang = khachHangOpt.get();
-
-                Map<String, Object> khachHangUpdate = new HashMap<>();
-                khachHangUpdate.put("action", "CUSTOMER_UPDATE");
-                khachHangUpdate.put("khachHangId", khachHang.getId());
-                khachHangUpdate.put("ten", khachHang.getTen());
-                khachHangUpdate.put("soDienThoai", khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : null);
-                khachHangUpdate.put("email", khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getEmail() : null);
-                khachHangUpdate.put("timestamp", Instant.now());
-
-                messagingTemplate.convertAndSend("/topic/khach-hang-update", khachHangUpdate);
-                System.out.println("Đã gửi thông tin khách hàng qua WebSocket - KH ID: " + khachHangId + ", Tên: " + khachHang.getTen());
-            } else {
-                System.out.println("Không tìm thấy khách hàng với ID: " + khachHangId);
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi thông tin khách hàng qua WebSocket: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 }

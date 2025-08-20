@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 @Controller
 @RequestMapping("/api/hoa-don")
 public class HoaDonController {
@@ -80,6 +80,19 @@ public class HoaDonController {
         Pageable pageable = PageRequest.of(page, size);
         // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
         Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/my-orders")
+    public ResponseEntity<?> getMyOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam Integer idKhachHang,
+            @RequestParam(required = false) Timestamp startDate,
+            @RequestParam(required = false) Timestamp endDate,
+            @RequestParam(required = false) Short trangThai) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<HoaDonResponse> response = hoaDonService.getHoaDonOfCustomerAndFilters(idKhachHang, startDate, endDate, trangThai, pageable);
         return ResponseEntity.ok(response);
     }
 

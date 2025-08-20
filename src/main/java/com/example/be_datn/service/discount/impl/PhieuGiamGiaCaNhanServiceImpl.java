@@ -1,5 +1,7 @@
 package com.example.be_datn.service.discount.impl;
 
+import com.example.be_datn.entity.account.KhachHang;
+import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.repository.discount.PhieuGiamGiaCaNhanRepository;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
@@ -62,5 +64,10 @@ public class PhieuGiamGiaCaNhanServiceImpl implements PhieuGiamGiaCaNhanService 
         }
 
         return isValid ? optional : Optional.empty();
+    }
+
+    @Override
+    public PhieuGiamGiaCaNhan findByKhachHangAndPhieuGiamGia(KhachHang khachHang, PhieuGiamGia phieuGiamGia) {
+        return phieuGiamGiaCaNhanRepository.findByIdKhachHangAndIdPhieuGiamGia(khachHang, phieuGiamGia);
     }
 }

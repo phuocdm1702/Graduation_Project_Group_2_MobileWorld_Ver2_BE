@@ -17,9 +17,11 @@ import com.example.be_datn.service.account.KhachHangServices;
 import jakarta.security.auth.message.AuthException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,9 @@ public class KhachHangServicesImpl implements KhachHangServices {
 
     private final HoaDonRepository hoaDonRepository;
     private final EmailServices emailServices;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
 
     @Autowired
@@ -544,7 +549,33 @@ public class KhachHangServicesImpl implements KhachHangServices {
         hoaDon.setSoDienThoaiKhachHang(khachHang.getIdTaiKhoan().getSoDienThoai());
         hoaDon.setUpdatedAt(new Date());
 
+        sendKhachHangUpdate(khachHang.getId());
         return hoaDonRepository.save(hoaDon);
     }
 
+    private void sendKhachHangUpdate(Integer khachHangId) {
+        try {
+            // Lấy thông tin khách hàng từ database
+            Optional<KhachHang> khachHangOpt = khachHangRepository.findById(khachHangId);
+            if (khachHangOpt.isPresent()) {
+                KhachHang khachHang = khachHangOpt.get();
+
+                Map<String, Object> khachHangUpdate = new HashMap<>();
+                khachHangUpdate.put("action", "CUSTOMER_UPDATE");
+                khachHangUpdate.put("khachHangId", khachHang.getId());
+                khachHangUpdate.put("ten", khachHang.getTen());
+                khachHangUpdate.put("soDienThoai", khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : null);
+                khachHangUpdate.put("email", khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getEmail() : null);
+                khachHangUpdate.put("timestamp", Instant.now());
+
+                messagingTemplate.convertAndSend("/topic/khach-hang-update", khachHangUpdate);
+                System.out.println("Đã gửi thông tin khách hàng qua WebSocket - KH ID: " + khachHangId + ", Tên: " + khachHang.getTen());
+            } else {
+                System.out.println("Không tìm thấy khách hàng với ID: " + khachHangId);
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông tin khách hàng qua WebSocket: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }

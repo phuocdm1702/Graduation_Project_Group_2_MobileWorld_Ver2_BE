@@ -37,4 +37,8 @@ public interface HoaDonService {
     HoaDonResponse updateHoaDon(Integer id, String maHD, String loaHD);
 
     HoaDon updatePhieuGiamGia(Integer hoaDonId, Integer idPhieuGiamGia);
+
+    HoaDonResponse getHoaDonByMaForLookup(String maHD);
+
+    HoaDonResponse cancelOrder(Integer orderId);
 }

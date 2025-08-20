@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -408,4 +409,54 @@ public class HoaDonServiceImpl implements HoaDonService {
         }
     }
 
+    @Override
+    public HoaDonResponse getHoaDonByMaForLookup(String maHD) {
+        return hoaDonRepository.findByMaForLookup(maHD)
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại"));
+    }
+
+    @Override
+    @Transactional
+    public HoaDonResponse cancelOrder(Integer orderId) {
+        HoaDon hoaDon = hoaDonRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với ID: " + orderId));
+
+        // Check if order can be cancelled
+        if (hoaDon.getTrangThai() != 1) { // Assuming 1 is "Chờ xác nhận"
+            throw new RuntimeException("Chỉ có thể hủy đơn hàng ở trạng thái 'Chờ xác nhận'.");
+        }
+
+        // Update order status
+        hoaDon.setTrangThai((short) 4); // 4 is "Đã hủy"
+        hoaDon.setUpdatedAt(new Date());
+        // You might want to set who updated it if you have user management
+        // hoaDon.setUpdatedBy(userId);
+
+        // Restore Imel status
+        for (HoaDonChiTiet chiTiet : hoaDon.getChiTietHoaDon()) {
+            if (chiTiet.getIdImelDaBan() != null) {
+                String imelString = chiTiet.getIdImelDaBan().getImel();
+                Imel imel = imelRepository.findByImelAndDeleted(imelString, true)
+                        .orElse(null); // Find Imel by the string and deleted = true
+                if (imel != null) {
+                    imel.setDeleted(false);
+                    imelRepository.save(imel);
+                }
+            }
+        }
+
+        hoaDonRepository.save(hoaDon);
+
+        // Add to history
+        LichSuHoaDon lichSuHoaDon = LichSuHoaDon.builder()
+                .ma("LSHD_" + System.currentTimeMillis())
+                .hanhDong("Hủy đơn hàng")
+                .thoiGian(Instant.now())
+                .hoaDon(hoaDon)
+                .idNhanVien(hoaDon.getIdNhanVien()) // Assuming the original staff member is responsible
+                .build();
+        lichSuHoaDonRepository.save(lichSuHoaDon);
+
+        return hoaDonMapper.mapToDto(hoaDon);
+    }
 }

@@ -148,6 +148,16 @@ public class HoaDonController {
         }
     }
 
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<HoaDonResponse> cancelOrder(@PathVariable Integer id) {
+        try {
+            HoaDonResponse response = hoaDonService.cancelOrder(id);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
     @PostMapping("/xac-nhan-imei/{idHD}")
     public ResponseEntity<HoaDonResponse> confirmAndAssignIMEI(
             @PathVariable Integer idHD,
@@ -194,6 +204,15 @@ public class HoaDonController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
+    @GetMapping("/ma/{maHD}")
+    public ResponseEntity<HoaDonResponse> getHoaDonByMaHD(@PathVariable String maHD) {
+        try {
+            return ResponseEntity.ok(hoaDonService.getHoaDonByMaForLookup(maHD));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
 

@@ -6,6 +6,7 @@ import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.dto.sell.response.ChiTietSanPhamGroupDTO;
+import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.entity.inventory.ChiTietGioHang;
@@ -13,6 +14,7 @@ import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.product.ChiTietSanPham;
 import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.repository.product.ImelRepository;
+import com.example.be_datn.service.account.KhachHangServices;
 import com.example.be_datn.service.discount.PhieuGiamGiaCaNhanService;
 import com.example.be_datn.service.discount.PhieuGiamGiaService;
 import com.example.be_datn.service.order.HoaDonService;
@@ -40,6 +42,7 @@ public class BanHangController {
     private final PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService;
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final HoaDonService hoaDonService;
+    private final KhachHangServices khachHangServices;
 
     @Autowired
     private ImelRepository imelRepository;
@@ -47,10 +50,11 @@ public class BanHangController {
     @Autowired
     private VNPayService vnPayService;
 
-    public BanHangController(PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService, PhieuGiamGiaService phieuGiamGiaService, HoaDonService hoaDonService) {
+    public BanHangController(PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService, PhieuGiamGiaService phieuGiamGiaService, HoaDonService hoaDonService, KhachHangServices khachHangServices) {
         this.phieuGiamGiaCaNhanService = phieuGiamGiaCaNhanService;
         this.phieuGiamGiaService = phieuGiamGiaService;
         this.hoaDonService = hoaDonService;
+        this.khachHangServices = khachHangServices;
     }
 
     @GetMapping("/hoa-don-cho")
@@ -239,5 +243,10 @@ public class BanHangController {
             @RequestParam(value = "idPhieuGiamGia", required = false) Integer idPhieuGiamGia) {
         HoaDon updatedHoaDon = hoaDonService.updatePhieuGiamGia(hoaDonId, idPhieuGiamGia);
         return ResponseEntity.ok(updatedHoaDon);
+    }
+    @GetMapping("/getById")
+    public ResponseEntity<KhachHang> getKhachHangById(@RequestParam("id") Integer id) {
+        KhachHang khachHang = khachHangServices.findById(id);
+        return ResponseEntity.ok(khachHang);
     }
 }

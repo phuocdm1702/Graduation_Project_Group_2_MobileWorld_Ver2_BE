@@ -123,11 +123,31 @@ public class KhachHangController {
         return ResponseEntity.ok(result);
     }
     @GetMapping("/searchKhachHangHD")
-    public ResponseEntity<HoaDon> searchKhachHangAndUpdateHoaDon(
+    public ResponseEntity<?> searchKhachHangAndUpdateHoaDon(
             @RequestParam("query") String keyword,
             @RequestParam("hoaDonId") Integer hoaDonId) {
-        HoaDon hoaDon = khachHangServices.searchKhachHangAndUpdateHoaDon(keyword, hoaDonId);
-        return ResponseEntity.ok(hoaDon);
+        try {
+            HoaDon hoaDon = khachHangServices.searchKhachHangAndUpdateHoaDon(keyword, hoaDonId);
+            return ResponseEntity.ok(hoaDon);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi server: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/getById/{idKhachHang}")
+    public ResponseEntity<KhachHang> getCustomerById(@PathVariable int idKhachHang) {
+        try {
+            KhachHang khachHang = khachHangServices.findById(idKhachHang);
+            if (khachHang == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(khachHang);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
     //import khach hang ra excel
     @PostMapping("/import")

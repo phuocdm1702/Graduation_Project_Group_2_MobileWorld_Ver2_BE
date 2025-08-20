@@ -50,7 +50,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
 
     //hien thi du lieu
     @Override
-    public List<KhachHang> getall(){
+    public List<KhachHang> getall() {
         return khachHangRepository.findAll()
                 .stream()
                 .filter(kh -> !"KH00001".equals(kh.getMa())).collect(Collectors.toUnmodifiableList());
@@ -59,7 +59,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
     @Override
     public List<KhachHangDTO> getKHPgg() {
         List<KhachHang> khachHangs = khachHangRepository.findAll();
-        return  khachHangs.stream()
+        return khachHangs.stream()
                 .map(this::mapToKhachHangDTO)
                 .collect(Collectors.toList());
     }
@@ -260,8 +260,8 @@ public class KhachHangServicesImpl implements KhachHangServices {
 
                     TaiKhoan taiKhoan = taiKhoanRepository.findById(existingNhanVien.getIdTaiKhoan().getId())
                             .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại!"));
-                    taiKhoanRepository.findByEmail(khachHangResponse.getEmail()).ifPresent(tk ->{
-                        if (!tk.getId().equals(taiKhoan.getId())){
+                    taiKhoanRepository.findByEmail(khachHangResponse.getEmail()).ifPresent(tk -> {
+                        if (!tk.getId().equals(taiKhoan.getId())) {
                             throw new RuntimeException("Email đã được sử dụng bởi tài khoản khác!");
                         }
                     });
@@ -417,6 +417,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             }
         }
     }
+
     @Override
     public List<DiaChiKhachHang> getAllAddressesByKhachHangId(Integer idKhachHang) {
         return diaChiKhachHangRepository.findAllByIdKhachHangId(idKhachHang);
@@ -447,9 +448,10 @@ public class KhachHangServicesImpl implements KhachHangServices {
             khachHangRepository.save(khachHang);
         }
     }
+
     //xoa dckh
     @Override
-    public void deleteDiaChi(Integer id)  {
+    public void deleteDiaChi(Integer id) {
         Optional<DiaChiKhachHang> diaChiOptional = diaChiKhachHangRepository.findById(id);
         if (diaChiOptional.isPresent()) {
             DiaChiKhachHang diaChiKhachHang = diaChiOptional.get();
@@ -530,27 +532,46 @@ public class KhachHangServicesImpl implements KhachHangServices {
     }
 
     public HoaDon searchKhachHangAndUpdateHoaDon(String keyword, Integer hoaDonId) {
-        if (hoaDonId == null) {
-            throw new IllegalArgumentException("ID hóa đơn không được để trống");
+        try {
+            if (hoaDonId == null) {
+                throw new IllegalArgumentException("ID hóa đơn không được để trống");
+            }
+
+            KhachHang khachHang;
+
+            if (keyword == null || keyword.trim().isEmpty()) {
+                khachHang = khachHangRepository.findById(1)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng mặc định với ID = 1"));
+            } else {
+                List<KhachHang> khachHangs = searchKhachHang(keyword);
+                if (khachHangs.isEmpty()) {
+                    khachHang = khachHangRepository.findById(1)
+                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng mặc định với ID = 1"));
+                } else {
+                    khachHang = khachHangs.get(0);
+                }
+            }
+
+            HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn với ID: " + hoaDonId));
+
+            hoaDon.setIdKhachHang(khachHang);
+            hoaDon.setTenKhachHang(khachHang.getTen());
+
+            if (khachHang.getIdTaiKhoan() != null) {
+                hoaDon.setSoDienThoaiKhachHang(khachHang.getIdTaiKhoan().getSoDienThoai());
+            } else {
+                hoaDon.setSoDienThoaiKhachHang(null);
+            }
+
+            hoaDon.setUpdatedAt(new Date());
+
+            return hoaDonRepository.save(hoaDon);
+        } catch (IllegalArgumentException e) {
+            throw e; // Ném lại ngoại lệ với thông báo cụ thể
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi tìm kiếm khách hàng hoặc cập nhật hóa đơn: " + e.getMessage(), e);
         }
-
-        List<KhachHang> khachHangs = searchKhachHang(keyword);
-        if (khachHangs.isEmpty()) {
-            throw new IllegalArgumentException("Không tìm thấy khách hàng với từ khóa: " + keyword);
-        }
-
-        KhachHang khachHang = khachHangs.get(0);
-
-        HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn với ID: " + hoaDonId));
-
-        hoaDon.setIdKhachHang(khachHang);
-        hoaDon.setTenKhachHang(khachHang.getTen());
-        hoaDon.setSoDienThoaiKhachHang(khachHang.getIdTaiKhoan().getSoDienThoai());
-        hoaDon.setUpdatedAt(new Date());
-
-        sendKhachHangUpdate(khachHang.getId());
-        return hoaDonRepository.save(hoaDon);
     }
 
     private void sendKhachHangUpdate(Integer khachHangId) {

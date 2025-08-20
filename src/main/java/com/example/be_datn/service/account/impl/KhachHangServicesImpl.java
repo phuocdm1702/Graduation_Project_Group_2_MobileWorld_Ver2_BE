@@ -529,22 +529,41 @@ public class KhachHangServicesImpl implements KhachHangServices {
             throw new IllegalArgumentException("ID hóa đơn không được để trống");
         }
 
-        List<KhachHang> khachHangs = searchKhachHang(keyword);
-        if (khachHangs.isEmpty()) {
-            throw new IllegalArgumentException("Không tìm thấy khách hàng với từ khóa: " + keyword);
-        }
+        KhachHang khachHang;
 
-        KhachHang khachHang = khachHangs.get(0);
+        if (keyword == null || keyword.trim().isEmpty()) {
+            // Nếu không nhập keyword → dùng khách hàng mặc định id = 1
+            khachHang = khachHangRepository.findById(1)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng mặc định với ID = 1"));
+        } else {
+            // Nếu có keyword thì tìm kiếm
+            List<KhachHang> khachHangs = searchKhachHang(keyword);
+
+            if (khachHangs.isEmpty()) {
+                // Không tìm thấy kết quả thì cũng gán mặc định id = 1
+                khachHang = khachHangRepository.findById(1)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng mặc định với ID = 1"));
+            } else {
+                khachHang = khachHangs.get(0);
+            }
+        }
 
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn với ID: " + hoaDonId));
 
         hoaDon.setIdKhachHang(khachHang);
         hoaDon.setTenKhachHang(khachHang.getTen());
-        hoaDon.setSoDienThoaiKhachHang(khachHang.getIdTaiKhoan().getSoDienThoai());
+
+        if (khachHang.getIdTaiKhoan() != null) {
+            hoaDon.setSoDienThoaiKhachHang(khachHang.getIdTaiKhoan().getSoDienThoai());
+        } else {
+            hoaDon.setSoDienThoaiKhachHang(null);
+        }
+
         hoaDon.setUpdatedAt(new Date());
 
         return hoaDonRepository.save(hoaDon);
     }
+
 
 }

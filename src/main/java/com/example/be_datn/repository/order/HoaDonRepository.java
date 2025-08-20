@@ -67,7 +67,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             AND (:trangThai IS NULL OR h.trangThai = :trangThai)
             AND (:deleted IS NULL OR h.deleted = :deleted)
             AND (:loaiDon IS NULL OR h.loaiDon = :loaiDon)
-            AND (:idKhachHang IS NULL OR h.idKhachHang.id = :idKhachHang)
+           
             ORDER BY h.id DESC
             """)
     Page<HoaDonResponse> getHoaDonAndFilters(

@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+@CrossOrigin(origins = "http://localhost:5173")
 @Controller
 @RequestMapping("/api/hoa-don")
 public class HoaDonController {

@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/payment")
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
@@ -25,23 +28,24 @@ public class VNPAYController {
     }
 
     @GetMapping("/vnpay-payment")
-    public ResponseEntity<String> paymentReturn(HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> paymentReturn(HttpServletRequest request) {
         int paymentStatus = vnPayService.orderReturn(request);
-
-        String statusMessage;
+        Map<String, String> response = new HashMap<>();
         switch (paymentStatus) {
             case 1:
-                statusMessage = "Transaction Successful";
+                response.put("status", "success");
+                response.put("message", "Transaction Successful");
                 break;
             case 0:
-                statusMessage = "Transaction Failed";
+                response.put("status", "failed");
+                response.put("message", "Transaction Failed");
                 break;
             default:
-                statusMessage = "Invalid Signature";
+                response.put("status", "error");
+                response.put("message", "Invalid Signature");
                 break;
         }
-
-        return new ResponseEntity<>(statusMessage, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 }

@@ -88,7 +88,7 @@ public class NhaSanXuatServiceImpl implements NhaSanXuatService {
 
         // Tạo mới
         NhaSanXuat entity = NhaSanXuat.builder()
-                .ma(request.getMa())
+                .ma("")
                 .nhaSanXuat(request.getNhaSanXuat())
                 .deleted(false)
                 .build();

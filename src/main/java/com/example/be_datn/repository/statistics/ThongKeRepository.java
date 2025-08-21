@@ -269,4 +269,34 @@ public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
             "JOIN sp.idNhaSanXuat nsx " +
             "GROUP BY nsx.id, nsx.nhaSanXuat")
     List<HangBanChayDTO> thongKeHangBanChay();
+
+    @Query(value = "SELECT " +
+            "SUM(hd.tong_tien_sau_giam) as doanhThu, " +
+            "COUNT(hdct.id_chi_tiet_san_pham) as sanPhamDaBan, " +
+            "COUNT(DISTINCT hd.id) as tongSoDonHang " +
+            "FROM hoa_don hd " +
+            "LEFT JOIN hoa_don_chi_tiet hdct ON hd.id = hdct.id_hoa_don " +
+            "WHERE CAST(hd.created_at AS DATE) = DATEADD(DAY, -1, CAST(GETDATE() AS DATE)) " +
+            "AND hd.deleted = 0",
+            nativeQuery = true)
+    Map<String, Object> thongKeTheoNgayHomQua();
+
+    @Query(value = "SELECT " +
+            "hd.loai_don as loaiDon, " +
+            "COUNT(hd.id) as soLuong " +
+            "FROM hoa_don hd " +
+            "WHERE CAST(hd.created_at AS DATE) = CAST(DATEADD(DAY, -1, GETDATE()) AS DATE) " +
+            "AND hd.deleted = 0" +
+            "GROUP BY hd.loai_don",
+            nativeQuery = true)
+    List<LoaiHoaDonDTO> thongKeLoaiHoaDonHomQua();
+
+    @Query(value = "SELECT " +
+            "hd.trang_thai as trangThai, " +
+            "COUNT(hd.id) as soLuong " +
+            "FROM hoa_don hd " +
+            "WHERE CAST(hd.created_at AS DATE) = CAST(DATEADD(DAY, -1, GETDATE()) AS DATE) " +
+            "GROUP BY hd.trang_thai",
+            nativeQuery = true)
+    List<Map<String, Object>> thongKeTrangThaiDonHangHomQua();
 }

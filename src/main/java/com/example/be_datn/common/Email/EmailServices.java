@@ -1,21 +1,31 @@
 package com.example.be_datn.common.Email;
 
 
+import com.example.be_datn.service.statistics.ThongKeService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Service
 public class EmailServices {
     private final JavaMailSender mailSender;
+    private final ThongKeService thongKeService;
 
-    public EmailServices(JavaMailSender mailSender) {
+@Autowired
+    public EmailServices(JavaMailSender mailSender, ThongKeService thongKeService) {
         this.mailSender = mailSender;
+        this.thongKeService = thongKeService;
     }
 
 
@@ -388,5 +398,141 @@ public class EmailServices {
             System.err.println("❌ Lỗi khi gửi email khách hàng tới " + to + ": " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    @Async
+    public void sendDailyStatsEmail(String to) throws MessagingException {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(to);
+            helper.setSubject("📊 Báo cáo thống kê ngày hôm qua - MobileWorld");
+            helper.setFrom("lequangphuc2872006@gmail.com");
+
+            // Lấy dữ liệu thống kê
+            Map<String, Object> thongKeTongQuan = thongKeService.thongKeTheoNgayHomQua();
+            List<Map<String, Object>> trangThaiDonHang = thongKeService.getOrderStatusStatsHomQua();
+            List<Map<String, Object>> loaiHoaDon = thongKeService.thongKeLoaiHoaDonHomQua();
+
+            // Định dạng ngày hôm qua
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DAY_OF_YEAR, -1);
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            String yesterday = sdf.format(cal.getTime());
+
+            // Xử lý dữ liệu tổng quan
+            double doanhThu = thongKeTongQuan.get("doanhThu") instanceof Number ? ((Number) thongKeTongQuan.get("doanhThu")).doubleValue() : 0.0;
+            int sanPhamDaBan = thongKeTongQuan.get("sanPhamDaBan") instanceof Number ? ((Number) thongKeTongQuan.get("sanPhamDaBan")).intValue() : 0;
+            int tongSoDonHang = thongKeTongQuan.get("tongSoDonHang") instanceof Number ? ((Number) thongKeTongQuan.get("tongSoDonHang")).intValue() : 0;
+
+            // Xử lý bảng trạng thái đơn hàng
+            String trangThaiContent;
+            if (trangThaiDonHang.isEmpty()) {
+                trangThaiContent = "<tr><td colspan='2' style='text-align: center; padding: 10px;'>Không có dữ liệu ngày hôm qua</td></tr>";
+            } else {
+                StringBuilder trangThaiHtml = new StringBuilder();
+                for (Map<String, Object> statusEntry : trangThaiDonHang) {
+                    String trangThaiName = String.valueOf(statusEntry.get("trangThai")); // Already mapped
+                    long soLuong = statusEntry.get("soLuong") instanceof Number ? ((Number) statusEntry.get("soLuong")).longValue() : 0;
+                    trangThaiHtml.append(String.format("<tr><td style='text-align: center; padding: 10px;'>%s</td><td style='text-align: center; padding: 10px;'>%d</td></tr>", trangThaiName, soLuong));
+                }
+                trangThaiContent = trangThaiHtml.toString();
+            }
+
+            // Xử lý bảng loại hóa đơn
+            String loaiDonContent;
+            if (loaiHoaDon.isEmpty()) {
+                loaiDonContent = "<tr><td colspan='2' style='text-align: center; padding: 10px;'>Không có dữ liệu ngày hôm qua</td></tr>";
+            } else {
+                StringBuilder loaiDonHtml = new StringBuilder();
+                for (Map<String, Object> ld : loaiHoaDon) {
+                    String loaiDon = ld.get("loaiDon") != null ? String.valueOf(ld.get("loaiDon")) : "Không xác định";
+                    long soLuong = ld.get("soLuong") instanceof Number ? ((Number) ld.get("soLuong")).longValue() : 0;
+                    loaiDonHtml.append(String.format("<tr><td style='text-align: center; padding: 10px;'>%s</td><td style='text-align: center; padding: 10px;'>%d</td></tr>", loaiDon, soLuong));
+                }
+                loaiDonContent = loaiDonHtml.toString();
+            }
+
+            String htmlContent = """
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h1 style="color: #333;">MobileWorld</h1>
+                        <h2>Báo cáo thống kê ngày {yesterday}</h2>
+                        <h3>Tổng quan</h3>
+                        <p><strong>Doanh thu (tạm tính):</strong> {doanhThu} VNĐ</p>
+                        <p><strong>Sản phẩm đã bán:</strong> {sanPhamDaBan}</p>
+                        <p><strong>Tổng số đơn hàng:</strong> {tongSoDonHang}</p>                        
+                        <h3>Trạng thái đơn hàng</h3>
+                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+                            <tr style="background-color: #68b281; color: white;">
+                                <th style="text-align: center; padding: 10px;">Trạng thái</th>
+                                <th style="text-align: center; padding: 10px;">Số lượng</th>
+                            </tr>
+                            {trangThai}
+                        </table>
+                        <h3>Phân phối đa kênh</h3>
+                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+                            <tr style="background-color: #68b281; color: white;">
+                                <th style="text-align: center; padding: 10px;">Loại hóa đơn</th>
+                                <th style="text-align: center; padding: 10px;">Số lượng</th>
+                            </tr>
+                            {loaiDon}
+                        </table>
+                        <p>Lưu ý: Nếu có thắc mắc về báo cáo, vui lòng liên hệ qua email lequangphuc2872006@gmail.com</p>
+                        <p>Trân trọng,<br>MobileWorld</p>
+                        <p>Liên hệ: lequangphuc2872006@gmail.com</p>
+                    </div>
+            """;
+
+            String finalHtmlContent = htmlContent
+                    .replace("{yesterday}", yesterday)
+                    .replace("{doanhThu}", String.format("%,.0f", doanhThu))
+                    .replace("{sanPhamDaBan}", String.valueOf(sanPhamDaBan))
+                    .replace("{tongSoDonHang}", String.valueOf(tongSoDonHang))
+                    .replace("{trangThai}", trangThaiContent)
+                    .replace("{loaiDon}", loaiDonContent);
+
+            StringBuilder plainTextContent = new StringBuilder();
+            plainTextContent.append(String.format("Báo cáo thống kê ngày %s\n\n", yesterday));
+            plainTextContent.append("Tổng quan:\n");
+            plainTextContent.append(String.format("- Doanh thu: %,.0f VNĐ\n", doanhThu));
+            plainTextContent.append(String.format("- Sản phẩm đã bán: %d\n", sanPhamDaBan));
+            plainTextContent.append(String.format("- Tổng số đơn hàng: %d\n\n", tongSoDonHang));
+            plainTextContent.append("Trạng thái đơn hàng:\n");
+            if (trangThaiDonHang.isEmpty()) {
+                plainTextContent.append("- Không có dữ liệu ngày hôm qua\n");
+            } else {
+                for (Map<String, Object> statusEntry : trangThaiDonHang) {
+                    String trangThaiName = String.valueOf(statusEntry.get("trangThai")); // Already mapped
+                    long soLuong = statusEntry.get("soLuong") instanceof Number ? ((Number) statusEntry.get("soLuong")).longValue() : 0;
+                    plainTextContent.append(String.format("- %s: %d\n", trangThaiName, soLuong));
+                }
+            }
+            plainTextContent.append("\nPhân phối đa kênh:\n");
+            if (loaiHoaDon.isEmpty()) {
+                plainTextContent.append("- Không có dữ liệu ngày hôm qua\n");
+            } else {
+                for (Map<String, Object> ld : loaiHoaDon) {
+                    String loaiDon = ld.get("loaiDon") != null ? String.valueOf(ld.get("loaiDon")) : "Không xác định";
+                    long soLuong = ld.get("soLuong") instanceof Number ? ((Number) ld.get("soLuong")).longValue() : 0;
+                    plainTextContent.append(String.format("- %s: %d\n", loaiDon, soLuong));
+                }
+            }
+            plainTextContent.append("\nLưu ý: Nếu có thắc mắc về báo cáo, vui lòng liên hệ qua email lequangphuc2872006@gmail.com\n");
+            plainTextContent.append("Nhấn vào liên kết để xem báo cáo chi tiết: http://localhost:3000/dashboard\n");
+            plainTextContent.append("\nTrân trọng,\nMobileWorld\nLiên hệ: lequangphuc2872006@gmail.com");
+
+            helper.setText(plainTextContent.toString(), finalHtmlContent);
+            mailSender.send(message);
+            System.out.println("Email báo cáo thống kê ngày hôm qua đã được gửi tới: " + to);
+        } catch (MessagingException e) {
+            System.err.println("Lỗi khi gửi email báo cáo thống kê tới " + to + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Scheduled(cron = "0 0 1 * * ?")
+    public void scheduleDailyStatsEmail() throws MessagingException {
+        sendDailyStatsEmail("minhndth02076@fpt.edu.vn");
     }
 }

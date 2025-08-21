@@ -151,7 +151,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
 
         // 3. Tạo tài khoản
         QuyenHan quyenHan = new QuyenHan();
-        quyenHan.setId(3);
+        quyenHan.setId(2);
 
         String randomPassword = emailServices.generateRandomPassword(8);
 
@@ -159,7 +159,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
                 .ma(MaTaiKhoan())
                 .email(nhanVienResponse.getEmail())
                 .soDienThoai(nhanVienResponse.getSoDienThoai())
-                .tenDangNhap(nhanVienResponse.getTenDangNhap())
+                .tenDangNhap(generateMaNhanVien(nhanVienResponse.getTenNhanVien()))
                 .idQuyenHan(quyenHan)
                 .matKhau(randomPassword)
                 .deleted(true)

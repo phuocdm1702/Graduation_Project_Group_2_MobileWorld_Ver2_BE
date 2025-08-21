@@ -375,7 +375,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             } else {
                 // Thêm khách hàng mới
                 QuyenHan quyenHan = new QuyenHan();
-                quyenHan.setId(2);
+                quyenHan.setId(3);
 
                 TaiKhoan taiKhoan = new TaiKhoan();
                 taiKhoan.setMa(MaTaiKhoan());

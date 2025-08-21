@@ -407,4 +407,41 @@ public class ThongKeService {
         }
         return result;
     }
+
+    public Map<String, Object> thongKeTheoNgayHomQua() {
+        return tkRepo.thongKeTheoNgayHomQua();
+    }
+
+
+    public List<Map<String, Object>> getOrderStatusStatsHomQua() {
+        List<Map<String, Object>> stats = tkRepo.thongKeTrangThaiDonHangHomQua();
+        Map<String, String> statusMapping = new HashMap<>();
+        statusMapping.put("0", "Chờ xác nhận");
+        statusMapping.put("1", "Chờ giao hàng");
+        statusMapping.put("2", "Đang giao");
+        statusMapping.put("3", "Hoàn thành");
+        statusMapping.put("4", "Đã hủy");
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> stat : stats) {
+            Map<String, Object> mappedStat = new HashMap<>();
+            String trangThaiKey = String.valueOf(stat.get("trangThai"));
+            mappedStat.put("trangThai", statusMapping.getOrDefault(trangThaiKey, "Không xác định"));
+            mappedStat.put("soLuong", ((Number) stat.get("soLuong")).longValue());
+            result.add(mappedStat);
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> thongKeLoaiHoaDonHomQua() {
+        List<LoaiHoaDonDTO> dtos = tkRepo.thongKeLoaiHoaDonHomQua();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (LoaiHoaDonDTO dto : dtos) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("loaiDon", dto.getLoaiDon());
+            map.put("soLuong", dto.getSoLuong());
+            result.add(map);
+        }
+        return result;
+    }
 }

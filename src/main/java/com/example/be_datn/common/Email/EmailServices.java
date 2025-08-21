@@ -217,16 +217,13 @@ public class EmailServices {
 
     public void EmailKH(String to, String customerName, String email, String password) throws MessagingException {
         try {
-            // Tạo MimeMessage
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // Thiết lập thông tin email
             helper.setTo(to);
             helper.setSubject("🎉 Chào mừng bạn trở thành khách hàng của MobileWorld!");
             helper.setFrom("no-reply@mobileworld.com.vn");
 
-            // Nội dung HTML của email
             String htmlContent = """
         <!DOCTYPE html>
         <html lang="vi">
@@ -234,13 +231,14 @@ public class EmailServices {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Chào Mừng Khách Hàng Mới</title>
-            <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
             <style>
                 body {
                     margin: 0;
                     padding: 0;
-                    font-family: Arial, sans-serif;
-                    background-color: #f5f6fa;
+                    font-family: 'Poppins', Arial, sans-serif;
+                    background-color: #f0f2f5;
+                    color: #222;
                 }
                 .container {
                     width: 100%;
@@ -249,85 +247,82 @@ public class EmailServices {
                     padding: 20px;
                 }
                 .header {
-                    background-color: #f5a623; /* Màu cam của MobileWorld */
-                    padding: 20px;
+                    background: linear-gradient(135deg, #28a745, #1e7e34);
+                    padding: 25px;
                     text-align: center;
-                    border-radius: 8px 8px 0 0;
+                    border-radius: 12px 12px 0 0;
                 }
                 .header h1 {
                     margin: 0;
-                    font-size: 24px;
-                    color: #ffffff;
-                    font-weight: bold;
+                    font-size: 26px;
+                    color: #fff;
+                    font-weight: 600;
                 }
                 .content {
                     background-color: #ffffff;
-                    padding: 20px;
-                    border-radius: 0 0 8px 8px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-                    text-align: center;
-                }
-                .thank-you-section {
+                    padding: 25px;
+                    border-radius: 0 0 12px 12px;
+                    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
                     text-align: center;
                 }
                 .thank-you-section h2 {
-                    font-family: 'Dancing Script', 'Brush Script MT', cursive;
-                    font-size: 36px;
-                    color: #f5a623;
-                    margin: 0;
-                    line-height: 1.2;
-                    font-weight: 700;
-                    letter-spacing: 2px;
-                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+                    font-size: 28px;
+                    color: #28a745;
+                    margin: 0 0 10px;
+                    font-weight: 600;
                 }
                 .thank-you-section p {
-                    color: #4a4a4a;
                     font-size: 14px;
-                    margin: 8px 0 20px;
+                    color: #444;
+                    margin-bottom: 20px;
                 }
-                .coupon-details {
-                    background-color: #fff5e6;
+                .highlight-box {
+                    background: #e8f5e9;
+                    color: #155724;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    font-size: 16px;
+                    font-weight: 500;
+                }
+                .account-info {
+                    background: #f9f9f9;
+                    border: 1px solid #e0e0e0;
                     padding: 15px;
                     border-radius: 8px;
                     margin-bottom: 20px;
                     text-align: left;
                 }
-                .coupon-details p {
+                .account-info p {
                     margin: 8px 0;
-                    color: #4a4a4a;
                     font-size: 14px;
+                    color: #333;
                 }
-                .coupon-details p strong {
-                    color: #f5a623;
-                    font-weight: bold;
-                }
-                .discount-box {
-                    background-color: #f5a623;
-                    color: #ffffff;
-                    padding: 10px;
-                    border-radius: 8px;
-                    font-size: 18px;
-                    font-weight: bold;
-                    margin-bottom: 20px;
+                .account-info strong {
+                    color: #28a745;
                 }
                 .cta-button {
                     display: inline-block;
                     padding: 12px 24px;
-                    background-color: #f5a623;
-                    color: #ffffff;
+                    background: linear-gradient(135deg, #28a745, #218838);
+                    color: #fff !important;
                     text-decoration: none;
                     border-radius: 8px;
-                    font-size: 16px;
+                    font-size: 15px;
                     font-weight: 500;
+                    transition: background 0.3s ease;
+                }
+                .cta-button:hover {
+                    background: linear-gradient(135deg, #218838, #1e7e34);
                 }
                 .footer {
                     text-align: center;
-                    padding: 20px 0;
-                    color: #4a4a4a;
+                    padding: 15px 0;
                     font-size: 12px;
+                    color: #666;
                 }
                 .footer a {
-                    color: #f5a623;
+                    color: #28a745;
                     text-decoration: none;
                 }
             </style>
@@ -342,13 +337,13 @@ public class EmailServices {
                         <h2>Xin chào {customerName}!</h2>
                         <p>Cảm ơn bạn đã trở thành khách hàng của MobileWorld 🎉</p>
                     </div>
-                    <div class="discount-box">
-                        Tài khoản của bạn đã được tạo thành công!
+                    <div class="highlight-box">
+                        🎊 Tài khoản của bạn đã được tạo thành công!
                     </div>
-                    <div class="coupon-details">
-                        <p><strong>Email đăng nhập:</strong> {email} </p>
+                    <div class="account-info">
+                        <p><strong>Email đăng nhập:</strong> {email}</p>
                         <p><strong>Mật khẩu:</strong> {password}</p>
-                        <p>Lưu ý: Vui lòng đăng nhập để kích hoạt tài khoản. Nếu có bất kỳ vấn đề nào, hãy liên hệ với chúng tôi qua email: support@mobileworld.com.vn</p>
+                        <p><em>⚠️ Vui lòng đăng nhập để kích hoạt tài khoản.</em></p>
                     </div>
                     <p>
                         <a href="http://localhost:3000/login" class="cta-button">ĐĂNG NHẬP NGAY</a>
@@ -364,17 +359,15 @@ public class EmailServices {
         </html>
         """;
 
-            // Thay thế các placeholder
             String finalHtmlContent = htmlContent
                     .replace("{customerName}", customerName)
                     .replace("{email}", email)
                     .replace("{password}", password);
 
-            // Nội dung plain-text fallback
             String plainTextContent = """
-            Chào mừng bạn trở thành khách hàng của MobileWorld!
+            Xin chào %s!
 
-            Xin chào %s,
+            Cảm ơn bạn đã trở thành khách hàng của MobileWorld 🎉
 
             Tài khoản của bạn đã được tạo thành công:
             - Email đăng nhập: %s
@@ -384,17 +377,15 @@ public class EmailServices {
 
             Trân trọng,
             MobileWorld
-            Liên hệ: support@mobileworld.com.vn
+            Liên hệ: lequangphuc2872006@gmail.com
             """.formatted(customerName, email, password);
 
-            // Thiết lập nội dung email
             helper.setText(plainTextContent, finalHtmlContent);
 
-            // Gửi email
             mailSender.send(message);
-            System.out.println("Email chào mừng đã được gửi tới: " + to);
+            System.out.println("✅ Email chào mừng khách hàng đã được gửi tới: " + to);
         } catch (MessagingException e) {
-            System.err.println("Lỗi khi gửi email chào mừng tới " + to + ": " + e.getMessage());
+            System.err.println("❌ Lỗi khi gửi email khách hàng tới " + to + ": " + e.getMessage());
             e.printStackTrace();
         }
     }

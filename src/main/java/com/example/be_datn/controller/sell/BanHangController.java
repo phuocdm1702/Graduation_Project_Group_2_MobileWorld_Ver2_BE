@@ -58,7 +58,7 @@ public class BanHangController {
     }
 
     @GetMapping("/hoa-don-cho")
-    public ResponseEntity<List<HoaDon>> getHD() {
+    public ResponseEntity<List<HoaDonDTO>> getHD() {
         // Service sẽ tự động gửi realtime update
         return ResponseEntity.ok(banHangService.getHDCho());
     }

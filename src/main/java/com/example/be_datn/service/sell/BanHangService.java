@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface BanHangService {
-    List<HoaDon> getHDCho();
+    List<HoaDonDTO> getHDCho();
 
     void huyHD(Integer idHD);
 

@@ -53,40 +53,31 @@ public class RamServiceImpl implements RamService {
     @Override
     @Transactional
     public RamResponse createRam(RamRequest request) {
-        log.info("Creating new RAM with code: {}", request.getMa());
+        log.info("Creating new RAM");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("RAM code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã RAM đã tồn tại!");
+        // Kiểm tra trùng lặp: dung lượng RAM
+        boolean exists = repository.existsByDungLuongRamAndDeletedFalse(
+                request.getDungLuongRam().trim());
+
+        if (exists) {
+            log.error("RAM already exists with same capacity");
+            throw new RuntimeException("RAM với dung lượng này đã tồn tại!");
         }
 
-        if (repository.existsByDungLuongRamAndDeletedFalse(request.getDungLuongRam())) {
-            log.error("RAM capacity already exists: {}", request.getDungLuongRam());
-            throw new RuntimeException("Dung lượng RAM đã tồn tại!");
-        }
+        // Tìm RAM đã bị xóa mềm có cùng dung lượng
+        Optional<Ram> existingDeleted = repository.findByDungLuongRamAndDeletedTrue(
+                request.getDungLuongRam().trim());
 
-        Optional<Ram> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<Ram> existingByName = repository.findByDungLuongRamAndDeletedTrue(request.getDungLuongRam());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted RAM by code: {}", request.getMa());
-            Ram entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted RAM with same capacity");
+            Ram entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setDungLuongRam(request.getDungLuongRam());
-            return convertToResponse(repository.save(entity));
-        }
-
-        if (existingByName.isPresent()) {
-            log.info("Restoring soft-deleted RAM by capacity: {}", request.getDungLuongRam());
-            Ram entity = existingByName.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
             return convertToResponse(repository.save(entity));
         }
 
         Ram entity = Ram.builder()
-                .ma(request.getMa())
-                .dungLuongRam(request.getDungLuongRam())
+                .ma("") // Không sử dụng mã nữa
+                .dungLuongRam(request.getDungLuongRam().trim())
                 .deleted(false)
                 .build();
 
@@ -106,40 +97,27 @@ public class RamServiceImpl implements RamService {
                     return new RuntimeException("RAM không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("RAM code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã RAM đã tồn tại!");
+        String newDungLuongRam = request.getDungLuongRam().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getDungLuongRam().equals(newDungLuongRam);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với RAM khác
+            boolean existsOther = repository.existsByDungLuongRamAndDeletedFalseAndIdNot(
+                    newDungLuongRam, id);
+
+            if (existsOther) {
+                log.error("RAM already exists with same capacity during update");
+                throw new RuntimeException("RAM với dung lượng này đã tồn tại!");
+            }
         }
 
-        if (!entity.getDungLuongRam().equals(request.getDungLuongRam()) &&
-                repository.existsByDungLuongRamAndDeletedFalse(request.getDungLuongRam(), id)) {
-            log.error("RAM capacity already exists during update: {}", request.getDungLuongRam());
-            throw new RuntimeException("Dung lượng RAM đã tồn tại!");
-        }
-
-        entity.setMa(request.getMa());
-        entity.setDungLuongRam(request.getDungLuongRam());
+        entity.setDungLuongRam(newDungLuongRam);
 
         Ram updatedEntity = repository.save(entity);
         log.info("Updated RAM with id: {}", id);
         return convertToResponse(updatedEntity);
-    }
-
-    @Override
-    @Transactional
-    public void deleteRam(Integer id) {
-        log.info("Soft deleting RAM with id: {}", id);
-
-        Ram entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("RAM not found for deletion with id: {}", id);
-                    return new RuntimeException("RAM không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted RAM with id: {}", id);
     }
 
     @Override
@@ -149,40 +127,7 @@ public class RamServiceImpl implements RamService {
                 .map(this::convertToResponse);
     }
 
-    @Override
-    public Page<RamResponse> filterByDungLuongRam(String dungLuongRam, Pageable pageable) {
-        log.info("Filtering RAMs by capacity: {}", dungLuongRam);
-        return repository.findByDungLuongRamIgnoreCase(dungLuongRam, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllRamCapacities() {
-        log.info("Getting all RAM capacities");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(Ram::getDungLuongRam)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByDungLuongRam(String dungLuongRam, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByDungLuongRamAndDeletedFalse(dungLuongRam, excludeId);
-        }
-        return repository.existsByDungLuongRamAndDeletedFalse(dungLuongRam);
-    }
-
+    // Chuyển đổi Entity sang Response DTO
     private RamResponse convertToResponse(Ram entity) {
         return RamResponse.builder()
                 .id(entity.getId())

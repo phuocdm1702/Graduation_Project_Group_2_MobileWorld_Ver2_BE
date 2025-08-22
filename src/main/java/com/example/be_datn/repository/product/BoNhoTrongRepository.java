@@ -23,38 +23,24 @@ public interface BoNhoTrongRepository extends JpaRepository<BoNhoTrong, Integer>
     // Tìm bộ nhớ trong theo ID và chưa bị xóa
     Optional<BoNhoTrong> findByIdAndDeletedFalse(Integer id);
 
-    // Kiểm tra mã bộ nhớ trong đã tồn tại (chưa bị xóa)
-    @Query("SELECT COUNT(b) > 0 FROM BoNhoTrong b WHERE b.ma = :ma AND b.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    // Kiểm tra dung lượng bộ nhớ trong đã tồn tại (chưa bị xóa)
-    @Query("SELECT COUNT(b) > 0 FROM BoNhoTrong b WHERE b.dungLuongBoNhoTrong = :dungLuongBoNhoTrong AND b.deleted = false")
-    boolean existsByDungLuongBoNhoTrongAndDeletedFalse(@Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong);
-
-    // Kiểm tra mã bộ nhớ trong đã tồn tại (chưa bị xóa) loại trừ ID hiện tại
-    @Query("SELECT COUNT(b) > 0 FROM BoNhoTrong b WHERE b.ma = :ma AND b.deleted = false AND b.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    // Kiểm tra dung lượng bộ nhớ trong đã tồn tại (chưa bị xóa) loại trừ ID hiện tại
-    @Query("SELECT COUNT(b) > 0 FROM BoNhoTrong b WHERE b.dungLuongBoNhoTrong = :dungLuongBoNhoTrong AND b.deleted = false AND b.id != :excludeId")
-    boolean existsByDungLuongBoNhoTrongAndDeletedFalse(@Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong, @Param("excludeId") Integer excludeId);
-
-    // Tìm bộ nhớ trong đã bị xóa theo mã
-    @Query("SELECT b FROM BoNhoTrong b WHERE b.ma = :ma AND b.deleted = true")
-    Optional<BoNhoTrong> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    // Tìm bộ nhớ trong đã bị xóa theo dung lượng
-    @Query("SELECT b FROM BoNhoTrong b WHERE b.dungLuongBoNhoTrong = :dungLuongBoNhoTrong AND b.deleted = true")
-    Optional<BoNhoTrong> findByDungLuongBoNhoTrongAndDeletedTrue(@Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong);
-
     // Tìm kiếm theo từ khóa
     @Query("SELECT b FROM BoNhoTrong b WHERE b.deleted = false AND " +
             "(LOWER(b.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(b.dungLuongBoNhoTrong) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<BoNhoTrong> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    // Lọc theo dung lượng bộ nhớ trong
-    @Query("SELECT b FROM BoNhoTrong b WHERE b.deleted = false AND " +
-            "LOWER(b.dungLuongBoNhoTrong) = LOWER(:dungLuongBoNhoTrong)")
-    Page<BoNhoTrong> findByDungLuongBoNhoTrongIgnoreCase(@Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong, Pageable pageable);
+    // Kiểm tra dung lượng bộ nhớ trong đã tồn tại (chưa bị xóa)
+    boolean existsByDungLuongBoNhoTrongAndDeletedFalse(String dungLuongBoNhoTrong);
+
+    // Kiểm tra dung lượng bộ nhớ trong đã tồn tại (chưa bị xóa) loại trừ ID hiện tại
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM BoNhoTrong b " +
+            "WHERE b.dungLuongBoNhoTrong = :dungLuongBoNhoTrong " +
+            "AND b.deleted = false " +
+            "AND b.id != :excludeId")
+    boolean existsByDungLuongBoNhoTrongAndDeletedFalseAndIdNot(
+            @Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong,
+            @Param("excludeId") Integer excludeId);
+
+    // Tìm bộ nhớ trong đã bị xóa theo dung lượng
+    Optional<BoNhoTrong> findByDungLuongBoNhoTrongAndDeletedTrue(String dungLuongBoNhoTrong);
 }

@@ -2,8 +2,6 @@ package com.example.be_datn.controller.product;
 
 import com.example.be_datn.dto.product.request.HoTroBoNhoNgoaiRequest;
 import com.example.be_datn.dto.product.response.HoTroBoNhoNgoaiResponse;
-import java.util.HashMap;
-import java.util.Map;
 import com.example.be_datn.service.product.HoTroBoNhoNgoaiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ho-tro-bo-nho-ngoai")
@@ -28,8 +28,8 @@ public class HoTroBoNhoNgoaiController {
 
     @GetMapping
     public ResponseEntity<Page<HoTroBoNhoNgoaiResponse>> getAll(
-            @RequestParam(defaultValue="0") int page,
-            @RequestParam(defaultValue="10") int size) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         log.info("Getting all external memory supports - page: {}, size: {}", page, size);
         Pageable pageable = PageRequest.of(page, size);
         Page<HoTroBoNhoNgoaiResponse> result = service.getAllHoTroBoNhoNgoai(pageable);
@@ -60,7 +60,7 @@ public class HoTroBoNhoNgoaiController {
     public ResponseEntity<?> create(
             @Valid @RequestBody HoTroBoNhoNgoaiRequest request,
             BindingResult result) {
-        log.info("Creating new external memory support with code: {}", request.getMa());
+        log.info("Creating new external memory support");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class HoTroBoNhoNgoaiController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting external memory support with id: {}", id);
-        try {
-            service.deleteHoTroBoNhoNgoai(id);
-            log.info("Successfully deleted external memory support with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting external memory support with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<HoTroBoNhoNgoaiResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String hoTroBoNhoNgoai,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching external memory supports - keyword: {}, hoTroBoNhoNgoai: {}, page: {}, size: {}",
-                keyword, hoTroBoNhoNgoai, page, size);
+        log.info("Searching external memory supports - keyword: {} page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (hoTroBoNhoNgoai != null && !hoTroBoNhoNgoai.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByHoTroBoNhoNgoai(hoTroBoNhoNgoai.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchHoTroBoNhoNgoai(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllHoTroBoNhoNgoai(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllHoTroBoNhoaiNames() {
-        log.info("Getting all external memory support names");
-        List<String> names = service.getAllHoTroBoNhoNgoaiNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if external memory support code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/name")
-    public ResponseEntity<Boolean> checkHoTroBoNhoaiExistsByName(
-            @RequestParam(name = "hoTroBoNhoNgoai") String hoTroBoNhoNgoai,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if external memory support name exists: {}, excludeId: {}", hoTroBoNhoNgoai, excludeId);
-        boolean exists = service.existsByHoTroBoNhoNgoai(hoTroBoNhoNgoai, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

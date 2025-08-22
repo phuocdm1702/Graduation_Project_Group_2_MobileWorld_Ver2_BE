@@ -14,36 +14,33 @@ import java.util.Optional;
 @Repository
 public interface HoTroBoNhoNgoaiRepository extends JpaRepository<HoTroBoNhoNgoai, Integer> {
 
+    // Tìm tất cả các hỗ trợ bộ nhớ ngoài chưa bị xóa
     List<HoTroBoNhoNgoai> findByDeletedFalse();
 
+    // Tìm tất cả các hỗ trợ bộ nhớ ngoài chưa bị xóa với phân trang
     Page<HoTroBoNhoNgoai> findByDeletedFalse(Pageable pageable);
 
+    // Tìm hỗ trợ bộ nhớ ngoài theo ID và chưa bị xóa
     Optional<HoTroBoNhoNgoai> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(h) > 0 FROM HoTroBoNhoNgoai h WHERE h.ma = :ma AND h.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(h) > 0 FROM HoTroBoNhoNgoai h WHERE h.hoTroBoNhoNgoai = :hoTroBoNhoNgoai AND h.deleted = false")
-    boolean existsByHoTroBoNhoNgoaiAndDeletedFalse(@Param("hoTroBoNhoNgoai") String hoTroBoNhoNgoai);
-
-    @Query("SELECT COUNT(h) > 0 FROM HoTroBoNhoNgoai h WHERE h.ma = :ma AND h.deleted = false AND h.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT COUNT(h) > 0 FROM HoTroBoNhoNgoai h WHERE h.hoTroBoNhoNgoai = :hoTroBoNhoNgoai AND h.deleted = false AND h.id != :excludeId")
-    boolean existsByHoTroBoNhoNgoaiAndDeletedFalse(@Param("hoTroBoNhoNgoai") String hoTroBoNhoNgoai, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT h FROM HoTroBoNhoNgoai h WHERE h.ma = :ma AND h.deleted = true")
-    Optional<HoTroBoNhoNgoai> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    @Query("SELECT h FROM HoTroBoNhoNgoai h WHERE h.hoTroBoNhoNgoai = :hoTroBoNhoNgoai AND h.deleted = true")
-    Optional<HoTroBoNhoNgoai> findByHoTroBoNhoNgoaiAndDeletedTrue(@Param("hoTroBoNhoNgoai") String hoTroBoNhoNgoai);
-
+    // Tìm kiếm theo từ khóa
     @Query("SELECT h FROM HoTroBoNhoNgoai h WHERE h.deleted = false AND " +
             "(LOWER(h.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(h.hoTroBoNhoNgoai) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<HoTroBoNhoNgoai> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT h FROM HoTroBoNhoNgoai h WHERE h.deleted = false AND " +
-            "LOWER(h.hoTroBoNhoNgoai) = LOWER(:hoTroBoNhoNgoai)")
-    Page<HoTroBoNhoNgoai> findByHoTroBoNhoNgoaiIgnoreCase(@Param("hoTroBoNhoNgoai") String hoTroBoNhoNgoai, Pageable pageable);
+    // Kiểm tra tên hỗ trợ bộ nhớ ngoài đã tồn tại (chưa bị xóa)
+    boolean existsByHoTroBoNhoNgoaiAndDeletedFalse(String hoTroBoNhoNgoai);
+
+    // Kiểm tra tên hỗ trợ bộ nhớ ngoài đã tồn tại (chưa bị xóa) loại trừ ID hiện tại
+    @Query("SELECT CASE WHEN COUNT(h) > 0 THEN true ELSE false END FROM HoTroBoNhoNgoai h " +
+            "WHERE h.hoTroBoNhoNgoai = :hoTroBoNhoNgoai " +
+            "AND h.deleted = false " +
+            "AND h.id != :excludeId")
+    boolean existsByHoTroBoNhoNgoaiAndDeletedFalseAndIdNot(
+            @Param("hoTroBoNhoNgoai") String hoTroBoNhoNgoai,
+            @Param("excludeId") Integer excludeId);
+
+    // Tìm hỗ trợ bộ nhớ ngoài đã bị xóa theo tên
+    Optional<HoTroBoNhoNgoai> findByHoTroBoNhoNgoaiAndDeletedTrue(String hoTroBoNhoNgoai);
 }

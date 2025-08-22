@@ -60,7 +60,7 @@ public class RamController {
     public ResponseEntity<?> create(
             @Valid @RequestBody RamRequest request,
             BindingResult result) {
-        log.info("Creating new RAM with code: {}", request.getMa());
+        log.info("Creating new RAM");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class RamController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting RAM with id: {}", id);
-        try {
-            service.deleteRam(id);
-            log.info("Successfully deleted RAM with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting RAM with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<RamResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String dungLuongRam,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching RAMs - keyword: {}, dungLuongRam: {}, page: {}, size: {}",
-                keyword, dungLuongRam, page, size);
+        log.info("Searching RAMs - keyword: {} page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (dungLuongRam != null && !dungLuongRam.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByDungLuongRam(dungLuongRam.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchRam(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllRam(pageable));
-    }
-
-    @GetMapping("/all-capacities")
-    public ResponseEntity<List<String>> getAllRamCapacities() {
-        log.info("Getting all RAM capacities");
-        List<String> capacities = service.getAllRamCapacities();
-        return ResponseEntity.ok(capacities);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if RAM code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/dung-luong-ram")
-    public ResponseEntity<Boolean> checkDungLuongRamExists(
-            @RequestParam String dungLuongRam,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if RAM capacity exists: {}, excludeId: {}", dungLuongRam, excludeId);
-        boolean exists = service.existsByDungLuongRam(dungLuongRam, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

@@ -22,4 +22,5 @@ public interface ProductClientService {
     public List<Object[]> getProductForCompare();
 
     public Optional<SanPham> findSanPhamWithDetailsById(Integer id);
+
 }

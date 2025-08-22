@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.product;
 
+
 import com.example.be_datn.entity.product.ChiTietSanPham;
 import com.example.be_datn.service.clientService.ProductService.ProductClientService;
 import com.example.be_datn.service.clientService.impl.Product.ProductDetailClientServiceImpl;
@@ -7,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +42,7 @@ public class ProductController {
             variant.put("thong_so_camera_sau", record[7]);
             variant.put("thong_so_camera_truoc", record[8]);
             variant.put("ctsp_id", record[9]);
-            variant.put("gia_ban", record[10] != null ? record[10] : 0);
+            variant.put("gia_ban", record[10]); // Preserve null
             variant.put("ctsp_ma", record[11]);
             variant.put("id_imel", record[12]);
             variant.put("mau_sac", record[13]);
@@ -48,8 +50,8 @@ public class ProductController {
             variant.put("bo_nho_trong_dung_luong", record[15]);
             variant.put("anh_san_pham_url", record[16] != null ? record[16] : "/assets/images/placeholder.jpg");
             variant.put("ghi_chu", record[17] != null ? record[17] : "Không có mô tả chi tiết.");
-            variant.put("gia_sau_khi_giam", record[18] != null ? record[18] : record[10] != null ? record[10] : 0);
-            variant.put("gia_ban_dau", record[19] != null ? record[19] : record[10] != null ? record[10] : 0);
+            variant.put("gia_sau_khi_giam", record[18]); // Preserve null
+            variant.put("gia_ban_dau", record[19] != null ? record[19] : record[10]); // Fallback to gia_ban
             variant.put("has_discount", record[20] != null && ((Number) record[20]).intValue() == 1);
             variant.put("giam_phan_tram", record[21] != null ? record[21] : 0);
             variant.put("giam_toi_da", record[22] != null ? record[22] : 0);
@@ -71,7 +73,6 @@ public class ProductController {
             variant.put("do_sang_toi_da", record[38] != null ? record[38] : "Không có thông tin");
             variant.put("tan_so_quet", record[39] != null ? record[39] : "Không có thông tin");
             variant.put("kieu_man_hinh", record[40] != null ? record[40] : "Không có thông tin");
-            variant.put("imel_value", record[41] != null ? record[41] : "Không có thông tin");
             return variant;
         }).collect(Collectors.toList());
     }

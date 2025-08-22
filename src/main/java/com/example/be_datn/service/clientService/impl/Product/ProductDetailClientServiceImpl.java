@@ -32,4 +32,9 @@ public class ProductDetailClientServiceImpl implements ProductDetailClientServic
     public List<String> findDistinctColors() {
         return chiTietSanPhamRepository.findDistinctColors();
     }
+
+    @Override
+    public List<Object[]> findChiTietSanPhamBySanPhamIdModification(Integer sanPhamId) {
+        return chiTietSanPhamRepository.findChiTietSanPhamBySanPhamIdModification(sanPhamId);
+    }
 }

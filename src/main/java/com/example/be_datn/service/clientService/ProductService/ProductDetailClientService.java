@@ -14,4 +14,6 @@ public interface ProductDetailClientService { ;
     public Double findMaxPrice();
 
     public List<String> findDistinctColors();
+
+    public List<Object[]> findChiTietSanPhamBySanPhamIdModification(Integer sanPhamId);
 }

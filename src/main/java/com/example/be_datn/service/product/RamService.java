@@ -9,25 +9,22 @@ import java.util.List;
 
 public interface RamService {
 
+    // Lấy tất cả RAM với phân trang
     Page<RamResponse> getAllRam(Pageable pageable);
 
+    // Lấy tất cả RAM dạng list
     List<RamResponse> getAllRamList();
 
+    // Lấy RAM theo ID
     RamResponse getRamById(Integer id);
 
+    // Tạo mới RAM
     RamResponse createRam(RamRequest request);
 
+    // Cập nhật RAM
     RamResponse updateRam(Integer id, RamRequest request);
 
-    void deleteRam(Integer id);
-
+    // Tìm kiếm RAM
     Page<RamResponse> searchRam(String keyword, Pageable pageable);
 
-    Page<RamResponse> filterByDungLuongRam(String dungLuongRam, Pageable pageable);
-
-    List<String> getAllRamCapacities();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByDungLuongRam(String dungLuongRam, Integer excludeId);
 }

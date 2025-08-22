@@ -53,43 +53,31 @@ public class BoNhoTrongServiceImpl implements BoNhoTrongService {
     @Override
     @Transactional
     public BoNhoTrongResponse createBoNhoTrong(BoNhoTrongRequest request) {
-        log.info("Creating new storage capacity with code: {}", request.getMa());
+        log.info("Creating new storage capacity");
 
-        // Kiểm tra trùng lặp với các bản ghi chưa xóa mềm
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Storage capacity code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã bộ nhớ trong đã tồn tại!");
+        // Kiểm tra trùng lặp: dung lượng bộ nhớ trong
+        boolean exists = repository.existsByDungLuongBoNhoTrongAndDeletedFalse(
+                request.getDungLuongBoNhoTrong().trim());
+
+        if (exists) {
+            log.error("Storage capacity already exists with same capacity");
+            throw new RuntimeException("Bộ nhớ trong với dung lượng này đã tồn tại!");
         }
 
-        if (repository.existsByDungLuongBoNhoTrongAndDeletedFalse(request.getDungLuongBoNhoTrong())) {
-            log.error("Storage capacity already exists: {}", request.getDungLuongBoNhoTrong());
-            throw new RuntimeException("Dung lượng bộ nhớ trong đã tồn tại!");
-        }
+        // Tìm bộ nhớ trong đã bị xóa mềm có cùng dung lượng
+        Optional<BoNhoTrong> existingDeleted = repository.findByDungLuongBoNhoTrongAndDeletedTrue(
+                request.getDungLuongBoNhoTrong().trim());
 
-        // Kiểm tra và khôi phục bản ghi đã xóa mềm
-        Optional<BoNhoTrong> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<BoNhoTrong> existingByCapacity = repository.findByDungLuongBoNhoTrongAndDeletedTrue(request.getDungLuongBoNhoTrong());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted storage capacity by code: {}", request.getMa());
-            BoNhoTrong entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted storage capacity with same capacity");
+            BoNhoTrong entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setDungLuongBoNhoTrong(request.getDungLuongBoNhoTrong());
             return convertToResponse(repository.save(entity));
         }
 
-        if (existingByCapacity.isPresent()) {
-            log.info("Restoring soft-deleted storage capacity by capacity: {}", request.getDungLuongBoNhoTrong());
-            BoNhoTrong entity = existingByCapacity.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
-            return convertToResponse(repository.save(entity));
-        }
-
-        // Tạo mới
         BoNhoTrong entity = BoNhoTrong.builder()
-                .ma(request.getMa())
-                .dungLuongBoNhoTrong(request.getDungLuongBoNhoTrong())
+                .ma("") // Không sử dụng mã nữa
+                .dungLuongBoNhoTrong(request.getDungLuongBoNhoTrong().trim())
                 .deleted(false)
                 .build();
 
@@ -109,43 +97,27 @@ public class BoNhoTrongServiceImpl implements BoNhoTrongService {
                     return new RuntimeException("Bộ nhớ trong không tồn tại hoặc đã bị xóa!");
                 });
 
-        // Kiểm tra trùng lặp mã, loại trừ bản ghi hiện tại
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("Storage capacity code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã bộ nhớ trong đã tồn tại!");
+        String newDungLuongBoNhoTrong = request.getDungLuongBoNhoTrong().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getDungLuongBoNhoTrong().equals(newDungLuongBoNhoTrong);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với bộ nhớ trong khác
+            boolean existsOther = repository.existsByDungLuongBoNhoTrongAndDeletedFalseAndIdNot(
+                    newDungLuongBoNhoTrong, id);
+
+            if (existsOther) {
+                log.error("Storage capacity already exists with same capacity during update");
+                throw new RuntimeException("Bộ nhớ trong với dung lượng này đã tồn tại!");
+            }
         }
 
-        // Kiểm tra trùng lặp dung lượng, loại trừ bản ghi hiện tại
-        if (!entity.getDungLuongBoNhoTrong().equals(request.getDungLuongBoNhoTrong()) &&
-                repository.existsByDungLuongBoNhoTrongAndDeletedFalse(request.getDungLuongBoNhoTrong(), id)) {
-            log.error("Storage capacity already exists during update: {}", request.getDungLuongBoNhoTrong());
-            throw new RuntimeException("Dung lượng bộ nhớ trong đã tồn tại!");
-        }
-
-        // Cập nhật thông tin
-        entity.setMa(request.getMa());
-        entity.setDungLuongBoNhoTrong(request.getDungLuongBoNhoTrong());
+        entity.setDungLuongBoNhoTrong(newDungLuongBoNhoTrong);
 
         BoNhoTrong updatedEntity = repository.save(entity);
         log.info("Updated storage capacity with id: {}", id);
         return convertToResponse(updatedEntity);
-    }
-
-    @Override
-    @Transactional
-    public void deleteBoNhoTrong(Integer id) {
-        log.info("Soft deleting storage capacity with id: {}", id);
-
-        BoNhoTrong entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Storage capacity not found for deletion with id: {}", id);
-                    return new RuntimeException("Bộ nhớ trong không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted storage capacity with id: {}", id);
     }
 
     @Override
@@ -155,40 +127,7 @@ public class BoNhoTrongServiceImpl implements BoNhoTrongService {
                 .map(this::convertToResponse);
     }
 
-    @Override
-    public Page<BoNhoTrongResponse> filterByDungLuongBoNhoTrong(String dungLuongBoNhoTrong, Pageable pageable) {
-        log.info("Filtering storage capacities by capacity: {}", dungLuongBoNhoTrong);
-        return repository.findByDungLuongBoNhoTrongIgnoreCase(dungLuongBoNhoTrong, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllStorageCapacities() {
-        log.info("Getting all storage capacity names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(BoNhoTrong::getDungLuongBoNhoTrong)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByDungLuongBoNhoTrong(String dungLuongBoNhoTrong, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByDungLuongBoNhoTrongAndDeletedFalse(dungLuongBoNhoTrong, excludeId);
-        }
-        return repository.existsByDungLuongBoNhoTrongAndDeletedFalse(dungLuongBoNhoTrong);
-    }
-
+    // Chuyển đổi Entity sang Response DTO
     private BoNhoTrongResponse convertToResponse(BoNhoTrong entity) {
         return BoNhoTrongResponse.builder()
                 .id(entity.getId())

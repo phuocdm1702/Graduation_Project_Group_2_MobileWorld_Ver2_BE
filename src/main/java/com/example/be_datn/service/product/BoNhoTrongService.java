@@ -24,21 +24,6 @@ public interface BoNhoTrongService {
     // Cập nhật bộ nhớ trong
     BoNhoTrongResponse updateBoNhoTrong(Integer id, BoNhoTrongRequest request);
 
-    // Xóa mềm bộ nhớ trong
-    void deleteBoNhoTrong(Integer id);
-
     // Tìm kiếm bộ nhớ trong
     Page<BoNhoTrongResponse> searchBoNhoTrong(String keyword, Pageable pageable);
-
-    // Lọc theo dung lượng bộ nhớ trong
-    Page<BoNhoTrongResponse> filterByDungLuongBoNhoTrong(String dungLuongBoNhoTrong, Pageable pageable);
-
-    // Lấy danh sách dung lượng bộ nhớ trong
-    List<String> getAllStorageCapacities();
-
-    // Kiểm tra mã bộ nhớ trong đã tồn tại
-    boolean existsByMa(String ma, Integer excludeId);
-
-    // Kiểm tra dung lượng bộ nhớ trong đã tồn tại
-    boolean existsByDungLuongBoNhoTrong(String dungLuongBoNhoTrong, Integer excludeId);
 }

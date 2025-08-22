@@ -25,7 +25,8 @@ public class HoTroBoNhoNgoaiServiceImpl implements HoTroBoNhoNgoaiService {
 
     @Override
     public Page<HoTroBoNhoNgoaiResponse> getAllHoTroBoNhoNgoai(Pageable pageable) {
-        log.info("Getting all external memory supports with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        log.info("Getting all external memory supports with pagination: page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
         return repository.findByDeletedFalse(pageable)
                 .map(this::convertToResponse);
     }
@@ -52,40 +53,31 @@ public class HoTroBoNhoNgoaiServiceImpl implements HoTroBoNhoNgoaiService {
     @Override
     @Transactional
     public HoTroBoNhoNgoaiResponse createHoTroBoNhoNgoai(HoTroBoNhoNgoaiRequest request) {
-        log.info("Creating new external memory support with code: {}", request.getMa());
+        log.info("Creating new external memory support");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("External memory support code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã hỗ trợ bộ nhớ ngoài đã tồn tại!");
+        // Kiểm tra trùng lặp: tên hỗ trợ bộ nhớ ngoài
+        boolean exists = repository.existsByHoTroBoNhoNgoaiAndDeletedFalse(
+                request.getHoTroBoNhoNgoai().trim());
+
+        if (exists) {
+            log.error("External memory support already exists with same name");
+            throw new RuntimeException("Hỗ trợ bộ nhớ ngoài với tên này đã tồn tại!");
         }
 
-        if (repository.existsByHoTroBoNhoNgoaiAndDeletedFalse(request.getHoTroBoNhoNgoai())) {
-            log.error("External memory support name already exists: {}", request.getHoTroBoNhoNgoai());
-            throw new RuntimeException("Hỗ trợ bộ nhớ ngoài đã tồn tại!");
-        }
+        // Tìm hỗ trợ bộ nhớ ngoài đã bị xóa mềm có cùng tên
+        Optional<HoTroBoNhoNgoai> existingDeleted = repository.findByHoTroBoNhoNgoaiAndDeletedTrue(
+                request.getHoTroBoNhoNgoai().trim());
 
-        Optional<HoTroBoNhoNgoai> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<HoTroBoNhoNgoai> existingByName = repository.findByHoTroBoNhoNgoaiAndDeletedTrue(request.getHoTroBoNhoNgoai());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted external memory support by code: {}", request.getMa());
-            HoTroBoNhoNgoai entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted external memory support with same name");
+            HoTroBoNhoNgoai entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setHoTroBoNhoNgoai(request.getHoTroBoNhoNgoai());
-            return convertToResponse(repository.save(entity));
-        }
-
-        if (existingByName.isPresent()) {
-            log.info("Restoring soft-deleted external memory support by name: {}", request.getHoTroBoNhoNgoai());
-            HoTroBoNhoNgoai entity = existingByName.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
             return convertToResponse(repository.save(entity));
         }
 
         HoTroBoNhoNgoai entity = HoTroBoNhoNgoai.builder()
-                .ma(request.getMa())
-                .hoTroBoNhoNgoai(request.getHoTroBoNhoNgoai())
+                .ma("") // Không sử dụng mã nữa
+                .hoTroBoNhoNgoai(request.getHoTroBoNhoNgoai().trim())
                 .deleted(false)
                 .build();
 
@@ -105,40 +97,27 @@ public class HoTroBoNhoNgoaiServiceImpl implements HoTroBoNhoNgoaiService {
                     return new RuntimeException("Hỗ trợ bộ nhớ ngoài không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("External memory support code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã hỗ trợ bộ nhớ ngoài đã tồn tại!");
+        String newHoTroBoNhoNgoai = request.getHoTroBoNhoNgoai().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getHoTroBoNhoNgoai().equals(newHoTroBoNhoNgoai);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với hỗ trợ bộ nhớ ngoài khác
+            boolean existsOther = repository.existsByHoTroBoNhoNgoaiAndDeletedFalseAndIdNot(
+                    newHoTroBoNhoNgoai, id);
+
+            if (existsOther) {
+                log.error("External memory support already exists with same name during update");
+                throw new RuntimeException("Hỗ trợ bộ nhớ ngoài với tên này đã tồn tại!");
+            }
         }
 
-        if (!entity.getHoTroBoNhoNgoai().equals(request.getHoTroBoNhoNgoai()) &&
-                repository.existsByHoTroBoNhoNgoaiAndDeletedFalse(request.getHoTroBoNhoNgoai(), id)) {
-            log.error("External memory support name already exists during update: {}", request.getHoTroBoNhoNgoai());
-            throw new RuntimeException("Hỗ trợ bộ nhớ ngoài đã tồn tại!");
-        }
-
-        entity.setMa(request.getMa());
-        entity.setHoTroBoNhoNgoai(request.getHoTroBoNhoNgoai());
+        entity.setHoTroBoNhoNgoai(newHoTroBoNhoNgoai);
 
         HoTroBoNhoNgoai updatedEntity = repository.save(entity);
         log.info("Updated external memory support with id: {}", id);
         return convertToResponse(updatedEntity);
-    }
-
-    @Override
-    @Transactional
-    public void deleteHoTroBoNhoNgoai(Integer id) {
-        log.info("Soft deleting external memory support with id: {}", id);
-
-        HoTroBoNhoNgoai entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("External memory support not found for deletion with id: {}", id);
-                    return new RuntimeException("Hỗ trợ bộ nhớ ngoài không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted external memory support with id: {}", id);
     }
 
     @Override
@@ -148,40 +127,7 @@ public class HoTroBoNhoNgoaiServiceImpl implements HoTroBoNhoNgoaiService {
                 .map(this::convertToResponse);
     }
 
-    @Override
-    public Page<HoTroBoNhoNgoaiResponse> filterByHoTroBoNhoNgoai(String hoTroBoNhoNgoai, Pageable pageable) {
-        log.info("Filtering external memory supports by name: {}", hoTroBoNhoNgoai);
-        return repository.findByHoTroBoNhoNgoaiIgnoreCase(hoTroBoNhoNgoai, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllHoTroBoNhoNgoaiNames() {
-        log.info("Getting all external memory support names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(HoTroBoNhoNgoai::getHoTroBoNhoNgoai)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByHoTroBoNhoNgoai(String hoTroBoNhoNgoai, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByHoTroBoNhoNgoaiAndDeletedFalse(hoTroBoNhoNgoai, excludeId);
-        }
-        return repository.existsByHoTroBoNhoNgoaiAndDeletedFalse(hoTroBoNhoNgoai);
-    }
-
+    // Chuyển đổi Entity sang Response DTO
     private HoTroBoNhoNgoaiResponse convertToResponse(HoTroBoNhoNgoai entity) {
         return HoTroBoNhoNgoaiResponse.builder()
                 .id(entity.getId())

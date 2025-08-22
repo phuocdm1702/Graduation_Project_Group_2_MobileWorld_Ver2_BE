@@ -9,25 +9,22 @@ import java.util.List;
 
 public interface HoTroBoNhoNgoaiService {
 
+    // Lấy tất cả hỗ trợ bộ nhớ ngoài với phân trang
     Page<HoTroBoNhoNgoaiResponse> getAllHoTroBoNhoNgoai(Pageable pageable);
 
+    // Lấy tất cả hỗ trợ bộ nhớ ngoài dạng list
     List<HoTroBoNhoNgoaiResponse> getAllHoTroBoNhoNgoaiList();
 
+    // Lấy hỗ trợ bộ nhớ ngoài theo ID
     HoTroBoNhoNgoaiResponse getHoTroBoNhoNgoaiById(Integer id);
 
+    // Tạo mới hỗ trợ bộ nhớ ngoài
     HoTroBoNhoNgoaiResponse createHoTroBoNhoNgoai(HoTroBoNhoNgoaiRequest request);
 
+    // Cập nhật hỗ trợ bộ nhớ ngoài
     HoTroBoNhoNgoaiResponse updateHoTroBoNhoNgoai(Integer id, HoTroBoNhoNgoaiRequest request);
 
-    void deleteHoTroBoNhoNgoai(Integer id);
-
+    // Tìm kiếm hỗ trợ bộ nhớ ngoài
     Page<HoTroBoNhoNgoaiResponse> searchHoTroBoNhoNgoai(String keyword, Pageable pageable);
 
-    Page<HoTroBoNhoNgoaiResponse> filterByHoTroBoNhoNgoai(String hoTroBoNhoNgoai, Pageable pageable);
-
-    List<String> getAllHoTroBoNhoNgoaiNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByHoTroBoNhoNgoai(String hoTroBoNhoNgoai, Integer excludeId);
 }

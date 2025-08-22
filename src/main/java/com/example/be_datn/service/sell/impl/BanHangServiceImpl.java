@@ -134,17 +134,61 @@ public class BanHangServiceImpl implements BanHangService {
     }
 
     @Override
-    public List<HoaDon> getHDCho() {
-        return hoaDonRepository.findAllHDNotConfirm();
+    public List<HoaDonDTO> getHDCho() {
+        return hoaDonRepository.findAllHDNotConfirm().stream().map(this::mapToHoaDonDto).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public void huyHD(Integer idHD) {
-        if (!hoaDonRepository.existsById(idHD)) {
-            throw new RuntimeException("Không tìm thấy hoá đơn có id: " + idHD);
+        HoaDon hoaDon = hoaDonRepository.findById(idHD)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hoá đơn có id: " + idHD));
+
+        String ghKey = GH_PREFIX + idHD;
+        GioHangDTO gh = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
+
+        if (gh != null && gh.getChiTietGioHangDTOS() != null) {
+            for (ChiTietGioHangDTO item : gh.getChiTietGioHangDTOS()) {
+                if (item.getMaImel() != null && !item.getMaImel().isEmpty()) {
+                    String[] imels = item.getMaImel().split(",\\s*");
+                    for (String imei : imels) {
+                        Optional<Imel> imelOpt = imelRepository.findByImel(imei.trim());
+                        if (imelOpt.isPresent()) {
+                            Imel imelEntity = imelOpt.get();
+                            imelEntity.setDeleted(false);
+                            imelRepository.save(imelEntity);
+                        }
+                    }
+                }
+            }
         }
-        hoaDonRepository.deleteById(idHD);
+
+        // Xóa các bản ghi trong hinh_thuc_thanh_toan
+        Set<HinhThucThanhToan> hinhThucThanhToans = hoaDon.getHinhThucThanhToan();
+        if (hinhThucThanhToans != null && !hinhThucThanhToans.isEmpty()) {
+            hinhThucThanhToanRepository.deleteAll(hinhThucThanhToans);
+        }
+
+        // Xóa các bản ghi trong lich_su_hoa_don
+        List<LichSuHoaDon> lichSuHoaDons = hoaDon.getLichSuHoaDon();
+        if (lichSuHoaDons != null && !lichSuHoaDons.isEmpty()) {
+            lichSuHoaDonRepository.deleteAll(lichSuHoaDons);
+        }
+
+        // Xóa các bản ghi trong hoa_don_chi_tiet
+        Set<HoaDonChiTiet> hoaDonChiTiets = hoaDon.getChiTietHoaDon();
+        if (hoaDonChiTiets != null && !hoaDonChiTiets.isEmpty()) {
+            hoaDonChiTietRepository.deleteAll(hoaDonChiTiets);
+        }
+
+        // Xóa các bản ghi trong gio_hang_tam
+        gioHangTamRepository.markAsDeletedByIdHoaDon(idHD);
+
+        // Xóa giỏ hàng khỏi Redis
+        redisTemplate.delete(ghKey);
+
+        // Xóa hóa đơn
+        hoaDonRepository.delete(hoaDon);
     }
 
     @Override

@@ -19,13 +19,5 @@ public interface CumCameraService {
 
     CumCameraResponse updateCumCamera(Integer id, CumCameraRequest request);
 
-    void deleteCumCamera(Integer id);
-
     Page<CumCameraResponse> searchCumCamera(String keyword, Pageable pageable);
-
-    Page<CumCameraResponse> filterByThongSoCameraSau(String thongSoCameraSau, Pageable pageable);
-
-    List<String> getAllThongSoCameraSauNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
 }

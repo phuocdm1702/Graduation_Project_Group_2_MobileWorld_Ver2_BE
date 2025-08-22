@@ -20,22 +20,25 @@ public interface CumCameraRepository extends JpaRepository<CumCamera, Integer> {
 
     Optional<CumCamera> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(c) > 0 FROM CumCamera c WHERE c.ma = :ma AND c.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(c) > 0 FROM CumCamera c WHERE c.ma = :ma AND c.deleted = false AND c.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT c FROM CumCamera c WHERE c.ma = :ma AND c.deleted = true")
-    Optional<CumCamera> findByMaAndDeletedTrue(@Param("ma") String ma);
-
     @Query("SELECT c FROM CumCamera c WHERE c.deleted = false AND " +
             "(LOWER(c.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(c.thongSoCameraSau) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(c.thongSoCameraTruoc) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<CumCamera> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT c FROM CumCamera c WHERE c.deleted = false AND " +
-            "LOWER(c.thongSoCameraSau) = LOWER(:thongSoCameraSau)")
-    Page<CumCamera> findByThongSoCameraSauIgnoreCase(@Param("thongSoCameraSau") String thongSoCameraSau, Pageable pageable);
+    boolean existsByThongSoCameraSauAndThongSoCameraTruocAndDeletedFalse(
+            String thongSoCameraSau, String thongSoCameraTruoc);
+
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM CumCamera c " +
+            "WHERE c.thongSoCameraSau = :thongSoCameraSau " +
+            "AND c.thongSoCameraTruoc = :thongSoCameraTruoc " +
+            "AND c.deleted = false " +
+            "AND c.id != :excludeId")
+    boolean existsByThongSoCameraSauAndThongSoCameraTruocAndDeletedFalseAndIdNot(
+            @Param("thongSoCameraSau") String thongSoCameraSau,
+            @Param("thongSoCameraTruoc") String thongSoCameraTruoc,
+            @Param("excludeId") Integer excludeId);
+
+    Optional<CumCamera> findByThongSoCameraSauAndThongSoCameraTruocAndDeletedTrue(
+            String thongSoCameraSau, String thongSoCameraTruoc);
 }

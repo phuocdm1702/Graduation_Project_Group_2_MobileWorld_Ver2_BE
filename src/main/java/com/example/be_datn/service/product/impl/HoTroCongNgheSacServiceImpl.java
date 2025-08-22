@@ -45,7 +45,7 @@ public class HoTroCongNgheSacServiceImpl implements HoTroCongNgheSacService {
         HoTroCongNgheSac entity = repository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> {
                     log.error("Charging technology not found with id: {}", id);
-                    return new RuntimeException("Công nghệ sạc không tồn tại hoặc đã bị xóa!");
+                    return new RuntimeException("Hỗ trợ công nghệ sạc không tồn tại hoặc đã bị xóa!");
                 });
         return convertToResponse(entity);
     }
@@ -53,46 +53,32 @@ public class HoTroCongNgheSacServiceImpl implements HoTroCongNgheSacService {
     @Override
     @Transactional
     public HoTroCongNgheSacResponse createHoTroCongNgheSac(HoTroCongNgheSacRequest request) {
-        log.info("Creating new charging technology with code: {}", request.getMa());
+        log.info("Creating new charging technology");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Charging technology code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã công nghệ sạc đã tồn tại!");
+        boolean exists = repository.existsByCongSacAndCongNgheHoTroAndDeletedFalse(
+                request.getCongSac().trim(),
+                request.getCongNgheHoTro().trim());
+
+        if (exists) {
+            log.error("Charging technology already exists with same port and support technology");
+            throw new RuntimeException("Cổng sạc với Công nghệ hỗ trợ này đã tồn tại!");
         }
 
-        if (request.getCongSac() != null && !request.getCongSac().isEmpty() &&
-                repository.existsByCongSacAndDeletedFalse(request.getCongSac())) {
-            log.error("Charging port already exists: {}", request.getCongSac());
-            throw new RuntimeException("Cổng sạc đã tồn tại!");
-        }
+        Optional<HoTroCongNgheSac> existingDeleted = repository.findByCongSacAndCongNgheHoTroAndDeletedTrue(
+                request.getCongSac().trim(),
+                request.getCongNgheHoTro().trim());
 
-        Optional<HoTroCongNgheSac> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<HoTroCongNgheSac> existingByPort = request.getCongSac() != null && !request.getCongSac().isEmpty()
-                ? repository.findByCongSacAndDeletedTrue(request.getCongSac())
-                : Optional.empty();
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted charging technology by code: {}", request.getMa());
-            HoTroCongNgheSac entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted charging technology with same specs");
+            HoTroCongNgheSac entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setCongSac(request.getCongSac());
-            entity.setCongNgheHoTro(request.getCongNgheHoTro());
-            return convertToResponse(repository.save(entity));
-        }
-
-        if (existingByPort.isPresent()) {
-            log.info("Restoring soft-deleted charging technology by port: {}", request.getCongSac());
-            HoTroCongNgheSac entity = existingByPort.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
-            entity.setCongNgheHoTro(request.getCongNgheHoTro());
             return convertToResponse(repository.save(entity));
         }
 
         HoTroCongNgheSac entity = HoTroCongNgheSac.builder()
-                .ma(request.getMa())
-                .congSac(request.getCongSac())
-                .congNgheHoTro(request.getCongNgheHoTro())
+                .ma("")
+                .congSac(request.getCongSac().trim())
+                .congNgheHoTro(request.getCongNgheHoTro().trim())
                 .deleted(false)
                 .build();
 
@@ -109,25 +95,27 @@ public class HoTroCongNgheSacServiceImpl implements HoTroCongNgheSacService {
         HoTroCongNgheSac entity = repository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> {
                     log.error("Charging technology not found for update with id: {}", id);
-                    return new RuntimeException("Công nghệ sạc không tồn tại hoặc đã bị xóa!");
+                    return new RuntimeException("Hỗ trợ công nghệ sạc không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Charging technology code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã công nghệ sạc đã tồn tại!");
+        String newCongSac = request.getCongSac().trim();
+        String newCongNgheHoTro = request.getCongNgheHoTro().trim();
+
+        boolean isUnchanged = entity.getCongSac().equals(newCongSac) &&
+                entity.getCongNgheHoTro().equals(newCongNgheHoTro);
+
+        if (!isUnchanged) {
+            boolean existsOther = repository.existsByCongSacAndCongNgheHoTroAndDeletedFalseAndIdNot(
+                    newCongSac, newCongNgheHoTro, id);
+
+            if (existsOther) {
+                log.error("Charging technology already exists with same port and support technology during update");
+                throw new RuntimeException("Cổng sạc với Công nghệ hỗ trợ này đã tồn tại!");
+            }
         }
 
-        if (request.getCongSac() != null && !request.getCongSac().isEmpty() &&
-                !entity.getCongSac().equals(request.getCongSac()) &&
-                repository.existsByCongSacAndDeletedFalse(request.getCongSac())) {
-            log.error("Charging port already exists during update: {}", request.getCongSac());
-            throw new RuntimeException("Cổng sạc đã tồn tại!");
-        }
-
-        entity.setMa(request.getMa());
-        entity.setCongSac(request.getCongSac());
-        entity.setCongNgheHoTro(request.getCongNgheHoTro());
+        entity.setCongSac(newCongSac);
+        entity.setCongNgheHoTro(newCongNgheHoTro);
 
         HoTroCongNgheSac updatedEntity = repository.save(entity);
         log.info("Updated charging technology with id: {}", id);
@@ -135,61 +123,10 @@ public class HoTroCongNgheSacServiceImpl implements HoTroCongNgheSacService {
     }
 
     @Override
-    @Transactional
-    public void deleteHoTroCongNgheSac(Integer id) {
-        log.info("Soft deleting charging technology with id: {}", id);
-
-        HoTroCongNgheSac entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Charging technology not found for deletion with id: {}", id);
-                    return new RuntimeException("Công nghệ sạc không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted charging technology with id: {}", id);
-    }
-
-    @Override
     public Page<HoTroCongNgheSacResponse> searchHoTroCongNgheSac(String keyword, Pageable pageable) {
         log.info("Searching charging technologies with keyword: {}", keyword);
         return repository.searchByKeyword(keyword, pageable)
                 .map(this::convertToResponse);
-    }
-
-    @Override
-    public Page<HoTroCongNgheSacResponse> filterByCongSac(String congSac, Pageable pageable) {
-        log.info("Filtering charging technologies by port: {}", congSac);
-        return repository.findByCongSacIgnoreCase(congSac, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllCongSacNames() {
-        log.info("Getting all charging port names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(HoTroCongNgheSac::getCongSac)
-                .filter(port -> port != null)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByCongSac(String congSac, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByCongSacAndDeletedFalse(congSac, excludeId);
-        }
-        return repository.existsByCongSacAndDeletedFalse(congSac);
     }
 
     private HoTroCongNgheSacResponse convertToResponse(HoTroCongNgheSac entity) {

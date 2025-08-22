@@ -23,38 +23,24 @@ public interface NhaSanXuatRepository extends JpaRepository<NhaSanXuat, Integer>
     // Tìm nhà sản xuất theo ID và chưa bị xóa
     Optional<NhaSanXuat> findByIdAndDeletedFalse(Integer id);
 
-    // Kiểm tra mã nhà sản xuất đã tồn tại (chưa bị xóa)
-    @Query("SELECT COUNT(n) > 0 FROM NhaSanXuat n WHERE n.ma = :ma AND n.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    // Kiểm tra tên nhà sản xuất đã tồn tại (chưa bị xóa)
-    @Query("SELECT COUNT(n) > 0 FROM NhaSanXuat n WHERE n.nhaSanXuat = :nhaSanXuat AND n.deleted = false")
-    boolean existsByNhaSanXuatAndDeletedFalse(@Param("nhaSanXuat") String nhaSanXuat);
-
-    // Kiểm tra mã nhà sản xuất đã tồn tại (chưa bị xóa) loại trừ ID hiện tại
-    @Query("SELECT COUNT(n) > 0 FROM NhaSanXuat n WHERE n.ma = :ma AND n.deleted = false AND n.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    // Kiểm tra tên nhà sản xuất đã tồn tại (chưa bị xóa) loại trừ ID hiện tại
-    @Query("SELECT COUNT(n) > 0 FROM NhaSanXuat n WHERE n.nhaSanXuat = :nhaSanXuat AND n.deleted = false AND n.id != :excludeId")
-    boolean existsByNhaSanXuatAndDeletedFalse(@Param("nhaSanXuat") String nhaSanXuat, @Param("excludeId") Integer excludeId);
-
-    // Tìm nhà sản xuất đã bị xóa theo mã
-    @Query("SELECT n FROM NhaSanXuat n WHERE n.ma = :ma AND n.deleted = true")
-    Optional<NhaSanXuat> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    // Tìm nhà sản xuất đã bị xóa theo tên
-    @Query("SELECT n FROM NhaSanXuat n WHERE n.nhaSanXuat = :nhaSanXuat AND n.deleted = true")
-    Optional<NhaSanXuat> findByNhaSanXuatAndDeletedTrue(@Param("nhaSanXuat") String nhaSanXuat);
-
     // Tìm kiếm theo từ khóa
     @Query("SELECT n FROM NhaSanXuat n WHERE n.deleted = false AND " +
             "(LOWER(n.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(n.nhaSanXuat) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<NhaSanXuat> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    // Lọc theo tên nhà sản xuất
-    @Query("SELECT n FROM NhaSanXuat n WHERE n.deleted = false AND " +
-            "LOWER(n.nhaSanXuat) = LOWER(:nhaSanXuat)")
-    Page<NhaSanXuat> findByNhaSanXuatIgnoreCase(@Param("nhaSanXuat") String nhaSanXuat, Pageable pageable);
+    // Kiểm tra tên nhà sản xuất đã tồn tại (chưa bị xóa) - tương tự CumCamera
+    boolean existsByNhaSanXuatAndDeletedFalse(String nhaSanXuat);
+
+    // Kiểm tra tên nhà sản xuất đã tồn tại (chưa bị xóa) loại trừ ID hiện tại - tương tự CumCamera
+    @Query("SELECT CASE WHEN COUNT(n) > 0 THEN true ELSE false END FROM NhaSanXuat n " +
+            "WHERE n.nhaSanXuat = :nhaSanXuat " +
+            "AND n.deleted = false " +
+            "AND n.id != :excludeId")
+    boolean existsByNhaSanXuatAndDeletedFalseAndIdNot(
+            @Param("nhaSanXuat") String nhaSanXuat,
+            @Param("excludeId") Integer excludeId);
+
+    // Tìm nhà sản xuất đã bị xóa theo tên - tương tự CumCamera
+    Optional<NhaSanXuat> findByNhaSanXuatAndDeletedTrue(String nhaSanXuat);
 }

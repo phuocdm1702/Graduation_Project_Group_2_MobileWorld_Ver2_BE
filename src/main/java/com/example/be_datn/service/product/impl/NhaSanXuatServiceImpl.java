@@ -53,43 +53,31 @@ public class NhaSanXuatServiceImpl implements NhaSanXuatService {
     @Override
     @Transactional
     public NhaSanXuatResponse createNhaSanXuat(NhaSanXuatRequest request) {
-        log.info("Creating new manufacturer with code: {}", request.getMa());
+        log.info("Creating new manufacturer");
 
-        // Kiểm tra trùng lặp với các bản ghi chưa xóa mềm
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Manufacturer code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã nhà sản xuất đã tồn tại!");
+        // Kiểm tra trùng lặp: tên nhà sản xuất
+        boolean exists = repository.existsByNhaSanXuatAndDeletedFalse(
+                request.getNhaSanXuat().trim());
+
+        if (exists) {
+            log.error("Manufacturer already exists with same name");
+            throw new RuntimeException("Nhà sản xuất với tên này đã tồn tại!");
         }
 
-        if (repository.existsByNhaSanXuatAndDeletedFalse(request.getNhaSanXuat())) {
-            log.error("Manufacturer name already exists: {}", request.getNhaSanXuat());
-            throw new RuntimeException("Tên nhà sản xuất đã tồn tại!");
-        }
+        // Tìm nhà sản xuất đã bị xóa mềm có cùng tên
+        Optional<NhaSanXuat> existingDeleted = repository.findByNhaSanXuatAndDeletedTrue(
+                request.getNhaSanXuat().trim());
 
-        // Kiểm tra và khôi phục bản ghi đã xóa mềm
-        Optional<NhaSanXuat> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<NhaSanXuat> existingByName = repository.findByNhaSanXuatAndDeletedTrue(request.getNhaSanXuat());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted manufacturer by code: {}", request.getMa());
-            NhaSanXuat entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted manufacturer with same name");
+            NhaSanXuat entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setNhaSanXuat(request.getNhaSanXuat());
             return convertToResponse(repository.save(entity));
         }
 
-        if (existingByName.isPresent()) {
-            log.info("Restoring soft-deleted manufacturer by name: {}", request.getNhaSanXuat());
-            NhaSanXuat entity = existingByName.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
-            return convertToResponse(repository.save(entity));
-        }
-
-        // Tạo mới
         NhaSanXuat entity = NhaSanXuat.builder()
-                .ma("")
-                .nhaSanXuat(request.getNhaSanXuat())
+                .ma("") // Không sử dụng mã nữa
+                .nhaSanXuat(request.getNhaSanXuat().trim())
                 .deleted(false)
                 .build();
 
@@ -109,23 +97,23 @@ public class NhaSanXuatServiceImpl implements NhaSanXuatService {
                     return new RuntimeException("Nhà sản xuất không tồn tại hoặc đã bị xóa!");
                 });
 
-        // Kiểm tra trùng lặp mã, loại trừ bản ghi hiện tại
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("Manufacturer code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã nhà sản xuất đã tồn tại!");
+        String newNhaSanXuat = request.getNhaSanXuat().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getNhaSanXuat().equals(newNhaSanXuat);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với nhà sản xuất khác
+            boolean existsOther = repository.existsByNhaSanXuatAndDeletedFalseAndIdNot(
+                    newNhaSanXuat, id);
+
+            if (existsOther) {
+                log.error("Manufacturer already exists with same name during update");
+                throw new RuntimeException("Nhà sản xuất với tên này đã tồn tại!");
+            }
         }
 
-        // Kiểm tra trùng lặp tên, loại trừ bản ghi hiện tại
-        if (!entity.getNhaSanXuat().equals(request.getNhaSanXuat()) &&
-                repository.existsByNhaSanXuatAndDeletedFalse(request.getNhaSanXuat(), id)) {
-            log.error("Manufacturer name already exists during update: {}", request.getNhaSanXuat());
-            throw new RuntimeException("Tên nhà sản xuất đã tồn tại!");
-        }
-
-        // Cập nhật thông tin
-        entity.setMa(request.getMa());
-        entity.setNhaSanXuat(request.getNhaSanXuat());
+        entity.setNhaSanXuat(newNhaSanXuat);
 
         NhaSanXuat updatedEntity = repository.save(entity);
         log.info("Updated manufacturer with id: {}", id);
@@ -133,60 +121,10 @@ public class NhaSanXuatServiceImpl implements NhaSanXuatService {
     }
 
     @Override
-    @Transactional
-    public void deleteNhaSanXuat(Integer id) {
-        log.info("Soft deleting manufacturer with id: {}", id);
-
-        NhaSanXuat entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Manufacturer not found for deletion with id: {}", id);
-                    return new RuntimeException("Nhà sản xuất không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted manufacturer with id: {}", id);
-    }
-
-    @Override
     public Page<NhaSanXuatResponse> searchNhaSanXuat(String keyword, Pageable pageable) {
         log.info("Searching manufacturers with keyword: {}", keyword);
         return repository.searchByKeyword(keyword, pageable)
                 .map(this::convertToResponse);
-    }
-
-    @Override
-    public Page<NhaSanXuatResponse> filterByNhaSanXuat(String nhaSanXuat, Pageable pageable) {
-        log.info("Filtering manufacturers by name: {}", nhaSanXuat);
-        return repository.findByNhaSanXuatIgnoreCase(nhaSanXuat, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllManufacturerNames() {
-        log.info("Getting all manufacturer names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(NhaSanXuat::getNhaSanXuat)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByNhaSanXuat(String nhaSanXuat, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByNhaSanXuatAndDeletedFalse(nhaSanXuat, excludeId);
-        }
-        return repository.existsByNhaSanXuatAndDeletedFalse(nhaSanXuat);
     }
 
     // Chuyển đổi Entity sang Response DTO

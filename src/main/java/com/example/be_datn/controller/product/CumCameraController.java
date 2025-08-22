@@ -60,7 +60,7 @@ public class CumCameraController {
     public ResponseEntity<?> create(
             @Valid @RequestBody CumCameraRequest request,
             BindingResult result) {
-        log.info("Creating new camera cluster with code: {}", request.getMa());
+        log.info("Creating new camera cluster");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,55 +99,21 @@ public class CumCameraController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting camera cluster with id: {}", id);
-        try {
-            service.deleteCumCamera(id);
-            log.info("Successfully deleted camera cluster with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting camera cluster with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<CumCameraResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String thongSoCameraSau,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching camera clusters - keyword: {}, thongSoCameraSau: {}, page: {}, size: {}",
-                keyword, thongSoCameraSau, page, size);
+        log.info("Searching camera clusters - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (thongSoCameraSau != null && !thongSoCameraSau.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByThongSoCameraSau(thongSoCameraSau.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchCumCamera(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllCumCamera(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllThongSoCameraSauNames() {
-        log.info("Getting all rear camera specs names");
-        List<String> names = service.getAllThongSoCameraSauNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if camera cluster code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

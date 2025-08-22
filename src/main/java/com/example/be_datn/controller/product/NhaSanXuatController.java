@@ -60,7 +60,7 @@ public class NhaSanXuatController {
     public ResponseEntity<?> create(
             @Valid @RequestBody NhaSanXuatRequest request,
             BindingResult result) {
-        log.info("Creating new manufacturer with code: {}", request.getMa());
+        log.info("Creating new manufacturer");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,33 +99,15 @@ public class NhaSanXuatController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting manufacturer with id: {}", id);
-        try {
-            service.deleteNhaSanXuat(id);
-            log.info("Successfully deleted manufacturer with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting manufacturer with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<NhaSanXuatResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String nhaSanXuat,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching manufacturers - keyword: {}, nhaSanXuat: {}, page: {}, size: {}",
-                keyword, nhaSanXuat, page, size);
+        log.info("Searching manufacturers - keyword: {} page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (nhaSanXuat != null && !nhaSanXuat.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByNhaSanXuat(nhaSanXuat.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchNhaSanXuat(keyword.trim(), pageable));
@@ -134,34 +116,6 @@ public class NhaSanXuatController {
         return ResponseEntity.ok(service.getAllNhaSanXuat(pageable));
     }
 
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllManufacturerNames() {
-        log.info("Getting all manufacturer names");
-        List<String> names = service.getAllManufacturerNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if manufacturer code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/nha-san-xuat")
-    public ResponseEntity<Boolean> checkNhaSanXuatExists(
-            @RequestParam String nhaSanXuat,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if manufacturer name exists: {}, excludeId: {}", nhaSanXuat, excludeId);
-        boolean exists = service.existsByNhaSanXuat(nhaSanXuat, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    /**
-     * Endpoint để lấy thống kê tổng quan
-     */
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats() {
         log.info("Getting manufacturer statistics");
@@ -180,9 +134,6 @@ public class NhaSanXuatController {
         }
     }
 
-    /**
-     * Chuyển đổi validation errors thành Map
-     */
     private Map<String, String> getErrorMap(BindingResult result) {
         Map<String, String> errors = new HashMap<>();
         result.getFieldErrors().forEach(error ->

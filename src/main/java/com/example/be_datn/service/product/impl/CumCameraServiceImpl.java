@@ -52,28 +52,34 @@ public class CumCameraServiceImpl implements CumCameraService {
     @Override
     @Transactional
     public CumCameraResponse createCumCamera(CumCameraRequest request) {
-        log.info("Creating new camera cluster with code: {}", request.getMa());
+        log.info("Creating new camera cluster");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Camera cluster code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã cụm camera đã tồn tại!");
+        // Kiểm tra trùng lặp: cả camera sau và camera trước giống hệt nhau
+        boolean exists = repository.existsByThongSoCameraSauAndThongSoCameraTruocAndDeletedFalse(
+                request.getThongSoCameraSau().trim(),
+                request.getThongSoCameraTruoc().trim());
+
+        if (exists) {
+            log.error("Camera cluster already exists with same front and rear camera specs");
+            throw new RuntimeException("Cụm camera với thông số camera trước và sau này đã tồn tại!");
         }
 
-        Optional<CumCamera> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
+        // Tìm cụm camera đã bị xóa mềm có cùng thông số
+        Optional<CumCamera> existingDeleted = repository.findByThongSoCameraSauAndThongSoCameraTruocAndDeletedTrue(
+                request.getThongSoCameraSau().trim(),
+                request.getThongSoCameraTruoc().trim());
 
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted camera cluster by code: {}", request.getMa());
-            CumCamera entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted camera cluster with same specs");
+            CumCamera entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setThongSoCameraSau(request.getThongSoCameraSau());
-            entity.setThongSoCameraTruoc(request.getThongSoCameraTruoc());
             return convertToResponse(repository.save(entity));
         }
 
         CumCamera entity = CumCamera.builder()
-                .ma(request.getMa())
-                .thongSoCameraSau(request.getThongSoCameraSau())
-                .thongSoCameraTruoc(request.getThongSoCameraTruoc())
+                .ma("") // Không sử dụng mã nữa
+                .thongSoCameraSau(request.getThongSoCameraSau().trim())
+                .thongSoCameraTruoc(request.getThongSoCameraTruoc().trim())
                 .deleted(false)
                 .build();
 
@@ -93,15 +99,26 @@ public class CumCameraServiceImpl implements CumCameraService {
                     return new RuntimeException("Cụm camera không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("Camera cluster code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã cụm camera đã tồn tại!");
+        String newCameraSau = request.getThongSoCameraSau().trim();
+        String newCameraTruoc = request.getThongSoCameraTruoc().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getThongSoCameraSau().equals(newCameraSau) &&
+                entity.getThongSoCameraTruoc().equals(newCameraTruoc);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với cụm camera khác
+            boolean existsOther = repository.existsByThongSoCameraSauAndThongSoCameraTruocAndDeletedFalseAndIdNot(
+                    newCameraSau, newCameraTruoc, id);
+
+            if (existsOther) {
+                log.error("Camera cluster already exists with same front and rear camera specs during update");
+                throw new RuntimeException("Cụm camera với thông số camera trước và sau này đã tồn tại!");
+            }
         }
 
-        entity.setMa(request.getMa());
-        entity.setThongSoCameraSau(request.getThongSoCameraSau());
-        entity.setThongSoCameraTruoc(request.getThongSoCameraTruoc());
+        entity.setThongSoCameraSau(newCameraSau);
+        entity.setThongSoCameraTruoc(newCameraTruoc);
 
         CumCamera updatedEntity = repository.save(entity);
         log.info("Updated camera cluster with id: {}", id);
@@ -109,53 +126,10 @@ public class CumCameraServiceImpl implements CumCameraService {
     }
 
     @Override
-    @Transactional
-    public void deleteCumCamera(Integer id) {
-        log.info("Soft deleting camera cluster with id: {}", id);
-
-        CumCamera entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Camera cluster not found for deletion with id: {}", id);
-                    return new RuntimeException("Cụm camera không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted camera cluster with id: {}", id);
-    }
-
-    @Override
     public Page<CumCameraResponse> searchCumCamera(String keyword, Pageable pageable) {
         log.info("Searching camera clusters with keyword: {}", keyword);
         return repository.searchByKeyword(keyword, pageable)
                 .map(this::convertToResponse);
-    }
-
-    @Override
-    public Page<CumCameraResponse> filterByThongSoCameraSau(String thongSoCameraSau, Pageable pageable) {
-        log.info("Filtering camera clusters by rear camera specs: {}", thongSoCameraSau);
-        return repository.findByThongSoCameraSauIgnoreCase(thongSoCameraSau, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllThongSoCameraSauNames() {
-        log.info("Getting all rear camera specs names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(CumCamera::getThongSoCameraSau)
-                .filter(spec -> spec != null)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
     }
 
     private CumCameraResponse convertToResponse(CumCamera entity) {

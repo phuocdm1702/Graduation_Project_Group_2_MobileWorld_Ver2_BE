@@ -60,7 +60,7 @@ public class HoTroCongNgheSacController {
     public ResponseEntity<?> create(
             @Valid @RequestBody HoTroCongNgheSacRequest request,
             BindingResult result) {
-        log.info("Creating new charging technology with code: {}", request.getMa());
+        log.info("Creating new charging technology");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class HoTroCongNgheSacController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting charging technology with id: {}", id);
-        try {
-            service.deleteHoTroCongNgheSac(id);
-            log.info("Successfully deleted charging technology with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting charging technology with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<HoTroCongNgheSacResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String congSac,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching charging technologies - keyword: {}, congSac: {}, page: {}, size: {}",
-                keyword, congSac, page, size);
+        log.info("Searching charging technologies - keyword: {} page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (congSac != null && !congSac.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByCongSac(congSac.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchHoTroCongNgheSac(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllHoTroCongNgheSac(pageable));
-    }
-
-    @GetMapping("/all-ports")
-    public ResponseEntity<List<String>> getAllChargingPorts() {
-        log.info("Getting all charging port names");
-        List<String> ports = service.getAllCongSacNames();
-        return ResponseEntity.ok(ports);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if charging technology code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/cong-sac")
-    public ResponseEntity<Boolean> checkCongSacExists(
-            @RequestParam String congSac,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if charging port exists: {}, excludeId: {}", congSac, excludeId);
-        boolean exists = service.existsByCongSac(congSac, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

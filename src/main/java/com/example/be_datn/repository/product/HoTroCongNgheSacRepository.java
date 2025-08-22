@@ -14,37 +14,36 @@ import java.util.Optional;
 @Repository
 public interface HoTroCongNgheSacRepository extends JpaRepository<HoTroCongNgheSac, Integer> {
 
+    // Tìm tất cả các hỗ trợ công nghệ sạc chưa bị xóa
     List<HoTroCongNgheSac> findByDeletedFalse();
 
+    // Tìm tất cả các hỗ trợ công nghệ sạc chưa bị xóa với phân trang
     Page<HoTroCongNgheSac> findByDeletedFalse(Pageable pageable);
 
+    // Tìm hỗ trợ công nghệ sạc theo ID và chưa bị xóa
     Optional<HoTroCongNgheSac> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(h) > 0 FROM HoTroCongNgheSac h WHERE h.ma = :ma AND h.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(h) > 0 FROM HoTroCongNgheSac h WHERE h.ma = :ma AND h.deleted = false AND h.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT COUNT(h) > 0 FROM HoTroCongNgheSac h WHERE h.congSac = :congSac AND h.deleted = false")
-    boolean existsByCongSacAndDeletedFalse(@Param("congSac") String congSac);
-
-    @Query("SELECT COUNT(h) > 0 FROM HoTroCongNgheSac h WHERE h.congSac = :congSac AND h.deleted = false AND h.id != :excludeId")
-    boolean existsByCongSacAndDeletedFalse(@Param("congSac") String congSac, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT h FROM HoTroCongNgheSac h WHERE h.ma = :ma AND h.deleted = true")
-    Optional<HoTroCongNgheSac> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    @Query("SELECT h FROM HoTroCongNgheSac h WHERE h.congSac = :congSac AND h.deleted = true")
-    Optional<HoTroCongNgheSac> findByCongSacAndDeletedTrue(@Param("congSac") String congSac);
-
+    // Tìm kiếm theo từ khóa
     @Query("SELECT h FROM HoTroCongNgheSac h WHERE h.deleted = false AND " +
             "(LOWER(h.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "(h.congSac IS NOT NULL AND LOWER(h.congSac) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR " +
-            "(h.congNgheHoTro IS NOT NULL AND LOWER(h.congNgheHoTro) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
+            "LOWER(h.congSac) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(h.congNgheHoTro) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<HoTroCongNgheSac> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT h FROM HoTroCongNgheSac h WHERE h.deleted = false AND " +
-            "LOWER(h.congSac) = LOWER(:congSac)")
-    Page<HoTroCongNgheSac> findByCongSacIgnoreCase(@Param("congSac") String congSac, Pageable pageable);
+    // Kiểm tra cổng sạc và công nghệ hỗ trợ đã tồn tại (chưa bị xóa) - tương tự CumCamera
+    boolean existsByCongSacAndCongNgheHoTroAndDeletedFalse(String congSac, String congNgheHoTro);
+
+    // Kiểm tra cổng sạc và công nghệ hỗ trợ đã tồn tại (chưa bị xóa) loại trừ ID hiện tại - tương tự CumCamera
+    @Query("SELECT CASE WHEN COUNT(h) > 0 THEN true ELSE false END FROM HoTroCongNgheSac h " +
+            "WHERE h.congSac = :congSac " +
+            "AND h.congNgheHoTro = :congNgheHoTro " +
+            "AND h.deleted = false " +
+            "AND h.id != :excludeId")
+    boolean existsByCongSacAndCongNgheHoTroAndDeletedFalseAndIdNot(
+            @Param("congSac") String congSac,
+            @Param("congNgheHoTro") String congNgheHoTro,
+            @Param("excludeId") Integer excludeId);
+
+    // Tìm hỗ trợ công nghệ sạc đã bị xóa theo cổng sạc và công nghệ hỗ trợ - tương tự CumCamera
+    Optional<HoTroCongNgheSac> findByCongSacAndCongNgheHoTroAndDeletedTrue(String congSac, String congNgheHoTro);
 }

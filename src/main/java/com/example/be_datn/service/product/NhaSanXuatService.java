@@ -24,21 +24,7 @@ public interface NhaSanXuatService {
     // Cập nhật nhà sản xuất
     NhaSanXuatResponse updateNhaSanXuat(Integer id, NhaSanXuatRequest request);
 
-    // Xóa mềm nhà sản xuất
-    void deleteNhaSanXuat(Integer id);
-
     // Tìm kiếm nhà sản xuất
     Page<NhaSanXuatResponse> searchNhaSanXuat(String keyword, Pageable pageable);
 
-    // Lọc theo tên nhà sản xuất
-    Page<NhaSanXuatResponse> filterByNhaSanXuat(String nhaSanXuat, Pageable pageable);
-
-    // Lấy danh sách tên nhà sản xuất
-    List<String> getAllManufacturerNames();
-
-    // Kiểm tra mã nhà sản xuất đã tồn tại
-    boolean existsByMa(String ma, Integer excludeId);
-
-    // Kiểm tra tên nhà sản xuất đã tồn tại
-    boolean existsByNhaSanXuat(String nhaSanXuat, Integer excludeId);
 }

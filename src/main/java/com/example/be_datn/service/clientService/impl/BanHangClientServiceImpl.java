@@ -797,6 +797,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         // Sau khi thanh toán, đặt trạng thái hóa đơn về 0 (chờ xác nhận IMEI)
         hoaDon.setTrangThai((short) 0);
         hoaDon.setLoaiDon(hoaDonRequest.getLoaiDon());
+        hoaDon.setDeleted(false);
         hoaDon.setNgayThanhToan(Instant.now());
 
         hinhThucThanhToanRepository.save(hinhThuc);

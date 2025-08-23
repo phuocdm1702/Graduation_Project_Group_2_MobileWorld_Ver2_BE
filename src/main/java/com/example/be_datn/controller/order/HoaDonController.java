@@ -222,4 +222,45 @@ public class HoaDonController {
         error.put("message", "Lỗi server không xác định: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
+
+    @PostMapping("/{idHD}/add-product-to-detail")
+    public ResponseEntity<HoaDonResponse> addProductToHoaDonChiTiet(
+            @PathVariable Integer idHD,
+            @RequestBody Map<String, Object> requestBody) {
+        try {
+            Integer chiTietSanPhamId = (Integer) requestBody.get("chiTietSanPhamId");
+            String imei = (String) requestBody.get("imei");
+            if (chiTietSanPhamId == null || imei == null || imei.trim().isEmpty()) {
+                throw new IllegalArgumentException("chiTietSanPhamId và imei không được để trống");
+            }
+            HoaDonResponse response = hoaDonService.addProductToHoaDonChiTiet(idHD, chiTietSanPhamId, imei);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Lỗi server: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @DeleteMapping("/{idHD}/delete-product-from-detail/{idHoaDonChiTiet}")
+    public ResponseEntity<HoaDonResponse> deleteProductFromHoaDonChiTiet(
+            @PathVariable Integer idHD,
+            @PathVariable Integer idHoaDonChiTiet) {
+        try {
+            HoaDonResponse response = hoaDonService.deleteProductFromHoaDonChiTiet(idHD, idHoaDonChiTiet);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Lỗi server: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 }

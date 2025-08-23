@@ -41,4 +41,8 @@ public interface HoaDonService {
     HoaDonResponse getHoaDonByMaForLookup(String maHD);
 
     HoaDonResponse cancelOrder(Integer orderId);
+
+    HoaDonResponse addProductToHoaDonChiTiet(Integer idHD, Integer chiTietSanPhamId, String imei);
+
+    HoaDonResponse deleteProductFromHoaDonChiTiet(Integer idHD, Integer idHoaDonChiTiet);
 }

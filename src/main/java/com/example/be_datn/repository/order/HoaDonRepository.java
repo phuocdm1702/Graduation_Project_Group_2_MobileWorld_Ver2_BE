@@ -100,7 +100,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             AND (:startDate IS NULL OR h.ngayTao >= :startDate)
             AND (:endDate IS NULL OR h.ngayTao <= :endDate)
             AND (:trangThai IS NULL OR h.trangThai = :trangThai)
-            AND h.deleted = false
+            AND (:deleted IS NULL OR h.deleted = :deleted)
             ORDER BY h.id DESC
             """)
     Page<HoaDonResponse> getHoaDonOfCustomerAndFilters(
@@ -108,6 +108,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             @Param("startDate") Timestamp startDate,
             @Param("endDate") Timestamp endDate,
             @Param("trangThai") Short trangThai,
+            @Param("deleted") Boolean deleted,
             Pageable pageable);
 
 
@@ -154,7 +155,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
                 h.deleted
             )
             FROM HoaDon h
-            WHERE h.ma = :ma
+            WHERE h.ma = :ma AND h.deleted = false
             """)
     Optional<HoaDonResponse> findByMaForLookup(@Param("ma") String ma);
 

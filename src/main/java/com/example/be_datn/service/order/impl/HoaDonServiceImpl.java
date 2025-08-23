@@ -302,8 +302,10 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public Page<HoaDonResponse> getHoaDonOfCustomerAndFilters(Integer idKhachHang, Timestamp startDate, Timestamp endDate, Short trangThai, Pageable pageable) {
-        return hoaDonRepository.getHoaDonOfCustomerAndFilters(idKhachHang, startDate, endDate, trangThai, pageable);
+    public Page<HoaDonResponse> getHoaDonOfCustomerAndFilters(Integer idKhachHang, Timestamp startDate, Timestamp endDate, Short trangThai, Boolean deleted, Pageable pageable) {
+        Page<HoaDonResponse> hoaDonPage = hoaDonRepository.getHoaDonOfCustomerAndFilters(idKhachHang, startDate, endDate, trangThai, deleted, pageable);
+        hoaDonPage.getContent().forEach(hoaDon -> System.out.println("Order ID: " + hoaDon.getId() + ", Status: " + hoaDon.getTrangThai())); // Add this line
+        return hoaDonPage;
     }
 
     @Override

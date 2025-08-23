@@ -565,7 +565,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             }
 
             hoaDon.setUpdatedAt(new Date());
-
+            sendKhachHangUpdate(khachHang.getId());
             return hoaDonRepository.save(hoaDon);
         } catch (IllegalArgumentException e) {
             throw e; // Ném lại ngoại lệ với thông báo cụ thể

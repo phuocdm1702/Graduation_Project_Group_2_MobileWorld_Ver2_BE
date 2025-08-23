@@ -307,6 +307,7 @@ public class BanHangServiceImpl implements BanHangService {
             newItem.setMauSac(chiTietSanPham.getIdMauSac().getMauSac());
             newItem.setRam(chiTietSanPham.getIdRam().getDungLuongRam());
             newItem.setBoNhoTrong(chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong());
+            newItem.setImage(chiTietSanPham.getIdAnhSanPham().getDuongDan() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null);
 
             // Kiểm tra giá giảm từ ChiTietDotGiamGia
             BigDecimal giaBan = chiTietSanPham.getGiaBan() != null ? chiTietSanPham.getGiaBan() : BigDecimal.ZERO;
@@ -537,6 +538,7 @@ public class BanHangServiceImpl implements BanHangService {
                 item.setGiaBanGoc(giaSauGiam);
                 item.setGhiChuGia(ghiChuGia);
                 item.setTongTien(giaSauGiam);
+                item.setImage(chiTietSanPham.getIdAnhSanPham().getDuongDan() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null);
             }
             gh.setTongTien(gh.getChiTietGioHangDTOS().stream()
                     .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)
@@ -943,6 +945,7 @@ public class BanHangServiceImpl implements BanHangService {
         dto.setSoLuong(((Number) result[5]).intValue()); // Số lượng từ truy vấn
         BigDecimal giaBan = result[6] != null ? (BigDecimal) result[6] : BigDecimal.ZERO;
         Integer chiTietSanPhamId = ((Number) result[7]).intValue();
+        String duongDan = (String) result[8]; // Image path
 
         BigDecimal giaSauGiam = giaBan;
         Optional<ChiTietDotGiamGia> chiTietDotGiamGiaOpt = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdAndActive(chiTietSanPhamId);
@@ -955,6 +958,7 @@ public class BanHangServiceImpl implements BanHangService {
         dto.setGiaBan(giaSauGiam); // Giá hiện tại (giá sau giảm nếu có)
         dto.setGiaBanGoc(giaSauGiam); // Giá sau giảm làm giá gốc trong đợt giảm giá
         dto.setGiaBanBanDau(giaBan); // Giá ban đầu từ ChiTietSanPham
+        dto.setDuongDan(duongDan); // Set the image path
         return dto;
     }
 

@@ -60,7 +60,7 @@ public class CpuController {
     public ResponseEntity<?> create(
             @Valid @RequestBody CpuRequest request,
             BindingResult result) {
-        log.info("Creating new CPU with code: {}", request.getMa());
+        log.info("Creating new CPU");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class CpuController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting CPU with id: {}", id);
-        try {
-            service.deleteCpu(id);
-            log.info("Successfully deleted CPU with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting CPU with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<CpuResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String tenCpu,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching CPUs - keyword: {}, tenCpu: {}, page: {}, size: {}",
-                keyword, tenCpu, page, size);
+        log.info("Searching CPUs - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (tenCpu != null && !tenCpu.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByTenCpu(tenCpu.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchCpu(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllCpu(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllTenCpuNames() {
-        log.info("Getting all CPU names");
-        List<String> names = service.getAllTenCpuNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if CPU code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/ten-cpu")
-    public ResponseEntity<Boolean> checkTenCpuExists(
-            @RequestParam String tenCpu,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if CPU name exists: {}, excludeId: {}", tenCpu, excludeId);
-        boolean exists = service.existsByTenCpu(tenCpu, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

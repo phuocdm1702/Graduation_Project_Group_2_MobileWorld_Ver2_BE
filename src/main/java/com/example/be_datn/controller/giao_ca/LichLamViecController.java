@@ -3,11 +3,13 @@ package com.example.be_datn.controller.giao_ca;
 import com.example.be_datn.dto.giao_ca.LichLamViecDTO;
 import com.example.be_datn.service.giao_ca.LichLamViecService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -19,8 +21,9 @@ public class LichLamViecController {
     private LichLamViecService lichLamViecService;
 
     @GetMapping
-    public List<LichLamViecDTO> getAll() {
-        return lichLamViecService.getAll();
+    public List<LichLamViecDTO> getAll(@RequestParam(required = false) Integer idNhanVien,
+                                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayLam) {
+        return lichLamViecService.getAll(idNhanVien, ngayLam);
     }
 
     @PostMapping

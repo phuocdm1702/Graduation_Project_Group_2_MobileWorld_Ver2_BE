@@ -54,8 +54,8 @@ public class LichLamViecService {
         return lichLamViec;
     }
 
-    public List<LichLamViecDTO> getAll() {
-        return lichLamViecRepository.findByDeletedFalse().stream().map(this::convertToDTO).collect(Collectors.toList());
+    public List<LichLamViecDTO> getAll(Integer idNhanVien, LocalDate ngayLam) {
+        return lichLamViecRepository.findWithFilters(idNhanVien, ngayLam).stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public LichLamViecDTO create(LichLamViecDTO lichLamViecDTO) {

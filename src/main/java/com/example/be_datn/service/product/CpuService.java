@@ -19,15 +19,5 @@ public interface CpuService {
 
     CpuResponse updateCpu(Integer id, CpuRequest request);
 
-    void deleteCpu(Integer id);
-
     Page<CpuResponse> searchCpu(String keyword, Pageable pageable);
-
-    Page<CpuResponse> filterByTenCpu(String tenCpu, Pageable pageable);
-
-    List<String> getAllTenCpuNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByTenCpu(String tenCpu, Integer excludeId);
 }

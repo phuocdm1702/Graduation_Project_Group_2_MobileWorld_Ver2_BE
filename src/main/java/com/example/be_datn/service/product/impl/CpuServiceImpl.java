@@ -52,42 +52,33 @@ public class CpuServiceImpl implements CpuService {
     @Override
     @Transactional
     public CpuResponse createCpu(CpuRequest request) {
-        log.info("Creating new CPU with code: {}", request.getMa());
+        log.info("Creating new CPU");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("CPU code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã CPU đã tồn tại!");
+        // Kiểm tra trùng lặp: cả tên CPU và số nhân giống hệt nhau
+        boolean exists = repository.existsByTenCpuAndSoNhanAndDeletedFalse(
+                request.getTenCpu().trim(),
+                request.getSoNhan());
+
+        if (exists) {
+            log.error("CPU already exists with same name and core count");
+            throw new RuntimeException("CPU với tên và số nhân này đã tồn tại!");
         }
 
-        if (repository.existsByTenCpuAndDeletedFalse(request.getTenCpu())) {
-            log.error("CPU name already exists: {}", request.getTenCpu());
-            throw new RuntimeException("Tên CPU đã tồn tại!");
-        }
+        // Tìm CPU đã bị xóa mềm có cùng tên và số nhân
+        Optional<Cpu> existingDeleted = repository.findByTenCpuAndSoNhanAndDeletedTrue(
+                request.getTenCpu().trim(),
+                request.getSoNhan());
 
-        Optional<Cpu> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<Cpu> existingByName = repository.findByTenCpuAndDeletedTrue(request.getTenCpu());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted CPU by code: {}", request.getMa());
-            Cpu entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted CPU with same name and core count");
+            Cpu entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setTenCpu(request.getTenCpu());
-            entity.setSoNhan(request.getSoNhan());
-            return convertToResponse(repository.save(entity));
-        }
-
-        if (existingByName.isPresent()) {
-            log.info("Restoring soft-deleted CPU by name: {}", request.getTenCpu());
-            Cpu entity = existingByName.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
-            entity.setSoNhan(request.getSoNhan());
             return convertToResponse(repository.save(entity));
         }
 
         Cpu entity = Cpu.builder()
-                .ma(request.getMa())
-                .tenCpu(request.getTenCpu())
+                .ma("") // Không sử dụng mã nữa
+                .tenCpu(request.getTenCpu().trim())
                 .soNhan(request.getSoNhan())
                 .deleted(false)
                 .build();
@@ -108,21 +99,26 @@ public class CpuServiceImpl implements CpuService {
                     return new RuntimeException("CPU không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("CPU code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã CPU đã tồn tại!");
+        String newTenCpu = request.getTenCpu().trim();
+        Integer newSoNhan = request.getSoNhan();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getTenCpu().equals(newTenCpu) &&
+                entity.getSoNhan().equals(newSoNhan);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với CPU khác
+            boolean existsOther = repository.existsByTenCpuAndSoNhanAndDeletedFalseAndIdNot(
+                    newTenCpu, Integer.valueOf(newSoNhan), id);
+
+            if (existsOther) {
+                log.error("CPU already exists with same name and core count during update");
+                throw new RuntimeException("CPU với tên và số nhân này đã tồn tại!");
+            }
         }
 
-        if (!entity.getTenCpu().equals(request.getTenCpu()) &&
-                repository.existsByTenCpuAndDeletedFalse(request.getTenCpu(), id)) {
-            log.error("CPU name already exists during update: {}", request.getTenCpu());
-            throw new RuntimeException("Tên CPU đã tồn tại!");
-        }
-
-        entity.setMa(request.getMa());
-        entity.setTenCpu(request.getTenCpu());
-        entity.setSoNhan(request.getSoNhan());
+        entity.setTenCpu(newTenCpu);
+        entity.setSoNhan(newSoNhan);
 
         Cpu updatedEntity = repository.save(entity);
         log.info("Updated CPU with id: {}", id);
@@ -130,60 +126,10 @@ public class CpuServiceImpl implements CpuService {
     }
 
     @Override
-    @Transactional
-    public void deleteCpu(Integer id) {
-        log.info("Soft deleting CPU with id: {}", id);
-
-        Cpu entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("CPU not found for deletion with id: {}", id);
-                    return new RuntimeException("CPU không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted CPU with id: {}", id);
-    }
-
-    @Override
     public Page<CpuResponse> searchCpu(String keyword, Pageable pageable) {
         log.info("Searching CPUs with keyword: {}", keyword);
         return repository.searchByKeyword(keyword, pageable)
                 .map(this::convertToResponse);
-    }
-
-    @Override
-    public Page<CpuResponse> filterByTenCpu(String tenCpu, Pageable pageable) {
-        log.info("Filtering CPUs by name: {}", tenCpu);
-        return repository.findByTenCpuIgnoreCase(tenCpu, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllTenCpuNames() {
-        log.info("Getting all CPU names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(Cpu::getTenCpu)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByTenCpu(String tenCpu, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByTenCpuAndDeletedFalse(tenCpu, excludeId);
-        }
-        return repository.existsByTenCpuAndDeletedFalse(tenCpu);
     }
 
     private CpuResponse convertToResponse(Cpu entity) {

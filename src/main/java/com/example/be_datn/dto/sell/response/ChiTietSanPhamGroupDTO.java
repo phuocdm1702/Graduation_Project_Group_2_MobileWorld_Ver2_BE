@@ -23,4 +23,5 @@ public class ChiTietSanPhamGroupDTO {
     private BigDecimal giaBan; // Giá hiện tại (giá sau giảm nếu có)
     private BigDecimal giaBanGoc; // Giá gốc (giá sau giảm trong đợt giảm giá)
     private BigDecimal giaBanBanDau; // Giá ban đầu từ ChiTietSanPham
+    private String duongDan;
 }

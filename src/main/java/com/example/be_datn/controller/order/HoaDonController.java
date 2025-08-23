@@ -1,6 +1,5 @@
 package com.example.be_datn.controller.order;
 
-import com.example.be_datn.dto.order.request.HoaDonRequest;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
 import com.example.be_datn.entity.product.Imel;
@@ -90,9 +89,10 @@ public class HoaDonController {
             @RequestParam Integer idKhachHang,
             @RequestParam(required = false) Timestamp startDate,
             @RequestParam(required = false) Timestamp endDate,
-            @RequestParam(required = false) Short trangThai) {
+            @RequestParam(required = false) Short trangThai,
+            @RequestParam(required = false) Boolean deleted) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<HoaDonResponse> response = hoaDonService.getHoaDonOfCustomerAndFilters(idKhachHang, startDate, endDate, trangThai, pageable);
+        Page<HoaDonResponse> response = hoaDonService.getHoaDonOfCustomerAndFilters(idKhachHang, startDate, endDate, trangThai, deleted, pageable);
         return ResponseEntity.ok(response);
     }
 

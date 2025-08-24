@@ -16,4 +16,6 @@ public interface ProductDetailClientService { ;
     public List<String> findDistinctColors();
 
     public List<Object[]> findChiTietSanPhamBySanPhamIdModification(Integer sanPhamId);
+
+    Long countSoLuongTonKho(Integer sanPhamId,String idMauSac,String idBoNhoTrong,String idRam);
 }

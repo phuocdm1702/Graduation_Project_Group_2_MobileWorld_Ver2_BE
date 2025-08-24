@@ -376,4 +376,30 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     ORDER BY ctsp.created_at DESC, ctsp.deleted ASC
     """, nativeQuery = true)
     List<Object[]> findChiTietSanPhamBySanPhamIdModification(@Param("sanPhamId") Integer sanPhamId);
+
+
+    @Query(value = """
+        SELECT COUNT(*) 
+        FROM chi_tiet_san_pham ct 
+        JOIN imel i ON ct.id_imel = i.id 
+        JOIN mau_sac ms ON ct.id_mau_sac = ms.id
+        JOIN ram ON ct.id_ram = ram.id
+        JOIN bo_nho_trong bnt ON ct.id_bo_nho_trong = bnt.id
+        WHERE ct.id_san_pham = :sanPhamId 
+        AND ms.mau_sac = :mauSac 
+        AND bnt.dung_luong_bo_nho_trong = :dungLuongBoNhoTrong 
+        AND ram.dung_luong_ram = :dungLuongRam 
+        AND ct.deleted = 0
+        AND NOT EXISTS (
+            SELECT 1 
+            FROM imel_da_ban idb 
+            WHERE idb.imel = i.imel
+        )
+        """, nativeQuery = true)
+    Long countSoLuongTonKho(
+            @Param("sanPhamId") Integer sanPhamId,
+            @Param("mauSac") String mauSac,
+            @Param("dungLuongBoNhoTrong") String dungLuongBoNhoTrong,
+            @Param("dungLuongRam") String dungLuongRam
+    );
 }

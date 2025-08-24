@@ -60,7 +60,7 @@ public class GpuController {
     public ResponseEntity<?> create(
             @Valid @RequestBody GpuRequest request,
             BindingResult result) {
-        log.info("Creating new GPU with code: {}", request.getMa());
+        log.info("Creating new GPU");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class GpuController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting GPU with id: {}", id);
-        try {
-            service.deleteGpu(id);
-            log.info("Successfully deleted GPU with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting GPU with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<GpuResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String tenGpu,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching GPUs - keyword: {}, tenGpu: {}, page: {}, size: {}",
-                keyword, tenGpu, page, size);
+        log.info("Searching GPUs - keyword: {} page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (tenGpu != null && !tenGpu.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByTenGpu(tenGpu.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchGpu(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllGpu(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllTenGpuNames() {
-        log.info("Getting all GPU names");
-        List<String> names = service.getAllTenGpuNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if GPU code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/ten-gpu")
-    public ResponseEntity<Boolean> checkTenGpuExists(
-            @RequestParam String tenGpu,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if GPU name exists: {}, excludeId: {}", tenGpu, excludeId);
-        boolean exists = service.existsByTenGpu(tenGpu, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

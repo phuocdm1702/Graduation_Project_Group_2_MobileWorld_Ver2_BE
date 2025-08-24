@@ -27,6 +27,8 @@ public interface BanHangService {
 
     GioHangDTO layGioHang(Integer idHD);
 
+    GioHangDTO layGioHangKhongGuiUpdate(Integer idHD);
+
     HoaDonDTO layChiTietHoaDonCho(Integer idHD);
 
     void xoaGioHang(Integer idHD);

@@ -9,25 +9,22 @@ import java.util.List;
 
 public interface GpuService {
 
+    // Lấy tất cả GPU với phân trang
     Page<GpuResponse> getAllGpu(Pageable pageable);
 
+    // Lấy tất cả GPU dạng list
     List<GpuResponse> getAllGpuList();
 
+    // Lấy GPU theo ID
     GpuResponse getGpuById(Integer id);
 
+    // Tạo mới GPU
     GpuResponse createGpu(GpuRequest request);
 
+    // Cập nhật GPU
     GpuResponse updateGpu(Integer id, GpuRequest request);
 
-    void deleteGpu(Integer id);
-
+    // Tìm kiếm GPU
     Page<GpuResponse> searchGpu(String keyword, Pageable pageable);
 
-    Page<GpuResponse> filterByTenGpu(String tenGpu, Pageable pageable);
-
-    List<String> getAllTenGpuNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByTenGpu(String tenGpu, Integer excludeId);
 }

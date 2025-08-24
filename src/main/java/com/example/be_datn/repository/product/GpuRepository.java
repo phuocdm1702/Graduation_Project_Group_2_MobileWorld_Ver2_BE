@@ -14,36 +14,33 @@ import java.util.Optional;
 @Repository
 public interface GpuRepository extends JpaRepository<Gpu, Integer> {
 
+    // Tìm tất cả các GPU chưa bị xóa
     List<Gpu> findByDeletedFalse();
 
+    // Tìm tất cả các GPU chưa bị xóa với phân trang
     Page<Gpu> findByDeletedFalse(Pageable pageable);
 
+    // Tìm GPU theo ID và chưa bị xóa
     Optional<Gpu> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(g) > 0 FROM Gpu g WHERE g.ma = :ma AND g.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(g) > 0 FROM Gpu g WHERE g.tenGpu = :tenGpu AND g.deleted = false")
-    boolean existsByTenGpuAndDeletedFalse(@Param("tenGpu") String tenGpu);
-
-    @Query("SELECT COUNT(g) > 0 FROM Gpu g WHERE g.ma = :ma AND g.deleted = false AND g.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT COUNT(g) > 0 FROM Gpu g WHERE g.tenGpu = :tenGpu AND g.deleted = false AND g.id != :excludeId")
-    boolean existsByTenGpuAndDeletedFalse(@Param("tenGpu") String tenGpu, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT g FROM Gpu g WHERE g.ma = :ma AND g.deleted = true")
-    Optional<Gpu> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    @Query("SELECT g FROM Gpu g WHERE g.tenGpu = :tenGpu AND g.deleted = true")
-    Optional<Gpu> findByTenGpuAndDeletedTrue(@Param("tenGpu") String tenGpu);
-
+    // Tìm kiếm theo từ khóa
     @Query("SELECT g FROM Gpu g WHERE g.deleted = false AND " +
             "(LOWER(g.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(g.tenGpu) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Gpu> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT g FROM Gpu g WHERE g.deleted = false AND " +
-            "LOWER(g.tenGpu) = LOWER(:tenGpu)")
-    Page<Gpu> findByTenGpuIgnoreCase(@Param("tenGpu") String tenGpu, Pageable pageable);
+    // Kiểm tra tên GPU đã tồn tại (chưa bị xóa) - tương tự NhaSanXuat
+    boolean existsByTenGpuAndDeletedFalse(String tenGpu);
+
+    // Kiểm tra tên GPU đã tồn tại (chưa bị xóa) loại trừ ID hiện tại - tương tự NhaSanXuat
+    @Query("SELECT CASE WHEN COUNT(g) > 0 THEN true ELSE false END FROM Gpu g " +
+            "WHERE g.tenGpu = :tenGpu " +
+            "AND g.deleted = false " +
+            "AND g.id != :excludeId")
+    boolean existsByTenGpuAndDeletedFalseAndIdNot(
+            @Param("tenGpu") String tenGpu,
+            @Param("excludeId") Integer excludeId);
+
+    // Tìm GPU đã bị xóa theo tên - tương tự NhaSanXuat
+    Optional<Gpu> findByTenGpuAndDeletedTrue(String tenGpu);
 }

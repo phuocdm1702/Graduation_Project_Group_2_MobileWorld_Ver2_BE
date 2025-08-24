@@ -345,7 +345,6 @@ public class BanHangServiceImpl implements BanHangService {
         }
 
         // Xử lý phiếu giảm giá
-        // Xử lý phiếu giảm giá
         if (chiTietGioHangDTO.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(chiTietGioHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy mã giảm giá!"));
@@ -549,6 +548,53 @@ public class BanHangServiceImpl implements BanHangService {
         // Gửi realtime update cho giỏ hàng
         sendGioHangUpdate(idHD, gh);
 
+        return gh;
+    }
+
+    @Override
+    public GioHangDTO layGioHangKhongGuiUpdate(Integer idHD) {
+        String ghKey = GH_PREFIX + idHD;
+        GioHangDTO gh = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
+        if (gh == null) {
+            HoaDon hoaDon = hoaDonRepository.findById(idHD)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn với ID " + idHD + " không tồn tại"));
+            gh = new GioHangDTO();
+            gh.setGioHangId(ghKey);
+            gh.setKhachHangId(hoaDon.getIdKhachHang() != null ? hoaDon.getIdKhachHang().getId() : null);
+            gh.setChiTietGioHangDTOS(new ArrayList<>());
+            gh.setTongTien(BigDecimal.ZERO);
+            redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
+        } else {
+            for (ChiTietGioHangDTO item : gh.getChiTietGioHangDTOS()) {
+                Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(item.getMaImel());
+                if (chiTietSanPhamOpt.isEmpty()) {
+                    continue;
+                }
+                ChiTietSanPham chiTietSanPham = chiTietSanPhamOpt.get();
+
+                BigDecimal giaBan = chiTietSanPham.getGiaBan() != null ? chiTietSanPham.getGiaBan() : BigDecimal.ZERO;
+                BigDecimal giaSauGiam = giaBan;
+                String ghiChuGia = "";
+                Optional<ChiTietDotGiamGia> chiTietDotGiamGiaOpt = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdAndActive(item.getChiTietSanPhamId());
+                if (chiTietDotGiamGiaOpt.isPresent()) {
+                    ChiTietDotGiamGia chiTietDotGiamGia = chiTietDotGiamGiaOpt.get();
+                    giaSauGiam = chiTietDotGiamGia.getGiaSauKhiGiam() != null ? chiTietDotGiamGia.getGiaSauKhiGiam() : giaBan;
+                    ghiChuGia = String.format("Giá gốc ban đầu: %s", giaBan);
+                }
+
+                item.setGiaBan(giaSauGiam);
+                item.setGiaBanGoc(giaSauGiam);
+                item.setGhiChuGia(ghiChuGia);
+                item.setTongTien(giaSauGiam);
+                item.setImage(chiTietSanPham.getIdAnhSanPham().getDuongDan() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null);
+            }
+            gh.setTongTien(gh.getChiTietGioHangDTOS().stream()
+                    .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+            redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
+        }
+
+        // KHÔNG gửi WebSocket update ở đây
         return gh;
     }
 
@@ -855,7 +901,7 @@ public class BanHangServiceImpl implements BanHangService {
     }
 
     private HoaDonDTO mapToHoaDonDto(HoaDon hoaDon) {
-        GioHangDTO gh = layGioHang(hoaDon.getId());
+        GioHangDTO gh = layGioHangKhongGuiUpdate(hoaDon.getId());
         List<ChiTietGioHangDTO> chiTietGioHangDTOS = gh.getChiTietGioHangDTOS();
 
         StringBuilder ghiChuGia = new StringBuilder();

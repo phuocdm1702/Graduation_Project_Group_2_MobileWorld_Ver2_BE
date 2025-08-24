@@ -29,7 +29,7 @@ public class ProductController {
 
     @GetMapping("/chi-tiet-san-pham")
     public List<Map<String, Object>> getProductVariants(@RequestParam("sanPhamId") Integer sanPhamId) {
-        List<Object[]> results = productDetailClientService.findChiTietSanPhamBySanPhamId(sanPhamId);
+        List<Object[]> results = productDetailClientService.findChiTietSanPhamBySanPhamIdModification(sanPhamId);
         return results.stream().map(record -> {
             Map<String, Object> variant = new HashMap<>();
             variant.put("sp_id", record[0]);
@@ -45,14 +45,16 @@ public class ProductController {
             variant.put("gia_ban", record[10]); // Preserve null
             variant.put("ctsp_ma", record[11]);
             variant.put("id_imel", record[12]);
-            variant.put("mau_sac", record[13]);
-            variant.put("ram_dung_luong", record[14]);
-            variant.put("bo_nho_trong_dung_luong", record[15]);
+            variant.put("mau_sac", record[13]); // Chuỗi: Xanh Bạc Hà, Bạc, v.v.
+            variant.put("ram_dung_luong", record[14]); // Chuỗi: 12GB, v.v.
+            variant.put("bo_nho_trong_dung_luong", record[15]); // Chuỗi: 512GB, 256GB, v.v.
             variant.put("anh_san_pham_url", record[16] != null ? record[16] : "/assets/images/placeholder.jpg");
             variant.put("ghi_chu", record[17] != null ? record[17] : "Không có mô tả chi tiết.");
             variant.put("gia_sau_khi_giam", record[18]); // Preserve null
             variant.put("gia_ban_dau", record[19] != null ? record[19] : record[10]); // Fallback to gia_ban
-            variant.put("has_discount", record[20] != null && ((Number) record[20]).intValue() == 1);
+            variant.put("has_discount", record[20] != null ?
+                    (record[20] instanceof Number ? ((Number) record[20]).intValue() == 1 :
+                            "1".equals(record[20].toString())) : false);
             variant.put("giam_phan_tram", record[21] != null ? record[21] : 0);
             variant.put("giam_toi_da", record[22] != null ? record[22] : 0);
             variant.put("loai_giam_gia_ap_dung", record[23] != null ? record[23] : "NONE");
@@ -73,6 +75,45 @@ public class ProductController {
             variant.put("do_sang_toi_da", record[38] != null ? record[38] : "Không có thông tin");
             variant.put("tan_so_quet", record[39] != null ? record[39] : "Không có thông tin");
             variant.put("kieu_man_hinh", record[40] != null ? record[40] : "Không có thông tin");
+
+            // Kiểm tra deleted
+            Integer deleted = 0;
+            if (record[41] != null) {
+                try {
+                    if (record[41] instanceof Number) {
+                        deleted = ((Number) record[41]).intValue();
+                    } else if (record[41] instanceof Boolean) {
+                        deleted = (Boolean) record[41] ? 1 : 0;
+                    } else {
+                        String deletedStr = record[41].toString();
+                        deleted = "true".equalsIgnoreCase(deletedStr) || "1".equals(deletedStr) ? 1 : 0;
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error parsing deleted: " + record[41] + ", type: " +
+                            (record[41] != null ? record[41].getClass().getName() : "null") +
+                            ", error: " + e.getMessage());
+                }
+            }
+            variant.put("deleted", deleted);
+
+            // Này là của so_luong_ton_kho
+            String mauSac = record[13] != null ? record[13].toString() : null;
+            String dungLuongRam = record[14] != null ? record[14].toString() : null;
+            String dungLuongBoNhoTrong = record[15] != null ? record[15].toString() : null;
+
+            Long soLuongTonKho = (mauSac != null && dungLuongRam != null && dungLuongBoNhoTrong != null && deleted == 0) ?
+                    productDetailClientService.countSoLuongTonKho(sanPhamId, mauSac, dungLuongBoNhoTrong, dungLuongRam) : 0L;
+            variant.put("so_luong_ton_kho", soLuongTonKho != null ? soLuongTonKho : 0L);
+
+//            System.out.println("sanPhamId: " + sanPhamId +
+//                    ", mauSac: " + mauSac +
+//                    ", dungLuongBoNhoTrong: " + dungLuongBoNhoTrong +
+//                    ", dungLuongRam: " + dungLuongRam +
+//                    ", deleted: " + deleted +
+//                    ", so_luong_ton_kho: " + soLuongTonKho +
+//                    ", record[41]: " + record[41] +
+//                    ", type: " + (record[41] != null ? record[41].getClass().getName() : "null"));
+
             return variant;
         }).collect(Collectors.toList());
     }

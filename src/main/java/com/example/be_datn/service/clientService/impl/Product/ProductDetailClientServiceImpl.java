@@ -37,4 +37,9 @@ public class ProductDetailClientServiceImpl implements ProductDetailClientServic
     public List<Object[]> findChiTietSanPhamBySanPhamIdModification(Integer sanPhamId) {
         return chiTietSanPhamRepository.findChiTietSanPhamBySanPhamIdModification(sanPhamId);
     }
+
+    @Override
+    public Long countSoLuongTonKho(Integer sanPhamId, String idMauSac, String idBoNhoTrong, String idRam) {
+        return chiTietSanPhamRepository.countSoLuongTonKho(sanPhamId,idMauSac,idBoNhoTrong,idRam);
+    }
 }

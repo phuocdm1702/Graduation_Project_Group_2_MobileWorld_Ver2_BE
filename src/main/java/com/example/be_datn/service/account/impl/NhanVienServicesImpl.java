@@ -191,7 +191,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
             emailServices.sendWelcomeEmail(
                     nhanVienResponse.getEmail(),
                     nhanVienResponse.getTenNhanVien(),
-                    nhanVienResponse.getEmail(),
+                    taiKhoan.getTenDangNhap(),
                     randomPassword
             );
         } catch (Exception e) {

@@ -196,7 +196,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             emailServices.EmailKH(
                     khachHangResponse.getEmail(),
                     khachHangResponse.getTenKH(),
-                    khachHangResponse.getEmail(),
+                    taiKhoan.getTenDangNhap(),
                     randomPassword
             );
         } catch (Exception e) {

@@ -224,7 +224,7 @@ public class EmailServices {
     }
 
 
-
+    @Async
     public void EmailKH(String to, String customerName, String email, String password) throws MessagingException {
         try {
             MimeMessage message = mailSender.createMimeMessage();

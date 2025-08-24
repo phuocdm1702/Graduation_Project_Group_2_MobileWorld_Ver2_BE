@@ -158,6 +158,16 @@ public class HoaDonController {
         }
     }
 
+    @PutMapping("/{id}/cancel-client")
+    public ResponseEntity<HoaDonResponse> cancelOrderClient(@PathVariable Integer id) {
+        try {
+            HoaDonResponse response = hoaDonService.cancelOrderClient(id);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
     @PostMapping("/xac-nhan-imei/{idHD}")
     public ResponseEntity<HoaDonResponse> confirmAndAssignIMEI(
             @PathVariable Integer idHD,

@@ -461,8 +461,8 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với ID: " + orderId));
 
         // Check if order can be cancelled
-        if (hoaDon.getTrangThai() != 1) { // Assuming 1 is "Chờ xác nhận"
-            throw new RuntimeException("Chỉ có thể hủy đơn hàng ở trạng thái 'Chờ xác nhận'.");
+        if (hoaDon.getTrangThai() != 0 && hoaDon.getTrangThai() != 1) { // Assuming 0 is "Chờ xác nhận"
+            throw new RuntimeException("Chỉ có thể hủy đơn hàng ở trạng thái 'Chờ xác nhận' hoặc 'Chờ giao hàng'.");
         }
 
         // Update order status
@@ -493,6 +493,48 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .thoiGian(Instant.now())
                 .hoaDon(hoaDon)
                 .idNhanVien(hoaDon.getIdNhanVien()) // Assuming the original staff member is responsible
+                .build();
+        lichSuHoaDonRepository.save(lichSuHoaDon);
+
+        return hoaDonMapper.mapToDto(hoaDon);
+    }
+
+    @Override
+    @Transactional
+    public HoaDonResponse cancelOrderClient(Integer orderId) {
+        HoaDon hoaDon = hoaDonRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với ID: " + orderId));
+
+        // Check if order can be cancelled
+        if (hoaDon.getTrangThai() != 0) { // Assuming 0 is "Chờ xác nhận"
+            throw new RuntimeException("Chỉ có thể hủy đơn hàng ở trạng thái 'Chờ xác nhận'.");
+        }
+
+        // Update order status
+        hoaDon.setTrangThai((short) 4); // 4 is "Đã hủy"
+        hoaDon.setUpdatedAt(new Date());
+
+        // Restore Imel status
+        for (HoaDonChiTiet chiTiet : hoaDon.getChiTietHoaDon()) {
+            if (chiTiet.getIdImelDaBan() != null) {
+                String imelString = chiTiet.getIdImelDaBan().getImel();
+                Imel imel = imelRepository.findByImelAndDeleted(imelString, true)
+                        .orElse(null); // Find Imel by the string and deleted = true
+                if (imel != null) {
+                    imel.setDeleted(false);
+                    imelRepository.save(imel);
+                }
+            }
+        }
+
+        hoaDonRepository.save(hoaDon);
+
+        // Add to history
+        LichSuHoaDon lichSuHoaDon = LichSuHoaDon.builder()
+                .ma("LSHD_" + System.currentTimeMillis())
+                .hanhDong("Hủy đơn hàng")
+                .thoiGian(Instant.now())
+                .hoaDon(hoaDon)
                 .build();
         lichSuHoaDonRepository.save(lichSuHoaDon);
 

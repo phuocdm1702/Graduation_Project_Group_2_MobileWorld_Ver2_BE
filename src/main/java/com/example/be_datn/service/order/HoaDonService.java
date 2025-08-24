@@ -42,6 +42,8 @@ public interface HoaDonService {
 
     HoaDonResponse cancelOrder(Integer orderId);
 
+    HoaDonResponse cancelOrderClient(Integer orderId);
+
     HoaDonResponse addProductToHoaDonChiTiet(Integer idHD, Integer chiTietSanPhamId, String imei);
 
     HoaDonResponse deleteProductFromHoaDonChiTiet(Integer idHD, Integer idHoaDonChiTiet);

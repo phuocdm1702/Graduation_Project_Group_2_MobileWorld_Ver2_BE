@@ -362,7 +362,12 @@ public class BanHangServiceImpl implements BanHangService {
                 .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
-        hoaDon.setTongTien(gh.getTongTien());
+        if (gh.getChiTietGioHangDTOS().isEmpty()) {
+            hoaDon.setIdPhieuGiamGia(null);
+            hoaDon.setTongTien(BigDecimal.ZERO);
+        } else {
+            hoaDon.setTongTien(gh.getTongTien());
+        }
         hoaDonRepository.save(hoaDon);
 
         redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);

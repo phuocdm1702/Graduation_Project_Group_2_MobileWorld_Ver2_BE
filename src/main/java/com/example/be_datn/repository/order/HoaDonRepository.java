@@ -112,8 +112,11 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             Pageable pageable);
 
 
-    @Query("SELECT hd FROM HoaDon hd WHERE hd.deleted = true")
+    @Query("SELECT hd FROM HoaDon hd WHERE hd.loaiDon LIKE 'trực tiếp' AND hd.deleted = true")
     List<HoaDon> findAllHDNotConfirm();
+
+    @Query("SELECT hd FROM HoaDon hd WHERE hd.loaiDon LIKE %:loaiDon% AND hd.deleted = :deleted")
+    List<HoaDon> findHoaDonByLoaiDonLikeAndDeleted(@Param("loaiDon") String loaiDon, @Param("deleted") boolean deleted);
 
     @Query("SELECT COUNT(h) > 0 FROM HoaDon h WHERE h.id = :id")
     boolean existsById(Integer id);

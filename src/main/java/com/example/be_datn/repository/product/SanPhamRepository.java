@@ -16,8 +16,10 @@ import java.util.Optional;
 public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     Page<SanPham> findAll(Specification<SanPham> spec, Pageable pageable);
 
+    @Query("SELECT s FROM SanPham s WHERE s.deleted = false ORDER BY s.id DESC")
     Page<SanPham> findByDeletedFalse(Pageable pageable);
 
+    @Query("SELECT s FROM SanPham s WHERE s.deleted = false ORDER BY s.id DESC")
     List<SanPham> findAllByDeletedFalse();
 
     SanPham findByIdAndDeletedFalse(Integer id);

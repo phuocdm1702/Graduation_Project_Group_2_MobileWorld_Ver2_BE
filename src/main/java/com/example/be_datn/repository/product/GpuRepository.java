@@ -14,11 +14,11 @@ import java.util.Optional;
 @Repository
 public interface GpuRepository extends JpaRepository<Gpu, Integer> {
 
-    // Tìm tất cả các GPU chưa bị xóa
-    List<Gpu> findByDeletedFalse();
+    @Query("SELECT g FROM Gpu g WHERE g.deleted = false ORDER BY g.id DESC")
+    List<Gpu> findByDeletedFalseOrderByIdDesc();
 
-    // Tìm tất cả các GPU chưa bị xóa với phân trang
-    Page<Gpu> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT g FROM Gpu g WHERE g.deleted = false ORDER BY g.id DESC")
+    Page<Gpu> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     // Tìm GPU theo ID và chưa bị xóa
     Optional<Gpu> findByIdAndDeletedFalse(Integer id);
@@ -26,8 +26,9 @@ public interface GpuRepository extends JpaRepository<Gpu, Integer> {
     // Tìm kiếm theo từ khóa
     @Query("SELECT g FROM Gpu g WHERE g.deleted = false AND " +
             "(LOWER(g.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(g.tenGpu) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Gpu> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(g.tenGpu) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY g.id DESC")
+    Page<Gpu> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
     // Kiểm tra tên GPU đã tồn tại (chưa bị xóa) - tương tự NhaSanXuat
     boolean existsByTenGpuAndDeletedFalse(String tenGpu);

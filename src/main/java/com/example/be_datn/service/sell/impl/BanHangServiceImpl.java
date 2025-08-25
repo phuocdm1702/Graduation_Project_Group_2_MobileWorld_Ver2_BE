@@ -1019,7 +1019,53 @@ public class BanHangServiceImpl implements BanHangService {
             Map<String, Object> gioHangUpdate = new HashMap<>();
             gioHangUpdate.put("hoaDonId", hoaDonId);
             gioHangUpdate.put("maHoaDon", hoaDon != null ? hoaDon.getMa() : "");
-            gioHangUpdate.put("gioHang", gioHangDTO);
+
+            // Tạo bản sao của gioHangDTO với thông tin ảnh đầy đủ
+            GioHangDTO gioHangWithImages = new GioHangDTO();
+            gioHangWithImages.setGioHangId(gioHangDTO.getGioHangId());
+            gioHangWithImages.setKhachHangId(gioHangDTO.getKhachHangId());
+            gioHangWithImages.setTongTien(gioHangDTO.getTongTien());
+
+            // Cập nhật thông tin ảnh cho từng item trong giỏ hàng
+            List<ChiTietGioHangDTO> updatedItems = new ArrayList<>();
+            for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
+                ChiTietGioHangDTO updatedItem = new ChiTietGioHangDTO();
+                // Copy tất cả thông tin từ item gốc
+                updatedItem.setChiTietSanPhamId(item.getChiTietSanPhamId());
+                updatedItem.setMaImel(item.getMaImel());
+                updatedItem.setTenSanPham(item.getTenSanPham());
+                updatedItem.setMauSac(item.getMauSac());
+                updatedItem.setRam(item.getRam());
+                updatedItem.setBoNhoTrong(item.getBoNhoTrong());
+                updatedItem.setGiaBan(item.getGiaBan());
+                updatedItem.setGiaBanGoc(item.getGiaBanGoc());
+                updatedItem.setGhiChuGia(item.getGhiChuGia());
+                updatedItem.setSoLuong(item.getSoLuong());
+                updatedItem.setTongTien(item.getTongTien());
+                updatedItem.setIdPhieuGiamGia(item.getIdPhieuGiamGia());
+
+                // Lấy thông tin ảnh từ database
+                try {
+                    Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId());
+                    if (chiTietSanPhamOpt.isPresent()) {
+                        ChiTietSanPham chiTietSanPham = chiTietSanPhamOpt.get();
+                        String imagePath = chiTietSanPham.getIdAnhSanPham() != null && chiTietSanPham.getIdAnhSanPham().getDuongDan() != null
+                                ? chiTietSanPham.getIdAnhSanPham().getDuongDan()
+                                : null;
+                        updatedItem.setImage(imagePath);
+                    } else {
+                        updatedItem.setImage(item.getImage()); // Fallback to existing image if any
+                    }
+                } catch (Exception e) {
+                    System.err.println("Lỗi khi lấy thông tin ảnh cho sản phẩm ID " + item.getChiTietSanPhamId() + ": " + e.getMessage());
+                    updatedItem.setImage(item.getImage()); // Fallback to existing image if any
+                }
+
+                updatedItems.add(updatedItem);
+            }
+            gioHangWithImages.setChiTietGioHangDTOS(updatedItems);
+
+            gioHangUpdate.put("gioHang", gioHangWithImages);
 
             // Thêm thông tin khách hàng
             if (hoaDon != null && hoaDon.getIdKhachHang() != null) {
@@ -1055,6 +1101,7 @@ public class BanHangServiceImpl implements BanHangService {
 
             System.out.println("Đã gửi cập nhật giỏ hàng qua WebSocket - Hóa đơn: " + hoaDonId +
                     ", Khách hàng: " + gioHangUpdate.get("tenKhachHang") +
+                    ", Số sản phẩm: " + updatedItems.size() +
                     (hoaDon != null && hoaDon.getIdPhieuGiamGia() != null ?
                             ", Phiếu giảm giá: " + hoaDon.getIdPhieuGiamGia().getMa() : ", Không có phiếu giảm giá"));
         } catch (Exception e) {

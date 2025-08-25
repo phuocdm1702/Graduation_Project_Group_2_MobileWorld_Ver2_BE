@@ -19,15 +19,5 @@ public interface PinService {
 
     PinResponse updatePin(Integer id, PinRequest request);
 
-    void deletePin(Integer id);
-
     Page<PinResponse> searchPin(String keyword, Pageable pageable);
-
-    Page<PinResponse> filterByLoaiPin(String loaiPin, Pageable pageable);
-
-    List<String> getAllLoaiPinNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByLoaiPin(String loaiPin, Integer excludeId);
 }

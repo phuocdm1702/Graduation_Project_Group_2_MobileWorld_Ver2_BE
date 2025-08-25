@@ -9,25 +9,22 @@ import java.util.List;
 
 public interface ChiSoKhangBuiVaNuocService {
 
+    // Lấy tất cả chỉ số kháng bụi và nước với phân trang
     Page<ChiSoKhangBuiVaNuocResponse> getAllChiSoKhangBuiVaNuoc(Pageable pageable);
 
+    // Lấy tất cả chỉ số kháng bụi và nước dạng list
     List<ChiSoKhangBuiVaNuocResponse> getAllChiSoKhangBuiVaNuocList();
 
+    // Lấy chỉ số kháng bụi và nước theo ID
     ChiSoKhangBuiVaNuocResponse getChiSoKhangBuiVaNuocById(Integer id);
 
+    // Tạo mới chỉ số kháng bụi và nước
     ChiSoKhangBuiVaNuocResponse createChiSoKhangBuiVaNuoc(ChiSoKhangBuiVaNuocRequest request);
 
+    // Cập nhật chỉ số kháng bụi và nước
     ChiSoKhangBuiVaNuocResponse updateChiSoKhangBuiVaNuoc(Integer id, ChiSoKhangBuiVaNuocRequest request);
 
-    void deleteChiSoKhangBuiVaNuoc(Integer id);
-
+    // Tìm kiếm chỉ số kháng bụi và nước
     Page<ChiSoKhangBuiVaNuocResponse> searchChiSoKhangBuiVaNuoc(String keyword, Pageable pageable);
 
-    Page<ChiSoKhangBuiVaNuocResponse> filterByTenChiSo(String tenChiSo, Pageable pageable);
-
-    List<String> getAllTenChiSoNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByTenChiSo(String tenChiSo, Integer excludeId);
 }

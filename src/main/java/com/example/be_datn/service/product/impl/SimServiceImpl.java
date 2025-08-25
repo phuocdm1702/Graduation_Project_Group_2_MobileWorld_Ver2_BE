@@ -25,16 +25,15 @@ public class SimServiceImpl implements SimService {
 
     @Override
     public Page<SimResponse> getAllSim(Pageable pageable) {
-        log.info("Getting all SIMs with pagination: page={}, size={}",
-                pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        log.info("Getting all SIMs with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<SimResponse> getAllSimList() {
         log.info("Getting all SIMs as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -53,28 +52,34 @@ public class SimServiceImpl implements SimService {
     @Override
     @Transactional
     public SimResponse createSim(SimRequest request) {
-        log.info("Creating new SIM with code: {}", request.getMa());
+        log.info("Creating new SIM");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("SIM code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã SIM đã tồn tại!");
+        // Kiểm tra trùng lặp: cả soLuongSimHoTro và cacLoaiSimHoTro giống hệt nhau
+        boolean exists = repository.existsBySoLuongSimHoTroAndCacLoaiSimHoTroAndDeletedFalse(
+                request.getSoLuongSimHoTro(),
+                request.getCacLoaiSimHoTro().trim());
+
+        if (exists) {
+            log.error("SIM already exists with same soLuongSimHoTro and cacLoaiSimHoTro");
+            throw new RuntimeException("SIM với số lượng SIM hỗ trợ và các loại SIM hỗ trợ này đã tồn tại!");
         }
 
-        Optional<Sim> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
+        // Tìm SIM đã bị xóa mềm có cùng thông số
+        Optional<Sim> existingDeleted = repository.findBySoLuongSimHoTroAndCacLoaiSimHoTroAndDeletedTrue(
+                request.getSoLuongSimHoTro(),
+                request.getCacLoaiSimHoTro().trim());
 
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted SIM by code: {}", request.getMa());
-            Sim entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted SIM with same specs");
+            Sim entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setSoLuongSimHoTro(request.getSoLuongSimHoTro());
-            entity.setCacLoaiSimHoTro(request.getCacLoaiSimHoTro());
             return convertToResponse(repository.save(entity));
         }
 
         Sim entity = Sim.builder()
-                .ma(request.getMa())
+                .ma("") // Không sử dụng mã nữa
                 .soLuongSimHoTro(request.getSoLuongSimHoTro())
-                .cacLoaiSimHoTro(request.getCacLoaiSimHoTro())
+                .cacLoaiSimHoTro(request.getCacLoaiSimHoTro().trim())
                 .deleted(false)
                 .build();
 
@@ -94,15 +99,26 @@ public class SimServiceImpl implements SimService {
                     return new RuntimeException("SIM không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("SIM code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã SIM đã tồn tại!");
+        Integer newSoLuongSimHoTro = request.getSoLuongSimHoTro();
+        String newCacLoaiSimHoTro = request.getCacLoaiSimHoTro().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getSoLuongSimHoTro().equals(newSoLuongSimHoTro) &&
+                entity.getCacLoaiSimHoTro().equals(newCacLoaiSimHoTro);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với SIM khác
+            boolean existsOther = repository.existsBySoLuongSimHoTroAndCacLoaiSimHoTroAndDeletedFalseAndIdNot(
+                    newSoLuongSimHoTro, newCacLoaiSimHoTro, id);
+
+            if (existsOther) {
+                log.error("SIM already exists with same soLuongSimHoTro and cacLoaiSimHoTro during update");
+                throw new RuntimeException("SIM với số lượng SIM hỗ trợ và các loại SIM hỗ trợ này đã tồn tại!");
+            }
         }
 
-        entity.setMa(request.getMa());
-        entity.setSoLuongSimHoTro(request.getSoLuongSimHoTro());
-        entity.setCacLoaiSimHoTro(request.getCacLoaiSimHoTro());
+        entity.setSoLuongSimHoTro(newSoLuongSimHoTro);
+        entity.setCacLoaiSimHoTro(newCacLoaiSimHoTro);
 
         Sim updatedEntity = repository.save(entity);
         log.info("Updated SIM with id: {}", id);
@@ -110,53 +126,10 @@ public class SimServiceImpl implements SimService {
     }
 
     @Override
-    @Transactional
-    public void deleteSim(Integer id) {
-        log.info("Soft deleting SIM with id: {}", id);
-
-        Sim entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("SIM not found for deletion with id: {}", id);
-                    return new RuntimeException("SIM không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted SIM with id: {}", id);
-    }
-
-    @Override
     public Page<SimResponse> searchSim(String keyword, Pageable pageable) {
         log.info("Searching SIMs with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
-    }
-
-    @Override
-    public Page<SimResponse> filterBySoLuongSimHoTro(Integer soLuongSimHoTro, Pageable pageable) {
-        log.info("Filtering SIMs by supported SIM count: {}", soLuongSimHoTro);
-        return repository.findBySoLuongSimHoTro(soLuongSimHoTro, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllSimTypes() {
-        log.info("Getting all SIM types");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(Sim::getCacLoaiSimHoTro)
-                .filter(type -> type != null && !type.isEmpty())
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
     }
 
     private SimResponse convertToResponse(Sim entity) {

@@ -19,15 +19,5 @@ public interface HeDieuHanhService {
 
     HeDieuHanhResponse updateHeDieuHanh(Integer id, HeDieuHanhRequest request);
 
-    void deleteHeDieuHanh(Integer id);
-
     Page<HeDieuHanhResponse> searchHeDieuHanh(String keyword, Pageable pageable);
-
-    Page<HeDieuHanhResponse> filterByHeDieuHanh(String heDieuHanh, Pageable pageable);
-
-    List<String> getAllHeDieuHanhNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByHeDieuHanh(String heDieuHanh, Integer excludeId);
 }

@@ -14,11 +14,11 @@ import java.util.Optional;
 @Repository
 public interface RamRepository extends JpaRepository<Ram, Integer> {
 
-    // Tìm tất cả các RAM chưa bị xóa
-    List<Ram> findByDeletedFalse();
+    @Query("SELECT r FROM Ram r WHERE r.deleted = false ORDER BY r.id DESC")
+    List<Ram> findByDeletedFalseOrderByIdDesc();
 
-    // Tìm tất cả các RAM chưa bị xóa với phân trang
-    Page<Ram> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT r FROM Ram r WHERE r.deleted = false ORDER BY r.id DESC")
+    Page<Ram> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     // Tìm RAM theo ID và chưa bị xóa
     Optional<Ram> findByIdAndDeletedFalse(Integer id);
@@ -26,8 +26,9 @@ public interface RamRepository extends JpaRepository<Ram, Integer> {
     // Tìm kiếm theo từ khóa
     @Query("SELECT r FROM Ram r WHERE r.deleted = false AND " +
             "(LOWER(r.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(r.dungLuongRam) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Ram> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(r.dungLuongRam) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY r.id DESC")
+    Page<Ram> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
     // Kiểm tra dung lượng RAM đã tồn tại (chưa bị xóa) - tương tự NhaSanXuat
     boolean existsByDungLuongRamAndDeletedFalse(String dungLuongRam);

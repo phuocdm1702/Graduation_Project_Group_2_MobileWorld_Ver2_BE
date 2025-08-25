@@ -60,7 +60,7 @@ public class ChiSoKhangBuiVaNuocController {
     public ResponseEntity<?> create(
             @Valid @RequestBody ChiSoKhangBuiVaNuocRequest request,
             BindingResult result) {
-        log.info("Creating new dust and water resistance index with code: {}", request.getMa());
+        log.info("Creating new dust and water resistance index");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class ChiSoKhangBuiVaNuocController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting dust and water resistance index with id: {}", id);
-        try {
-            service.deleteChiSoKhangBuiVaNuoc(id);
-            log.info("Successfully deleted dust and water resistance index with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting dust and water resistance index with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<ChiSoKhangBuiVaNuocResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String tenChiSo,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching dust and water resistance indices - keyword: {}, tenChiSo: {}, page: {}, size: {}",
-                keyword, tenChiSo, page, size);
+        log.info("Searching dust and water resistance indices - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (tenChiSo != null && !tenChiSo.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByTenChiSo(tenChiSo.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchChiSoKhangBuiVaNuoc(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllChiSoKhangBuiVaNuoc(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllTenChiSoNames() {
-        log.info("Getting all dust and water resistance index names");
-        List<String> names = service.getAllTenChiSoNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if dust and water resistance index code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/ten-chi-so")
-    public ResponseEntity<Boolean> checkTenChiSoExists(
-            @RequestParam String tenChiSo,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if dust and water resistance index name exists: {}, excludeId: {}", tenChiSo, excludeId);
-        boolean exists = service.existsByTenChiSo(tenChiSo, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

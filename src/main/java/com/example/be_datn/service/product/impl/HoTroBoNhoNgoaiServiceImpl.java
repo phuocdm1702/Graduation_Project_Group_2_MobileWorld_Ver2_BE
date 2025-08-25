@@ -27,14 +27,14 @@ public class HoTroBoNhoNgoaiServiceImpl implements HoTroBoNhoNgoaiService {
     public Page<HoTroBoNhoNgoaiResponse> getAllHoTroBoNhoNgoai(Pageable pageable) {
         log.info("Getting all external memory supports with pagination: page={}, size={}",
                 pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<HoTroBoNhoNgoaiResponse> getAllHoTroBoNhoNgoaiList() {
         log.info("Getting all external memory supports as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -123,7 +123,7 @@ public class HoTroBoNhoNgoaiServiceImpl implements HoTroBoNhoNgoaiService {
     @Override
     public Page<HoTroBoNhoNgoaiResponse> searchHoTroBoNhoNgoai(String keyword, Pageable pageable) {
         log.info("Searching external memory supports with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
     }
 

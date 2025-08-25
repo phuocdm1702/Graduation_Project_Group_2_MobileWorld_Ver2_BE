@@ -60,7 +60,7 @@ public class HeDieuHanhController {
     public ResponseEntity<?> create(
             @Valid @RequestBody HeDieuHanhRequest request,
             BindingResult result) {
-        log.info("Creating new operating system with code: {}", request.getMa());
+        log.info("Creating new operating system");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class HeDieuHanhController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting operating system with id: {}", id);
-        try {
-            service.deleteHeDieuHanh(id);
-            log.info("Successfully deleted operating system with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting operating system with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<HeDieuHanhResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String heDieuHanh,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching operating systems - keyword: {}, heDieuHanh: {}, page: {}, size: {}",
-                keyword, heDieuHanh, page, size);
+        log.info("Searching operating systems - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (heDieuHanh != null && !heDieuHanh.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByHeDieuHanh(heDieuHanh.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchHeDieuHanh(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllHeDieuHanh(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllHeDieuHanhNames() {
-        log.info("Getting all operating system names");
-        List<String> names = service.getAllHeDieuHanhNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if operating system code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/he-dieu-hanh")
-    public ResponseEntity<Boolean> checkHeDieuHanhExists(
-            @RequestParam String heDieuHanh,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if operating system name exists: {}, excludeId: {}", heDieuHanh, excludeId);
-        boolean exists = service.existsByHeDieuHanh(heDieuHanh, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")
@@ -178,7 +135,7 @@ public class HeDieuHanhController {
     }
 
     private Map<String, String> getErrorMap(BindingResult result) {
-        Map< String, String> errors = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
         result.getFieldErrors().forEach(error ->
                 errors.put(error.getField(), error.getDefaultMessage()));
         result.getGlobalErrors().forEach(error ->

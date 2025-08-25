@@ -60,7 +60,7 @@ public class CongNgheManHinhController {
     public ResponseEntity<?> create(
             @Valid @RequestBody CongNgheManHinhRequest request,
             BindingResult result) {
-        log.info("Creating new display technology with code: {}", request.getMa());
+        log.info("Creating new display technology");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class CongNgheManHinhController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting display technology with id: {}", id);
-        try {
-            service.deleteCongNgheManHinh(id);
-            log.info("Successfully deleted display technology with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting display technology with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<CongNgheManHinhResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String congNgheManHinh,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching display technologies - keyword: {}, congNgheManHinh: {}, page: {}, size: {}",
-                keyword, congNgheManHinh, page, size);
+        log.info("Searching display technologies - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (congNgheManHinh != null && !congNgheManHinh.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByCongNgheManHinh(congNgheManHinh.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchCongNgheManHinh(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllCongNgheManHinh(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllCongNgheManHinhNames() {
-        log.info("Getting all display technology names");
-        List<String> names = service.getAllCongNgheManHinhNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if display technology code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/cong-nghe-man-hinh")
-    public ResponseEntity<Boolean> checkCongNgheManHinhExists(
-            @RequestParam String congNgheManHinh,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if display technology name exists: {}, excludeId: {}", congNgheManHinh, excludeId);
-        boolean exists = service.existsByCongNgheManHinh(congNgheManHinh, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

@@ -19,15 +19,5 @@ public interface CongNgheManHinhService {
 
     CongNgheManHinhResponse updateCongNgheManHinh(Integer id, CongNgheManHinhRequest request);
 
-    void deleteCongNgheManHinh(Integer id);
-
     Page<CongNgheManHinhResponse> searchCongNgheManHinh(String keyword, Pageable pageable);
-
-    Page<CongNgheManHinhResponse> filterByCongNgheManHinh(String congNgheManHinh, Pageable pageable);
-
-    List<String> getAllCongNgheManHinhNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByCongNgheManHinh(String congNgheManHinh, Integer excludeId);
 }

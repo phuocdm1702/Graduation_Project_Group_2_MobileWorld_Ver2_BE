@@ -60,7 +60,7 @@ public class SimController {
     public ResponseEntity<?> create(
             @Valid @RequestBody SimRequest request,
             BindingResult result) {
-        log.info("Creating new SIM with code: {}", request.getMa());
+        log.info("Creating new SIM");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,55 +99,21 @@ public class SimController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting SIM with id: {}", id);
-        try {
-            service.deleteSim(id);
-            log.info("Successfully deleted SIM with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting SIM with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<SimResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer soLuongSimHoTro,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching SIMs - keyword: {}, soLuongSimHoTro: {}, page: {}, size: {}",
-                keyword, soLuongSimHoTro, page, size);
+        log.info("Searching SIMs - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (soLuongSimHoTro != null) {
-            return ResponseEntity.ok(service.filterBySoLuongSimHoTro(soLuongSimHoTro, pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchSim(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllSim(pageable));
-    }
-
-    @GetMapping("/all-types")
-    public ResponseEntity<List<String>> getAllSimTypes() {
-        log.info("Getting all SIM types");
-        List<String> types = service.getAllSimTypes();
-        return ResponseEntity.ok(types);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if SIM code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

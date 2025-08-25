@@ -60,7 +60,7 @@ public class MauSacController {
     public ResponseEntity<?> create(
             @Valid @RequestBody MauSacRequest request,
             BindingResult result) {
-        log.info("Creating new color with code: {}", request.getMa());
+        log.info("Creating new color");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class MauSacController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting color with id: {}", id);
-        try {
-            service.deleteMauSac(id);
-            log.info("Successfully deleted color with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting color with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<MauSacResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String mauSac,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching colors - keyword: {}, mauSac: {}, page: {}, size: {}",
-                keyword, mauSac, page, size);
+        log.info("Searching colors - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (mauSac != null && !mauSac.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByMauSac(mauSac.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchMauSac(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllMauSac(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllColorNames() {
-        log.info("Getting all color names");
-        List<String> names = service.getAllColorNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if color code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/mau-sac")
-    public ResponseEntity<Boolean> checkMauSacExists(
-            @RequestParam String mauSac,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if color name exists: {}, excludeId: {}", mauSac, excludeId);
-        boolean exists = service.existsByMauSac(mauSac, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

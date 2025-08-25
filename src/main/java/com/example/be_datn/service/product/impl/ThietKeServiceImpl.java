@@ -25,16 +25,15 @@ public class ThietKeServiceImpl implements ThietKeService {
 
     @Override
     public Page<ThietKeResponse> getAllThietKe(Pageable pageable) {
-        log.info("Getting all designs with pagination: page={}, size={}",
-                pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        log.info("Getting all designs with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<ThietKeResponse> getAllThietKeList() {
         log.info("Getting all designs as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -53,28 +52,34 @@ public class ThietKeServiceImpl implements ThietKeService {
     @Override
     @Transactional
     public ThietKeResponse createThietKe(ThietKeRequest request) {
-        log.info("Creating new design with code: {}", request.getMa());
+        log.info("Creating new design");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Design code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã thiết kế đã tồn tại!");
+        // Kiểm tra trùng lặp: cả chatLieuKhung và chatLieuMatLung giống hệt nhau
+        boolean exists = repository.existsByChatLieuKhungAndChatLieuMatLungAndDeletedFalse(
+                request.getChatLieuKhung().trim(),
+                request.getChatLieuMatLung().trim());
+
+        if (exists) {
+            log.error("Design already exists with same frame and back material");
+            throw new RuntimeException("Thiết kế với chất liệu khung và chất liệu mặt lưng này đã tồn tại!");
         }
 
-        Optional<ThietKe> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
+        // Tìm thiết kế đã bị xóa mềm có cùng thông số
+        Optional<ThietKe> existingDeleted = repository.findByChatLieuKhungAndChatLieuMatLungAndDeletedTrue(
+                request.getChatLieuKhung().trim(),
+                request.getChatLieuMatLung().trim());
 
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted design by code: {}", request.getMa());
-            ThietKe entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted design with same specs");
+            ThietKe entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setChatLieuKhung(request.getChatLieuKhung());
-            entity.setChatLieuMatLung(request.getChatLieuMatLung());
             return convertToResponse(repository.save(entity));
         }
 
         ThietKe entity = ThietKe.builder()
-                .ma(request.getMa())
-                .chatLieuKhung(request.getChatLieuKhung())
-                .chatLieuMatLung(request.getChatLieuMatLung())
+                .ma("") // Không sử dụng mã nữa
+                .chatLieuKhung(request.getChatLieuKhung().trim())
+                .chatLieuMatLung(request.getChatLieuMatLung().trim())
                 .deleted(false)
                 .build();
 
@@ -94,15 +99,26 @@ public class ThietKeServiceImpl implements ThietKeService {
                     return new RuntimeException("Thiết kế không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("Design code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã thiết kế đã tồn tại!");
+        String newChatLieuKhung = request.getChatLieuKhung().trim();
+        String newChatLieuMatLung = request.getChatLieuMatLung().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getChatLieuKhung().equals(newChatLieuKhung) &&
+                entity.getChatLieuMatLung().equals(newChatLieuMatLung);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với thiết kế khác
+            boolean existsOther = repository.existsByChatLieuKhungAndChatLieuMatLungAndDeletedFalseAndIdNot(
+                    newChatLieuKhung, newChatLieuMatLung, id);
+
+            if (existsOther) {
+                log.error("Design already exists with same frame and back material during update");
+                throw new RuntimeException("Thiết kế với chất liệu khung và chất liệu mặt lưng này đã tồn tại!");
+            }
         }
 
-        entity.setMa(request.getMa());
-        entity.setChatLieuKhung(request.getChatLieuKhung());
-        entity.setChatLieuMatLung(request.getChatLieuMatLung());
+        entity.setChatLieuKhung(newChatLieuKhung);
+        entity.setChatLieuMatLung(newChatLieuMatLung);
 
         ThietKe updatedEntity = repository.save(entity);
         log.info("Updated design with id: {}", id);
@@ -110,53 +126,10 @@ public class ThietKeServiceImpl implements ThietKeService {
     }
 
     @Override
-    @Transactional
-    public void deleteThietKe(Integer id) {
-        log.info("Soft deleting design with id: {}", id);
-
-        ThietKe entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Design not found for deletion with id: {}", id);
-                    return new RuntimeException("Thiết kế không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted design with id: {}", id);
-    }
-
-    @Override
     public Page<ThietKeResponse> searchThietKe(String keyword, Pageable pageable) {
         log.info("Searching designs with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
-    }
-
-    @Override
-    public Page<ThietKeResponse> filterByChatLieuKhung(String chatLieuKhung, Pageable pageable) {
-        log.info("Filtering designs by frame material: {}", chatLieuKhung);
-        return repository.findByChatLieuKhungIgnoreCase(chatLieuKhung, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllFrameMaterials() {
-        log.info("Getting all frame materials");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(ThietKe::getChatLieuKhung)
-                .filter(material -> material != null && !material.isEmpty())
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
     }
 
     private ThietKeResponse convertToResponse(ThietKe entity) {

@@ -14,27 +14,34 @@ import java.util.Optional;
 @Repository
 public interface SimRepository extends JpaRepository<Sim, Integer> {
 
-    List<Sim> findByDeletedFalse();
+    @Query("SELECT s FROM Sim s WHERE s.deleted = false ORDER BY s.id DESC")
+    List<Sim> findByDeletedFalseOrderByIdDesc();
 
-    Page<Sim> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT s FROM Sim s WHERE s.deleted = false ORDER BY s.id DESC")
+    Page<Sim> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     Optional<Sim> findByIdAndDeletedFalse(Integer id);
-
-    @Query("SELECT COUNT(s) > 0 FROM Sim s WHERE s.ma = :ma AND s.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(s) > 0 FROM Sim s WHERE s.ma = :ma AND s.deleted = false AND s.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT s FROM Sim s WHERE s.ma = :ma AND s.deleted = true")
-    Optional<Sim> findByMaAndDeletedTrue(@Param("ma") String ma);
 
     @Query("SELECT s FROM Sim s WHERE s.deleted = false AND " +
             "(LOWER(s.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "CAST(s.soLuongSimHoTro AS string) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(s.cacLoaiSimHoTro) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Sim> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(s.cacLoaiSimHoTro) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY s.id DESC")
+    Page<Sim> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT s FROM Sim s WHERE s.deleted = false AND s.soLuongSimHoTro = :soLuongSimHoTro")
-    Page<Sim> findBySoLuongSimHoTro(@Param("soLuongSimHoTro") Integer soLuongSimHoTro, Pageable pageable);
+    boolean existsBySoLuongSimHoTroAndCacLoaiSimHoTroAndDeletedFalse(
+            Integer soLuongSimHoTro, String cacLoaiSimHoTro);
+
+    @Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM Sim s " +
+            "WHERE s.soLuongSimHoTro = :soLuongSimHoTro " +
+            "AND s.cacLoaiSimHoTro = :cacLoaiSimHoTro " +
+            "AND s.deleted = false " +
+            "AND s.id != :excludeId")
+    boolean existsBySoLuongSimHoTroAndCacLoaiSimHoTroAndDeletedFalseAndIdNot(
+            @Param("soLuongSimHoTro") Integer soLuongSimHoTro,
+            @Param("cacLoaiSimHoTro") String cacLoaiSimHoTro,
+            @Param("excludeId") Integer excludeId);
+
+    Optional<Sim> findBySoLuongSimHoTroAndCacLoaiSimHoTroAndDeletedTrue(
+            Integer soLuongSimHoTro, String cacLoaiSimHoTro);
 }

@@ -27,14 +27,14 @@ public class RamServiceImpl implements RamService {
     public Page<RamResponse> getAllRam(Pageable pageable) {
         log.info("Getting all RAMs with pagination: page={}, size={}",
                 pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<RamResponse> getAllRamList() {
         log.info("Getting all RAMs as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -123,7 +123,7 @@ public class RamServiceImpl implements RamService {
     @Override
     public Page<RamResponse> searchRam(String keyword, Pageable pageable) {
         log.info("Searching RAMs with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
     }
 

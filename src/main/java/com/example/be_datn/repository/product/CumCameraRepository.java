@@ -1,6 +1,7 @@
 package com.example.be_datn.repository.product;
 
 import com.example.be_datn.entity.product.CumCamera;
+import com.example.be_datn.entity.product.NhaSanXuat;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,17 +15,20 @@ import java.util.Optional;
 @Repository
 public interface CumCameraRepository extends JpaRepository<CumCamera, Integer> {
 
-    List<CumCamera> findByDeletedFalse();
+    @Query("SELECT c FROM CumCamera c WHERE c.deleted = false ORDER BY c.id DESC")
+    List<CumCamera> findByDeletedFalseOrderByIdDesc();
 
-    Page<CumCamera> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT c FROM CumCamera c WHERE c.deleted = false ORDER BY c.id DESC")
+    Page<CumCamera> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     Optional<CumCamera> findByIdAndDeletedFalse(Integer id);
 
     @Query("SELECT c FROM CumCamera c WHERE c.deleted = false AND " +
             "(LOWER(c.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(c.thongSoCameraSau) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(c.thongSoCameraTruoc) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<CumCamera> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(c.thongSoCameraTruoc) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY c.id DESC")
+    Page<CumCamera> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
     boolean existsByThongSoCameraSauAndThongSoCameraTruocAndDeletedFalse(
             String thongSoCameraSau, String thongSoCameraTruoc);

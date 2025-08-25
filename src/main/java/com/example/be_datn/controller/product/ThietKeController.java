@@ -60,7 +60,7 @@ public class ThietKeController {
     public ResponseEntity<?> create(
             @Valid @RequestBody ThietKeRequest request,
             BindingResult result) {
-        log.info("Creating new design with code: {}", request.getMa());
+        log.info("Creating new design");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,55 +99,21 @@ public class ThietKeController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting design with id: {}", id);
-        try {
-            service.deleteThietKe(id);
-            log.info("Successfully deleted design with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting design with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<ThietKeResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String chatLieuKhung,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching designs - keyword: {}, chatLieuKhung: {}, page: {}, size: {}",
-                keyword, chatLieuKhung, page, size);
+        log.info("Searching designs - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (chatLieuKhung != null && !chatLieuKhung.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByChatLieuKhung(chatLieuKhung.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchThietKe(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllThietKe(pageable));
-    }
-
-    @GetMapping("/all-frame-materials")
-    public ResponseEntity<List<String>> getAllFrameMaterials() {
-        log.info("Getting all frame materials");
-        List<String> materials = service.getAllFrameMaterials();
-        return ResponseEntity.ok(materials);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if design code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")
@@ -176,4 +142,4 @@ public class ThietKeController {
                 errors.put("global", error.getDefaultMessage()));
         return errors;
     }
-}
+}g

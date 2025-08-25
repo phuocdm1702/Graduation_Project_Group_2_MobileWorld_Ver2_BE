@@ -26,14 +26,14 @@ public class HeDieuHanhServiceImpl implements HeDieuHanhService {
     @Override
     public Page<HeDieuHanhResponse> getAllHeDieuHanh(Pageable pageable) {
         log.info("Getting all operating systems with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<HeDieuHanhResponse> getAllHeDieuHanhList() {
         log.info("Getting all operating systems as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -52,43 +52,34 @@ public class HeDieuHanhServiceImpl implements HeDieuHanhService {
     @Override
     @Transactional
     public HeDieuHanhResponse createHeDieuHanh(HeDieuHanhRequest request) {
-        log.info("Creating new operating system with code: {}", request.getMa());
+        log.info("Creating new operating system");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Operating system code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã hệ điều hành đã tồn tại!");
+        // Kiểm tra trùng lặp: cả tên và phiên bản giống hệt nhau
+        boolean exists = repository.existsByHeDieuHanhAndPhienBanAndDeletedFalse(
+                request.getHeDieuHanh().trim(),
+                request.getPhienBan().trim());
+
+        if (exists) {
+            log.error("Operating system already exists with same name and version");
+            throw new RuntimeException("Hệ điều hành với tên và phiên bản này đã tồn tại!");
         }
 
-        if (repository.existsByHeDieuHanhAndDeletedFalse(request.getHeDieuHanh())) {
-            log.error("Operating system name already exists: {}", request.getHeDieuHanh());
-            throw new RuntimeException("Tên hệ điều hành đã tồn tại!");
-        }
+        // Tìm hệ điều hành đã bị xóa mềm có cùng thông số
+        Optional<HeDieuHanh> existingDeleted = repository.findByHeDieuHanhAndPhienBanAndDeletedTrue(
+                request.getHeDieuHanh().trim(),
+                request.getPhienBan().trim());
 
-        Optional<HeDieuHanh> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<HeDieuHanh> existingByName = repository.findByHeDieuHanhAndDeletedTrue(request.getHeDieuHanh());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted operating system by code: {}", request.getMa());
-            HeDieuHanh entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted operating system with same specs");
+            HeDieuHanh entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setHeDieuHanh(request.getHeDieuHanh());
-            entity.setPhienBan(request.getPhienBan());
-            return convertToResponse(repository.save(entity));
-        }
-
-        if (existingByName.isPresent()) {
-            log.info("Restoring soft-deleted operating system by name: {}", request.getHeDieuHanh());
-            HeDieuHanh entity = existingByName.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
-            entity.setPhienBan(request.getPhienBan());
             return convertToResponse(repository.save(entity));
         }
 
         HeDieuHanh entity = HeDieuHanh.builder()
-                .ma(request.getMa())
-                .heDieuHanh(request.getHeDieuHanh())
-                .phienBan(request.getPhienBan())
+                .ma("") // Không sử dụng mã nữa
+                .heDieuHanh(request.getHeDieuHanh().trim())
+                .phienBan(request.getPhienBan().trim())
                 .deleted(false)
                 .build();
 
@@ -108,21 +99,26 @@ public class HeDieuHanhServiceImpl implements HeDieuHanhService {
                     return new RuntimeException("Hệ điều hành không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("Operating system code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã hệ điều hành đã tồn tại!");
+        String newHeDieuHanh = request.getHeDieuHanh().trim();
+        String newPhienBan = request.getPhienBan().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getHeDieuHanh().equals(newHeDieuHanh) &&
+                entity.getPhienBan().equals(newPhienBan);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với hệ điều hành khác
+            boolean existsOther = repository.existsByHeDieuHanhAndPhienBanAndDeletedFalseAndIdNot(
+                    newHeDieuHanh, newPhienBan, id);
+
+            if (existsOther) {
+                log.error("Operating system already exists with same name and version during update");
+                throw new RuntimeException("Hệ điều hành với tên và phiên bản này đã tồn tại!");
+            }
         }
 
-        if (!entity.getHeDieuHanh().equals(request.getHeDieuHanh()) &&
-                repository.existsByHeDieuHanhAndDeletedFalse(request.getHeDieuHanh(), id)) {
-            log.error("Operating system name already exists during update: {}", request.getHeDieuHanh());
-            throw new RuntimeException("Tên hệ điều hành đã tồn tại!");
-        }
-
-        entity.setMa(request.getMa());
-        entity.setHeDieuHanh(request.getHeDieuHanh());
-        entity.setPhienBan(request.getPhienBan());
+        entity.setHeDieuHanh(newHeDieuHanh);
+        entity.setPhienBan(newPhienBan);
 
         HeDieuHanh updatedEntity = repository.save(entity);
         log.info("Updated operating system with id: {}", id);
@@ -130,60 +126,10 @@ public class HeDieuHanhServiceImpl implements HeDieuHanhService {
     }
 
     @Override
-    @Transactional
-    public void deleteHeDieuHanh(Integer id) {
-        log.info("Soft deleting operating system with id: {}", id);
-
-        HeDieuHanh entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Operating system not found for deletion with id: {}", id);
-                    return new RuntimeException("Hệ điều hành không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted operating system with id: {}", id);
-    }
-
-    @Override
     public Page<HeDieuHanhResponse> searchHeDieuHanh(String keyword, Pageable pageable) {
         log.info("Searching operating systems with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
-    }
-
-    @Override
-    public Page<HeDieuHanhResponse> filterByHeDieuHanh(String heDieuHanh, Pageable pageable) {
-        log.info("Filtering operating systems by name: {}", heDieuHanh);
-        return repository.findByHeDieuHanhIgnoreCase(heDieuHanh, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllHeDieuHanhNames() {
-        log.info("Getting all operating system names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(HeDieuHanh::getHeDieuHanh)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByHeDieuHanh(String heDieuHanh, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByHeDieuHanhAndDeletedFalse(heDieuHanh, excludeId);
-        }
-        return repository.existsByHeDieuHanhAndDeletedFalse(heDieuHanh);
     }
 
     private HeDieuHanhResponse convertToResponse(HeDieuHanh entity) {

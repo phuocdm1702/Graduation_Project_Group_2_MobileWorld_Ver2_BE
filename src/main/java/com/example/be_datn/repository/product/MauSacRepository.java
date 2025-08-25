@@ -14,36 +14,31 @@ import java.util.Optional;
 @Repository
 public interface MauSacRepository extends JpaRepository<MauSac, Integer> {
 
-    List<MauSac> findByDeletedFalse();
+    @Query("SELECT m FROM MauSac m WHERE m.deleted = false ORDER BY m.id DESC")
+    List<MauSac> findByDeletedFalseOrderByIdDesc();
 
-    Page<MauSac> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT m FROM MauSac m WHERE m.deleted = false ORDER BY m.id DESC")
+    Page<MauSac> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     Optional<MauSac> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(m) > 0 FROM MauSac m WHERE m.ma = :ma AND m.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(m) > 0 FROM MauSac m WHERE m.mauSac = :mauSac AND m.deleted = false")
-    boolean existsByMauSacAndDeletedFalse(@Param("mauSac") String mauSac);
-
-    @Query("SELECT COUNT(m) > 0 FROM MauSac m WHERE m.ma = :ma AND m.deleted = false AND m.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT COUNT(m) > 0 FROM MauSac m WHERE m.mauSac = :mauSac AND m.deleted = false AND m.id != :excludeId")
-    boolean existsByMauSacAndDeletedFalse(@Param("mauSac") String mauSac, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT m FROM MauSac m WHERE m.ma = :ma AND m.deleted = true")
-    Optional<MauSac> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    @Query("SELECT m FROM MauSac m WHERE m.mauSac = :mauSac AND m.deleted = true")
-    Optional<MauSac> findByMauSacAndDeletedTrue(@Param("mauSac") String mauSac);
-
     @Query("SELECT m FROM MauSac m WHERE m.deleted = false AND " +
             "(LOWER(m.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(m.mauSac) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<MauSac> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(m.mauSac) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY m.id DESC")
+    Page<MauSac> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT m FROM MauSac m WHERE m.deleted = false AND " +
-            "LOWER(m.mauSac) = LOWER(:mauSac)")
-    Page<MauSac> findByMauSacIgnoreCase(@Param("mauSac") String mauSac, Pageable pageable);
+    boolean existsByMauSacAndMaMauAndDeletedFalse(String mauSac, String maMau);
+
+    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM MauSac m " +
+            "WHERE m.mauSac = :mauSac " +
+            "AND m.maMau = :maMau " +
+            "AND m.deleted = false " +
+            "AND m.id != :excludeId")
+    boolean existsByMauSacAndMaMauAndDeletedFalseAndIdNot(
+            @Param("mauSac") String mauSac,
+            @Param("maMau") String maMau,
+            @Param("excludeId") Integer excludeId);
+
+    Optional<MauSac> findByMauSacAndMaMauAndDeletedTrue(String mauSac, String maMau);
 }

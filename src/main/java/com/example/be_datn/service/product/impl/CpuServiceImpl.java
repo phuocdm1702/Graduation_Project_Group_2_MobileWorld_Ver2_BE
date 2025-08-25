@@ -26,14 +26,14 @@ public class CpuServiceImpl implements CpuService {
     @Override
     public Page<CpuResponse> getAllCpu(Pageable pageable) {
         log.info("Getting all CPUs with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<CpuResponse> getAllCpuList() {
         log.info("Getting all CPUs as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -128,7 +128,7 @@ public class CpuServiceImpl implements CpuService {
     @Override
     public Page<CpuResponse> searchCpu(String keyword, Pageable pageable) {
         log.info("Searching CPUs with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
     }
 

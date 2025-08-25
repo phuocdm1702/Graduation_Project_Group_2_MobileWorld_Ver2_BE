@@ -14,28 +14,34 @@ import java.util.Optional;
 @Repository
 public interface ThietKeRepository extends JpaRepository<ThietKe, Integer> {
 
-    List<ThietKe> findByDeletedFalse();
+    @Query("SELECT t FROM ThietKe t WHERE t.deleted = false ORDER BY t.id DESC")
+    List<ThietKe> findByDeletedFalseOrderByIdDesc();
 
-    Page<ThietKe> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT t FROM ThietKe t WHERE t.deleted = false ORDER BY t.id DESC")
+    Page<ThietKe> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     Optional<ThietKe> findByIdAndDeletedFalse(Integer id);
-
-    @Query("SELECT COUNT(t) > 0 FROM ThietKe t WHERE t.ma = :ma AND t.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(t) > 0 FROM ThietKe t WHERE t.ma = :ma AND t.deleted = false AND t.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT t FROM ThietKe t WHERE t.ma = :ma AND t.deleted = true")
-    Optional<ThietKe> findByMaAndDeletedTrue(@Param("ma") String ma);
 
     @Query("SELECT t FROM ThietKe t WHERE t.deleted = false AND " +
             "(LOWER(t.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(t.chatLieuKhung) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(t.chatLieuMatLung) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<ThietKe> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(t.chatLieuMatLung) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY t.id DESC")
+    Page<ThietKe> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT t FROM ThietKe t WHERE t.deleted = false AND " +
-            "LOWER(t.chatLieuKhung) = LOWER(:chatLieuKhung)")
-    Page<ThietKe> findByChatLieuKhungIgnoreCase(@Param("chatLieuKhung") String chatLieuKhung, Pageable pageable);
+    boolean existsByChatLieuKhungAndChatLieuMatLungAndDeletedFalse(
+            String chatLieuKhung, String chatLieuMatLung);
+
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM ThietKe t " +
+            "WHERE t.chatLieuKhung = :chatLieuKhung " +
+            "AND t.chatLieuMatLung = :chatLieuMatLung " +
+            "AND t.deleted = false " +
+            "AND t.id != :excludeId")
+    boolean existsByChatLieuKhungAndChatLieuMatLungAndDeletedFalseAndIdNot(
+            @Param("chatLieuKhung") String chatLieuKhung,
+            @Param("chatLieuMatLung") String chatLieuMatLung,
+            @Param("excludeId") Integer excludeId);
+
+    Optional<ThietKe> findByChatLieuKhungAndChatLieuMatLungAndDeletedTrue(
+            String chatLieuKhung, String chatLieuMatLung);
 }

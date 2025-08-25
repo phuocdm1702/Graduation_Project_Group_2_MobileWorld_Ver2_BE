@@ -19,13 +19,5 @@ public interface ThietKeService {
 
     ThietKeResponse updateThietKe(Integer id, ThietKeRequest request);
 
-    void deleteThietKe(Integer id);
-
     Page<ThietKeResponse> searchThietKe(String keyword, Pageable pageable);
-
-    Page<ThietKeResponse> filterByChatLieuKhung(String chatLieuKhung, Pageable pageable);
-
-    List<String> getAllFrameMaterials();
-
-    boolean existsByMa(String ma, Integer excludeId);
 }

@@ -60,7 +60,7 @@ public class CongNgheMangController {
     public ResponseEntity<?> create(
             @Valid @RequestBody CongNgheMangRequest request,
             BindingResult result) {
-        log.info("Creating new network technology with code: {}", request.getMa());
+        log.info("Creating new network technology");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class CongNgheMangController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting network technology with id: {}", id);
-        try {
-            service.deleteCongNgheMang(id);
-            log.info("Successfully deleted network technology with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting network technology with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<CongNgheMangResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String tenCongNgheMang,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching network technologies - keyword: {}, tenCongNgheMang: {}, page: {}, size: {}",
-                keyword, tenCongNgheMang, page, size);
+        log.info("Searching network technologies - keyword: {} page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (tenCongNgheMang != null && !tenCongNgheMang.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByTenCongNgheMang(tenCongNgheMang.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchCongNgheMang(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllCongNgheMang(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllTenCongNgheMangNames() {
-        log.info("Getting all network technology names");
-        List<String> names = service.getAllTenCongNgheMangNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if network technology code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/ten-cong-nghe-mang")
-    public ResponseEntity<Boolean> checkTenCongNgheMangExists(
-            @RequestParam String tenCongNgheMang,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if network technology name exists: {}, excludeId: {}", tenCongNgheMang, excludeId);
-        boolean exists = service.existsByTenCongNgheMang(tenCongNgheMang, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

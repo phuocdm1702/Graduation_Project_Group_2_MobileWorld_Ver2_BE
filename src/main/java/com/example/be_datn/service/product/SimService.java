@@ -19,13 +19,5 @@ public interface SimService {
 
     SimResponse updateSim(Integer id, SimRequest request);
 
-    void deleteSim(Integer id);
-
     Page<SimResponse> searchSim(String keyword, Pageable pageable);
-
-    Page<SimResponse> filterBySoLuongSimHoTro(Integer soLuongSimHoTro, Pageable pageable);
-
-    List<String> getAllSimTypes();
-
-    boolean existsByMa(String ma, Integer excludeId);
 }

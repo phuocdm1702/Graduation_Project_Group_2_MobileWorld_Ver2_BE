@@ -133,9 +133,25 @@ public class BanHangServiceImpl implements BanHangService {
         return "HD_" + code.toString();
     }
 
+//    @Override
+//    public List<HoaDonDTO> getHDCho() {
+//        return hoaDonRepository.findAllHDNotConfirm().stream().map(this::mapToHoaDonDto).collect(Collectors.toList());
+//    }
+
     @Override
     public List<HoaDonDTO> getHDCho() {
-        return hoaDonRepository.findAllHDNotConfirm().stream().map(this::mapToHoaDonDto).collect(Collectors.toList());
+        // Gọi repository với loaiDon = "trực tiếp" và deleted = true
+        List<HoaDon> hoaDons = hoaDonRepository.findHoaDonByLoaiDonLikeAndDeleted("trực tiếp", true);
+
+        // Ánh xạ thành HoaDonDTO
+        List<HoaDonDTO> hoaDonDTOs = hoaDons.stream()
+                .map(this::mapToHoaDonDto)
+                .collect(Collectors.toList());
+
+//        // Gửi realtime update qua WebSocket (tùy chọn nếu cần)
+//        hoaDonDTOs.forEach(hoaDonDTO -> sendHoaDonUpdate(hoaDonDTO.getId(), hoaDonDTO));
+
+        return hoaDonDTOs;
     }
 
     @Override

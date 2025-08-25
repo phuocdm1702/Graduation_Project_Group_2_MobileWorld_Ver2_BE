@@ -328,6 +328,7 @@ public class NhanVienServicesImpl implements NhanVienServices {
                 existing.setThanhPho(nhanVien.getThanhPho());
                 existing.setQuan(nhanVien.getQuan());
                 existing.setPhuong(nhanVien.getPhuong());
+                existing.setAnhNhanVien(nhanVien.getAnhNhanVien());
                 existing.setDiaChiCuThe(nhanVien.getDiaChiCuThe());
                 existing.setDeleted(nhanVien.getDeleted());
                 existing.setUpdatedAt(new Date().toInstant());

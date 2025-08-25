@@ -419,6 +419,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
                 diaChi.setQuan(dto.getQuan() != null ? dto.getQuan() : "N/A");
                 diaChi.setPhuong(dto.getPhuong() != null ? dto.getPhuong() : "N/A");
                 diaChi.setMacDinh(true);
+                diaChi.setDeleted(true);
                 diaChiKhachHangRepository.save(diaChi);
                 khachHang.setIdDiaChiKhachHang(diaChi);
                 khachHangRepository.save(khachHang);

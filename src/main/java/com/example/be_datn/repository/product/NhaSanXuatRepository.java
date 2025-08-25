@@ -14,20 +14,23 @@ import java.util.Optional;
 @Repository
 public interface NhaSanXuatRepository extends JpaRepository<NhaSanXuat, Integer> {
 
-    // Tìm tất cả các nhà sản xuất chưa bị xóa
-    List<NhaSanXuat> findByDeletedFalse();
+    // Tìm tất cả các nhà sản xuất chưa bị xóa (sắp xếp theo ID giảm dần - mới nhất lên đầu)
+    @Query("SELECT n FROM NhaSanXuat n WHERE n.deleted = false ORDER BY n.id DESC")
+    List<NhaSanXuat> findByDeletedFalseOrderByIdDesc();
 
-    // Tìm tất cả các nhà sản xuất chưa bị xóa với phân trang
-    Page<NhaSanXuat> findByDeletedFalse(Pageable pageable);
+    // Tìm tất cả các nhà sản xuất chưa bị xóa với phân trang (sắp xếp theo ID giảm dần - mới nhất lên đầu)
+    @Query("SELECT n FROM NhaSanXuat n WHERE n.deleted = false ORDER BY n.id DESC")
+    Page<NhaSanXuat> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     // Tìm nhà sản xuất theo ID và chưa bị xóa
     Optional<NhaSanXuat> findByIdAndDeletedFalse(Integer id);
 
-    // Tìm kiếm theo từ khóa
+    // Tìm kiếm theo từ khóa (sắp xếp theo ID giảm dần - mới nhất lên đầu)
     @Query("SELECT n FROM NhaSanXuat n WHERE n.deleted = false AND " +
             "(LOWER(n.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(n.nhaSanXuat) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<NhaSanXuat> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(n.nhaSanXuat) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY n.id DESC")
+    Page<NhaSanXuat> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
     // Kiểm tra tên nhà sản xuất đã tồn tại (chưa bị xóa) - tương tự CumCamera
     boolean existsByNhaSanXuatAndDeletedFalse(String nhaSanXuat);

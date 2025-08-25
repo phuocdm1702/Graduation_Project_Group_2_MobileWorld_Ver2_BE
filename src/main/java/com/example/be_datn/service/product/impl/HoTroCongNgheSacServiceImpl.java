@@ -27,14 +27,14 @@ public class HoTroCongNgheSacServiceImpl implements HoTroCongNgheSacService {
     public Page<HoTroCongNgheSacResponse> getAllHoTroCongNgheSac(Pageable pageable) {
         log.info("Getting all charging technologies with pagination: page={}, size={}",
                 pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<HoTroCongNgheSacResponse> getAllHoTroCongNgheSacList() {
         log.info("Getting all charging technologies as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -125,7 +125,7 @@ public class HoTroCongNgheSacServiceImpl implements HoTroCongNgheSacService {
     @Override
     public Page<HoTroCongNgheSacResponse> searchHoTroCongNgheSac(String keyword, Pageable pageable) {
         log.info("Searching charging technologies with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
     }
 

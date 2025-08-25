@@ -19,15 +19,5 @@ public interface MauSacService {
 
     MauSacResponse updateMauSac(Integer id, MauSacRequest request);
 
-    void deleteMauSac(Integer id);
-
     Page<MauSacResponse> searchMauSac(String keyword, Pageable pageable);
-
-    Page<MauSacResponse> filterByMauSac(String mauSac, Pageable pageable);
-
-    List<String> getAllColorNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByMauSac(String mauSac, Integer excludeId);
 }

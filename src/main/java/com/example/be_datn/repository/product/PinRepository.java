@@ -14,36 +14,33 @@ import java.util.Optional;
 @Repository
 public interface PinRepository extends JpaRepository<Pin, Integer> {
 
-    List<Pin> findByDeletedFalse();
+    @Query("SELECT p FROM Pin p WHERE p.deleted = false ORDER BY p.id DESC")
+    List<Pin> findByDeletedFalseOrderByIdDesc();
 
-    Page<Pin> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT p FROM Pin p WHERE p.deleted = false ORDER BY p.id DESC")
+    Page<Pin> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     Optional<Pin> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(p) > 0 FROM Pin p WHERE p.ma = :ma AND p.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(p) > 0 FROM Pin p WHERE p.loaiPin = :loaiPin AND p.deleted = false")
-    boolean existsByLoaiPinAndDeletedFalse(@Param("loaiPin") String loaiPin);
-
-    @Query("SELECT COUNT(p) > 0 FROM Pin p WHERE p.ma = :ma AND p.deleted = false AND p.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT COUNT(p) > 0 FROM Pin p WHERE p.loaiPin = :loaiPin AND p.deleted = false AND p.id != :excludeId")
-    boolean existsByLoaiPinAndDeletedFalse(@Param("loaiPin") String loaiPin, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT p FROM Pin p WHERE p.ma = :ma AND p.deleted = true")
-    Optional<Pin> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    @Query("SELECT p FROM Pin p WHERE p.loaiPin = :loaiPin AND p.deleted = true")
-    Optional<Pin> findByLoaiPinAndDeletedTrue(@Param("loaiPin") String loaiPin);
-
     @Query("SELECT p FROM Pin p WHERE p.deleted = false AND " +
             "(LOWER(p.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(p.loaiPin) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Pin> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(p.loaiPin) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY p.id DESC")
+    Page<Pin> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT p FROM Pin p WHERE p.deleted = false AND " +
-            "LOWER(p.loaiPin) = LOWER(:loaiPin)")
-    Page<Pin> findByLoaiPinIgnoreCase(@Param("loaiPin") String loaiPin, Pageable pageable);
+    boolean existsByLoaiPinAndDungLuongPinAndDeletedFalse(
+            String loaiPin, String dungLuongPin);
+
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Pin p " +
+            "WHERE p.loaiPin = :loaiPin " +
+            "AND p.dungLuongPin = :dungLuongPin " +
+            "AND p.deleted = false " +
+            "AND p.id != :excludeId")
+    boolean existsByLoaiPinAndDungLuongPinAndDeletedFalseAndIdNot(
+            @Param("loaiPin") String loaiPin,
+            @Param("dungLuongPin") String dungLuongPin,
+            @Param("excludeId") Integer excludeId);
+
+    Optional<Pin> findByLoaiPinAndDungLuongPinAndDeletedTrue(
+            String loaiPin, String dungLuongPin);
 }

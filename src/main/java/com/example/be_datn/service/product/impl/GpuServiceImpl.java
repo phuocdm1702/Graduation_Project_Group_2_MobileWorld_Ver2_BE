@@ -27,14 +27,14 @@ public class GpuServiceImpl implements GpuService {
     public Page<GpuResponse> getAllGpu(Pageable pageable) {
         log.info("Getting all GPUs with pagination: page={}, size={}",
                 pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<GpuResponse> getAllGpuList() {
         log.info("Getting all GPUs as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -123,7 +123,7 @@ public class GpuServiceImpl implements GpuService {
     @Override
     public Page<GpuResponse> searchGpu(String keyword, Pageable pageable) {
         log.info("Searching GPUs with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
     }
 

@@ -25,16 +25,18 @@ public class NhaSanXuatServiceImpl implements NhaSanXuatService {
 
     @Override
     public Page<NhaSanXuatResponse> getAllNhaSanXuat(Pageable pageable) {
-        log.info("Getting all manufacturers with pagination: page={}, size={}",
+        log.info("Getting all manufacturers with pagination: page={}, size={} (newest first)",
                 pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<NhaSanXuatResponse> getAllNhaSanXuatList() {
-        log.info("Getting all manufacturers as list");
-        return repository.findByDeletedFalse().stream()
+        log.info("Getting all manufacturers as list (newest first)");
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -82,7 +84,7 @@ public class NhaSanXuatServiceImpl implements NhaSanXuatService {
                 .build();
 
         NhaSanXuat savedEntity = repository.save(entity);
-        log.info("Created new manufacturer with id: {}", savedEntity.getId());
+        log.info("Created new manufacturer with id: {} (will appear at top of list)", savedEntity.getId());
         return convertToResponse(savedEntity);
     }
 
@@ -122,8 +124,9 @@ public class NhaSanXuatServiceImpl implements NhaSanXuatService {
 
     @Override
     public Page<NhaSanXuatResponse> searchNhaSanXuat(String keyword, Pageable pageable) {
-        log.info("Searching manufacturers with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        log.info("Searching manufacturers with keyword: {} (newest first)", keyword);
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
     }
 

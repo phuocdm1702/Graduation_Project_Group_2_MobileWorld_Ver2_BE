@@ -14,11 +14,11 @@ import java.util.Optional;
 @Repository
 public interface BoNhoTrongRepository extends JpaRepository<BoNhoTrong, Integer> {
 
-    // Tìm tất cả bộ nhớ trong chưa bị xóa
-    List<BoNhoTrong> findByDeletedFalse();
+    @Query("SELECT b FROM BoNhoTrong b WHERE b.deleted = false ORDER BY b.id DESC")
+    List<BoNhoTrong> findByDeletedFalseOrderByIdDesc();
 
-    // Tìm tất cả bộ nhớ trong chưa bị xóa với phân trang
-    Page<BoNhoTrong> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT b FROM BoNhoTrong b WHERE b.deleted = false ORDER BY b.id DESC")
+    Page<BoNhoTrong> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     // Tìm bộ nhớ trong theo ID và chưa bị xóa
     Optional<BoNhoTrong> findByIdAndDeletedFalse(Integer id);
@@ -26,8 +26,9 @@ public interface BoNhoTrongRepository extends JpaRepository<BoNhoTrong, Integer>
     // Tìm kiếm theo từ khóa
     @Query("SELECT b FROM BoNhoTrong b WHERE b.deleted = false AND " +
             "(LOWER(b.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(b.dungLuongBoNhoTrong) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<BoNhoTrong> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(b.dungLuongBoNhoTrong) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY b.id DESC")
+    Page<BoNhoTrong> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
     // Kiểm tra dung lượng bộ nhớ trong đã tồn tại (chưa bị xóa)
     boolean existsByDungLuongBoNhoTrongAndDeletedFalse(String dungLuongBoNhoTrong);

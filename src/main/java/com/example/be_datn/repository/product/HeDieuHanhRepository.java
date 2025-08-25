@@ -14,36 +14,34 @@ import java.util.Optional;
 @Repository
 public interface HeDieuHanhRepository extends JpaRepository<HeDieuHanh, Integer> {
 
-    List<HeDieuHanh> findByDeletedFalse();
+    @Query("SELECT h FROM HeDieuHanh h WHERE h.deleted = false ORDER BY h.id DESC")
+    List<HeDieuHanh> findByDeletedFalseOrderByIdDesc();
 
-    Page<HeDieuHanh> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT h FROM HeDieuHanh h WHERE h.deleted = false ORDER BY h.id DESC")
+    Page<HeDieuHanh> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     Optional<HeDieuHanh> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(h) > 0 FROM HeDieuHanh h WHERE h.ma = :ma AND h.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(h) > 0 FROM HeDieuHanh h WHERE h.heDieuHanh = :heDieuHanh AND h.deleted = false")
-    boolean existsByHeDieuHanhAndDeletedFalse(@Param("heDieuHanh") String heDieuHanh);
-
-    @Query("SELECT COUNT(h) > 0 FROM HeDieuHanh h WHERE h.ma = :ma AND h.deleted = false AND h.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT COUNT(h) > 0 FROM HeDieuHanh h WHERE h.heDieuHanh = :heDieuHanh AND h.deleted = false AND h.id != :excludeId")
-    boolean existsByHeDieuHanhAndDeletedFalse(@Param("heDieuHanh") String heDieuHanh, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT h FROM HeDieuHanh h WHERE h.ma = :ma AND h.deleted = true")
-    Optional<HeDieuHanh> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    @Query("SELECT h FROM HeDieuHanh h WHERE h.heDieuHanh = :heDieuHanh AND h.deleted = true")
-    Optional<HeDieuHanh> findByHeDieuHanhAndDeletedTrue(@Param("heDieuHanh") String heDieuHanh);
-
     @Query("SELECT h FROM HeDieuHanh h WHERE h.deleted = false AND " +
             "(LOWER(h.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(h.heDieuHanh) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<HeDieuHanh> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(h.heDieuHanh) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(h.phienBan) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY h.id DESC")
+    Page<HeDieuHanh> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT h FROM HeDieuHanh h WHERE h.deleted = false AND " +
-            "LOWER(h.heDieuHanh) = LOWER(:heDieuHanh)")
-    Page<HeDieuHanh> findByHeDieuHanhIgnoreCase(@Param("heDieuHanh") String heDieuHanh, Pageable pageable);
+    boolean existsByHeDieuHanhAndPhienBanAndDeletedFalse(
+            String heDieuHanh, String phienBan);
+
+    @Query("SELECT CASE WHEN COUNT(h) > 0 THEN true ELSE false END FROM HeDieuHanh h " +
+            "WHERE h.heDieuHanh = :heDieuHanh " +
+            "AND h.phienBan = :phienBan " +
+            "AND h.deleted = false " +
+            "AND h.id != :excludeId")
+    boolean existsByHeDieuHanhAndPhienBanAndDeletedFalseAndIdNot(
+            @Param("heDieuHanh") String heDieuHanh,
+            @Param("phienBan") String phienBan,
+            @Param("excludeId") Integer excludeId);
+
+    Optional<HeDieuHanh> findByHeDieuHanhAndPhienBanAndDeletedTrue(
+            String heDieuHanh, String phienBan);
 }

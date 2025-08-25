@@ -14,36 +14,55 @@ import java.util.Optional;
 @Repository
 public interface CongNgheManHinhRepository extends JpaRepository<CongNgheManHinh, Integer> {
 
-    List<CongNgheManHinh> findByDeletedFalse();
+    @Query("SELECT c FROM CongNgheManHinh c WHERE c.deleted = false ORDER BY c.id DESC")
+    List<CongNgheManHinh> findByDeletedFalseOrderByIdDesc();
 
-    Page<CongNgheManHinh> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT c FROM CongNgheManHinh c WHERE c.deleted = false ORDER BY c.id DESC")
+    Page<CongNgheManHinh> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     Optional<CongNgheManHinh> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(c) > 0 FROM CongNgheManHinh c WHERE c.ma = :ma AND c.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(c) > 0 FROM CongNgheManHinh c WHERE c.congNgheManHinh = :congNgheManHinh AND c.deleted = false")
-    boolean existsByCongNgheManHinhAndDeletedFalse(@Param("congNgheManHinh") String congNgheManHinh);
-
-    @Query("SELECT COUNT(c) > 0 FROM CongNgheManHinh c WHERE c.ma = :ma AND c.deleted = false AND c.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT COUNT(c) > 0 FROM CongNgheManHinh c WHERE c.congNgheManHinh = :congNgheManHinh AND c.deleted = false AND c.id != :excludeId")
-    boolean existsByCongNgheManHinhAndDeletedFalse(@Param("congNgheManHinh") String congNgheManHinh, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT c FROM CongNgheManHinh c WHERE c.ma = :ma AND c.deleted = true")
-    Optional<CongNgheManHinh> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    @Query("SELECT c FROM CongNgheManHinh c WHERE c.congNgheManHinh = :congNgheManHinh AND c.deleted = true")
-    Optional<CongNgheManHinh> findByCongNgheManHinhAndDeletedTrue(@Param("congNgheManHinh") String congNgheManHinh);
-
     @Query("SELECT c FROM CongNgheManHinh c WHERE c.deleted = false AND " +
             "(LOWER(c.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(c.congNgheManHinh) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<CongNgheManHinh> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(c.congNgheManHinh) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY c.id DESC")
+    Page<CongNgheManHinh> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT c FROM CongNgheManHinh c WHERE c.deleted = false AND " +
-            "LOWER(c.congNgheManHinh) = LOWER(:congNgheManHinh)")
-    Page<CongNgheManHinh> findByCongNgheManHinhIgnoreCase(@Param("congNgheManHinh") String congNgheManHinh, Pageable pageable);
+    boolean existsByCongNgheManHinhAndChuanManHinhAndKichThuocAndDoPhanGiaiAndDoSangToiDaAndTanSoQuetAndKieuManHinhAndDeletedFalse(
+            String congNgheManHinh,
+            String chuanManHinh,
+            String kichThuoc,
+            String doPhanGiai,
+            String doSangToiDa,
+            String tanSoQuet,
+            String kieuManHinh);
+
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM CongNgheManHinh c " +
+            "WHERE c.congNgheManHinh = :congNgheManHinh " +
+            "AND c.chuanManHinh = :chuanManHinh " +
+            "AND c.kichThuoc = :kichThuoc " +
+            "AND c.doPhanGiai = :doPhanGiai " +
+            "AND c.doSangToiDa = :doSangToiDa " +
+            "AND c.tanSoQuet = :tanSoQuet " +
+            "AND c.kieuManHinh = :kieuManHinh " +
+            "AND c.deleted = false " +
+            "AND c.id != :excludeId")
+    boolean existsByAllFieldsAndDeletedFalseAndIdNot(
+            @Param("congNgheManHinh") String congNgheManHinh,
+            @Param("chuanManHinh") String chuanManHinh,
+            @Param("kichThuoc") String kichThuoc,
+            @Param("doPhanGiai") String doPhanGiai,
+            @Param("doSangToiDa") String doSangToiDa,
+            @Param("tanSoQuet") String tanSoQuet,
+            @Param("kieuManHinh") String kieuManHinh,
+            @Param("excludeId") Integer excludeId);
+
+    Optional<CongNgheManHinh> findByCongNgheManHinhAndChuanManHinhAndKichThuocAndDoPhanGiaiAndDoSangToiDaAndTanSoQuetAndKieuManHinhAndDeletedTrue(
+            String congNgheManHinh,
+            String chuanManHinh,
+            String kichThuoc,
+            String doPhanGiai,
+            String doSangToiDa,
+            String tanSoQuet,
+            String kieuManHinh);
 }

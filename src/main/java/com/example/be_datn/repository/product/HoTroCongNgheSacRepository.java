@@ -14,11 +14,11 @@ import java.util.Optional;
 @Repository
 public interface HoTroCongNgheSacRepository extends JpaRepository<HoTroCongNgheSac, Integer> {
 
-    // Tìm tất cả các hỗ trợ công nghệ sạc chưa bị xóa
-    List<HoTroCongNgheSac> findByDeletedFalse();
+    @Query("SELECT h FROM HoTroCongNgheSac h WHERE h.deleted = false ORDER BY h.id DESC")
+    List<HoTroCongNgheSac> findByDeletedFalseOrderByIdDesc();
 
-    // Tìm tất cả các hỗ trợ công nghệ sạc chưa bị xóa với phân trang
-    Page<HoTroCongNgheSac> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT h FROM HoTroCongNgheSac h WHERE h.deleted = false ORDER BY h.id DESC")
+    Page<HoTroCongNgheSac> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     // Tìm hỗ trợ công nghệ sạc theo ID và chưa bị xóa
     Optional<HoTroCongNgheSac> findByIdAndDeletedFalse(Integer id);
@@ -27,8 +27,9 @@ public interface HoTroCongNgheSacRepository extends JpaRepository<HoTroCongNgheS
     @Query("SELECT h FROM HoTroCongNgheSac h WHERE h.deleted = false AND " +
             "(LOWER(h.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(h.congSac) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(h.congNgheHoTro) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<HoTroCongNgheSac> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(h.congNgheHoTro) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY h.id DESC")
+    Page<HoTroCongNgheSac> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
     // Kiểm tra cổng sạc và công nghệ hỗ trợ đã tồn tại (chưa bị xóa) - tương tự CumCamera
     boolean existsByCongSacAndCongNgheHoTroAndDeletedFalse(String congSac, String congNgheHoTro);

@@ -25,16 +25,15 @@ public class MauSacServiceImpl implements MauSacService {
 
     @Override
     public Page<MauSacResponse> getAllMauSac(Pageable pageable) {
-        log.info("Getting all colors with pagination: page={}, size={}",
-                pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        log.info("Getting all colors with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<MauSacResponse> getAllMauSacList() {
         log.info("Getting all colors as list");
-        return repository.findByDeletedFalse().stream()
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -53,43 +52,34 @@ public class MauSacServiceImpl implements MauSacService {
     @Override
     @Transactional
     public MauSacResponse createMauSac(MauSacRequest request) {
-        log.info("Creating new color with code: {}", request.getMa());
+        log.info("Creating new color");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Color code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã màu sắc đã tồn tại!");
+        // Kiểm tra trùng lặp: cả tên màu sắc và mã màu
+        boolean exists = repository.existsByMauSacAndMaMauAndDeletedFalse(
+                request.getMauSac().trim(),
+                request.getMaMau().trim());
+
+        if (exists) {
+            log.error("Color already exists with same name and color code");
+            throw new RuntimeException("Màu sắc với tên màu và mã màu này đã tồn tại!");
         }
 
-        if (repository.existsByMauSacAndDeletedFalse(request.getMauSac())) {
-            log.error("Color name already exists: {}", request.getMauSac());
-            throw new RuntimeException("Tên màu sắc đã tồn tại!");
-        }
+        // Tìm màu sắc đã bị xóa mềm có cùng tên màu và mã màu
+        Optional<MauSac> existingDeleted = repository.findByMauSacAndMaMauAndDeletedTrue(
+                request.getMauSac().trim(),
+                request.getMaMau().trim());
 
-        Optional<MauSac> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<MauSac> existingByName = repository.findByMauSacAndDeletedTrue(request.getMauSac());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted color by code: {}", request.getMa());
-            MauSac entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted color with same name and color code");
+            MauSac entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setMauSac(request.getMauSac());
-            entity.setMaMau(request.getMaMau()); // Cập nhật mã màu
-            return convertToResponse(repository.save(entity));
-        }
-
-        if (existingByName.isPresent()) {
-            log.info("Restoring soft-deleted color by name: {}", request.getMauSac());
-            MauSac entity = existingByName.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
-            entity.setMaMau(request.getMaMau()); // Cập nhật mã màu
             return convertToResponse(repository.save(entity));
         }
 
         MauSac entity = MauSac.builder()
-                .ma(request.getMa())
-                .mauSac(request.getMauSac())
-                .maMau(request.getMaMau()) // Thêm mã màu
+                .ma("") // Không sử dụng mã nữa
+                .mauSac(request.getMauSac().trim())
+                .maMau(request.getMaMau())
                 .deleted(false)
                 .build();
 
@@ -109,21 +99,26 @@ public class MauSacServiceImpl implements MauSacService {
                     return new RuntimeException("Màu sắc không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("Color code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã màu sắc đã tồn tại!");
+        String newMauSac = request.getMauSac().trim();
+        String newMaMau = request.getMaMau().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getMauSac().equals(newMauSac) &&
+                entity.getMaMau().equals(newMaMau);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với màu sắc khác
+            boolean existsOther = repository.existsByMauSacAndMaMauAndDeletedFalseAndIdNot(
+                    newMauSac, newMaMau, id);
+
+            if (existsOther) {
+                log.error("Color already exists with same name and color code during update");
+                throw new RuntimeException("Màu sắc với tên màu và mã màu này đã tồn tại!");
+            }
         }
 
-        if (!entity.getMauSac().equals(request.getMauSac()) &&
-                repository.existsByMauSacAndDeletedFalse(request.getMauSac(), id)) {
-            log.error("Color name already exists during update: {}", request.getMauSac());
-            throw new RuntimeException("Tên màu sắc đã tồn tại!");
-        }
-
-        entity.setMa(request.getMa());
-        entity.setMauSac(request.getMauSac());
-        entity.setMaMau(request.getMaMau()); // Cập nhật mã màu
+        entity.setMauSac(newMauSac);
+        entity.setMaMau(newMaMau);
 
         MauSac updatedEntity = repository.save(entity);
         log.info("Updated color with id: {}", id);
@@ -131,60 +126,10 @@ public class MauSacServiceImpl implements MauSacService {
     }
 
     @Override
-    @Transactional
-    public void deleteMauSac(Integer id) {
-        log.info("Soft deleting color with id: {}", id);
-
-        MauSac entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Color not found for deletion with id: {}", id);
-                    return new RuntimeException("Màu sắc không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted color with id: {}", id);
-    }
-
-    @Override
     public Page<MauSacResponse> searchMauSac(String keyword, Pageable pageable) {
         log.info("Searching colors with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
-    }
-
-    @Override
-    public Page<MauSacResponse> filterByMauSac(String mauSac, Pageable pageable) {
-        log.info("Filtering colors by name: {}", mauSac);
-        return repository.findByMauSacIgnoreCase(mauSac, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllColorNames() {
-        log.info("Getting all color names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(MauSac::getMauSac)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByMauSac(String mauSac, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMauSacAndDeletedFalse(mauSac, excludeId);
-        }
-        return repository.existsByMauSacAndDeletedFalse(mauSac);
     }
 
     private MauSacResponse convertToResponse(MauSac entity) {
@@ -192,7 +137,7 @@ public class MauSacServiceImpl implements MauSacService {
                 .id(entity.getId())
                 .ma(entity.getMa())
                 .mauSac(entity.getMauSac())
-                .maMau(entity.getMaMau()) // Thêm mã màu vào response
+                .maMau(entity.getMaMau())
                 .deleted(entity.getDeleted())
                 .build();
     }

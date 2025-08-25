@@ -9,25 +9,21 @@ import java.util.List;
 
 public interface CongNgheMangService {
 
+    // Lấy tất cả công nghệ mạng với phân trang
     Page<CongNgheMangResponse> getAllCongNgheMang(Pageable pageable);
 
+    // Lấy tất cả công nghệ mạng dạng list
     List<CongNgheMangResponse> getAllCongNgheMangList();
 
+    // Lấy công nghệ mạng theo ID
     CongNgheMangResponse getCongNgheMangById(Integer id);
 
+    // Tạo mới công nghệ mạng
     CongNgheMangResponse createCongNgheMang(CongNgheMangRequest request);
 
+    // Cập nhật công nghệ mạng
     CongNgheMangResponse updateCongNgheMang(Integer id, CongNgheMangRequest request);
 
-    void deleteCongNgheMang(Integer id);
-
+    // Tìm kiếm công nghệ mạng
     Page<CongNgheMangResponse> searchCongNgheMang(String keyword, Pageable pageable);
-
-    Page<CongNgheMangResponse> filterByTenCongNgheMang(String tenCongNgheMang, Pageable pageable);
-
-    List<String> getAllTenCongNgheMangNames();
-
-    boolean existsByMa(String ma, Integer excludeId);
-
-    boolean existsByTenCongNgheMang(String tenCongNgheMang, Integer excludeId);
 }

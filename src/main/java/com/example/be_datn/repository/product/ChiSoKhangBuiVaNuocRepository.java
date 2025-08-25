@@ -14,36 +14,36 @@ import java.util.Optional;
 @Repository
 public interface ChiSoKhangBuiVaNuocRepository extends JpaRepository<ChiSoKhangBuiVaNuoc, Integer> {
 
-    List<ChiSoKhangBuiVaNuoc> findByDeletedFalse();
+    // Tìm tất cả các chỉ số kháng bụi và nước chưa bị xóa (sắp xếp theo ID giảm dần - mới nhất lên đầu)
+    @Query("SELECT c FROM ChiSoKhangBuiVaNuoc c WHERE c.deleted = false ORDER BY c.id DESC")
+    List<ChiSoKhangBuiVaNuoc> findByDeletedFalseOrderByIdDesc();
 
-    Page<ChiSoKhangBuiVaNuoc> findByDeletedFalse(Pageable pageable);
+    // Tìm tất cả các chỉ số kháng bụi và nước chưa bị xóa với phân trang (sắp xếp theo ID giảm dần - mới nhất lên đầu)
+    @Query("SELECT c FROM ChiSoKhangBuiVaNuoc c WHERE c.deleted = false ORDER BY c.id DESC")
+    Page<ChiSoKhangBuiVaNuoc> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
+    // Tìm chỉ số kháng bụi và nước theo ID và chưa bị xóa
     Optional<ChiSoKhangBuiVaNuoc> findByIdAndDeletedFalse(Integer id);
 
-    @Query("SELECT COUNT(c) > 0 FROM ChiSoKhangBuiVaNuoc c WHERE c.ma = :ma AND c.deleted = false")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma);
-
-    @Query("SELECT COUNT(c) > 0 FROM ChiSoKhangBuiVaNuoc c WHERE c.tenChiSo = :tenChiSo AND c.deleted = false")
-    boolean existsByTenChiSoAndDeletedFalse(@Param("tenChiSo") String tenChiSo);
-
-    @Query("SELECT COUNT(c) > 0 FROM ChiSoKhangBuiVaNuoc c WHERE c.ma = :ma AND c.deleted = false AND c.id != :excludeId")
-    boolean existsByMaAndDeletedFalse(@Param("ma") String ma, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT COUNT(c) > 0 FROM ChiSoKhangBuiVaNuoc c WHERE c.tenChiSo = :tenChiSo AND c.deleted = false AND c.id != :excludeId")
-    boolean existsByTenChiSoAndDeletedFalse(@Param("tenChiSo") String tenChiSo, @Param("excludeId") Integer excludeId);
-
-    @Query("SELECT c FROM ChiSoKhangBuiVaNuoc c WHERE c.ma = :ma AND c.deleted = true")
-    Optional<ChiSoKhangBuiVaNuoc> findByMaAndDeletedTrue(@Param("ma") String ma);
-
-    @Query("SELECT c FROM ChiSoKhangBuiVaNuoc c WHERE c.tenChiSo = :tenChiSo AND c.deleted = true")
-    Optional<ChiSoKhangBuiVaNuoc> findByTenChiSoAndDeletedTrue(@Param("tenChiSo") String tenChiSo);
-
+    // Tìm kiếm theo từ khóa (sắp xếp theo ID giảm dần - mới nhất lên đầu)
     @Query("SELECT c FROM ChiSoKhangBuiVaNuoc c WHERE c.deleted = false AND " +
             "(LOWER(c.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(c.tenChiSo) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<ChiSoKhangBuiVaNuoc> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(c.tenChiSo) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY c.id DESC")
+    Page<ChiSoKhangBuiVaNuoc> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT c FROM ChiSoKhangBuiVaNuoc c WHERE c.deleted = false AND " +
-            "LOWER(c.tenChiSo) = LOWER(:tenChiSo)")
-    Page<ChiSoKhangBuiVaNuoc> findByTenChiSoIgnoreCase(@Param("tenChiSo") String tenChiSo, Pageable pageable);
+    // Kiểm tra tên chỉ số đã tồn tại (chưa bị xóa) - tương tự NhaSanXuat
+    boolean existsByTenChiSoAndDeletedFalse(String tenChiSo);
+
+    // Kiểm tra tên chỉ số đã tồn tại (chưa bị xóa) loại trừ ID hiện tại - tương tự NhaSanXuat
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM ChiSoKhangBuiVaNuoc c " +
+            "WHERE c.tenChiSo = :tenChiSo " +
+            "AND c.deleted = false " +
+            "AND c.id != :excludeId")
+    boolean existsByTenChiSoAndDeletedFalseAndIdNot(
+            @Param("tenChiSo") String tenChiSo,
+            @Param("excludeId") Integer excludeId);
+
+    // Tìm chỉ số đã bị xóa theo tên - tương tự NhaSanXuat
+    Optional<ChiSoKhangBuiVaNuoc> findByTenChiSoAndDeletedTrue(String tenChiSo);
 }

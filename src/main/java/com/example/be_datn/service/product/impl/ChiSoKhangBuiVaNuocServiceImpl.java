@@ -25,15 +25,18 @@ public class ChiSoKhangBuiVaNuocServiceImpl implements ChiSoKhangBuiVaNuocServic
 
     @Override
     public Page<ChiSoKhangBuiVaNuocResponse> getAllChiSoKhangBuiVaNuoc(Pageable pageable) {
-        log.info("Getting all dust and water resistance indices with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        log.info("Getting all dust and water resistance indices with pagination: page={}, size={} (newest first)",
+                pageable.getPageNumber(), pageable.getPageSize());
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<ChiSoKhangBuiVaNuocResponse> getAllChiSoKhangBuiVaNuocList() {
-        log.info("Getting all dust and water resistance indices as list");
-        return repository.findByDeletedFalse().stream()
+        log.info("Getting all dust and water resistance indices as list (newest first)");
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -52,45 +55,36 @@ public class ChiSoKhangBuiVaNuocServiceImpl implements ChiSoKhangBuiVaNuocServic
     @Override
     @Transactional
     public ChiSoKhangBuiVaNuocResponse createChiSoKhangBuiVaNuoc(ChiSoKhangBuiVaNuocRequest request) {
-        log.info("Creating new dust and water resistance index with code: {}", request.getMa());
+        log.info("Creating new dust and water resistance index");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Dust and water resistance index code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã chỉ số kháng bụi và nước đã tồn tại!");
+        // Kiểm tra trùng lặp: tên chỉ số
+        boolean exists = repository.existsByTenChiSoAndDeletedFalse(
+                request.getTenChiSo().trim());
+
+        if (exists) {
+            log.error("Dust and water resistance index already exists with same name");
+            throw new RuntimeException("Chỉ số kháng bụi và nước với tên này đã tồn tại!");
         }
 
-        if (repository.existsByTenChiSoAndDeletedFalse(request.getTenChiSo())) {
-            log.error("Dust and water resistance index name already exists: {}", request.getTenChiSo());
-            throw new RuntimeException("Tên chỉ số kháng bụi và nước đã tồn tại!");
-        }
+        // Tìm chỉ số đã bị xóa mềm có cùng tên
+        Optional<ChiSoKhangBuiVaNuoc> existingDeleted = repository.findByTenChiSoAndDeletedTrue(
+                request.getTenChiSo().trim());
 
-        Optional<ChiSoKhangBuiVaNuoc> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<ChiSoKhangBuiVaNuoc> existingByName = repository.findByTenChiSoAndDeletedTrue(request.getTenChiSo());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted dust and water resistance index by code: {}", request.getMa());
-            ChiSoKhangBuiVaNuoc entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted dust and water resistance index with same name");
+            ChiSoKhangBuiVaNuoc entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setTenChiSo(request.getTenChiSo());
-            return convertToResponse(repository.save(entity));
-        }
-
-        if (existingByName.isPresent()) {
-            log.info("Restoring soft-deleted dust and water resistance index by name: {}", request.getTenChiSo());
-            ChiSoKhangBuiVaNuoc entity = existingByName.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
             return convertToResponse(repository.save(entity));
         }
 
         ChiSoKhangBuiVaNuoc entity = ChiSoKhangBuiVaNuoc.builder()
-                .ma(request.getMa())
-                .tenChiSo(request.getTenChiSo())
+                .ma("") // Không sử dụng mã nữa
+                .tenChiSo(request.getTenChiSo().trim())
                 .deleted(false)
                 .build();
 
         ChiSoKhangBuiVaNuoc savedEntity = repository.save(entity);
-        log.info("Created new dust and water resistance index with id: {}", savedEntity.getId());
+        log.info("Created new dust and water resistance index with id: {} (will appear at top of list)", savedEntity.getId());
         return convertToResponse(savedEntity);
     }
 
@@ -105,20 +99,23 @@ public class ChiSoKhangBuiVaNuocServiceImpl implements ChiSoKhangBuiVaNuocServic
                     return new RuntimeException("Chỉ số kháng bụi và nước không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("Dust and water resistance index code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã chỉ số kháng bụi và nước đã tồn tại!");
+        String newTenChiSo = request.getTenChiSo().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getTenChiSo().equals(newTenChiSo);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với chỉ số khác
+            boolean existsOther = repository.existsByTenChiSoAndDeletedFalseAndIdNot(
+                    newTenChiSo, id);
+
+            if (existsOther) {
+                log.error("Dust and water resistance index already exists with same name during update");
+                throw new RuntimeException("Chỉ số kháng bụi và nước với tên này đã tồn tại!");
+            }
         }
 
-        if (!entity.getTenChiSo().equals(request.getTenChiSo()) &&
-                repository.existsByTenChiSoAndDeletedFalse(request.getTenChiSo(), id)) {
-            log.error("Dust and water resistance index name already exists during update: {}", request.getTenChiSo());
-            throw new RuntimeException("Tên chỉ số kháng bụi và nước đã tồn tại!");
-        }
-
-        entity.setMa(request.getMa());
-        entity.setTenChiSo(request.getTenChiSo());
+        entity.setTenChiSo(newTenChiSo);
 
         ChiSoKhangBuiVaNuoc updatedEntity = repository.save(entity);
         log.info("Updated dust and water resistance index with id: {}", id);
@@ -126,62 +123,14 @@ public class ChiSoKhangBuiVaNuocServiceImpl implements ChiSoKhangBuiVaNuocServic
     }
 
     @Override
-    @Transactional
-    public void deleteChiSoKhangBuiVaNuoc(Integer id) {
-        log.info("Soft deleting dust and water resistance index with id: {}", id);
-
-        ChiSoKhangBuiVaNuoc entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Dust and water resistance index not found for deletion with id: {}", id);
-                    return new RuntimeException("Chỉ số kháng bụi và nước không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted dust and water resistance index with id: {}", id);
-    }
-
-    @Override
     public Page<ChiSoKhangBuiVaNuocResponse> searchChiSoKhangBuiVaNuoc(String keyword, Pageable pageable) {
-        log.info("Searching dust and water resistance indices with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        log.info("Searching dust and water resistance indices with keyword: {} (newest first)", keyword);
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
     }
 
-    @Override
-    public Page<ChiSoKhangBuiVaNuocResponse> filterByTenChiSo(String tenChiSo, Pageable pageable) {
-        log.info("Filtering dust and water resistance indices by name: {}", tenChiSo);
-        return repository.findByTenChiSoIgnoreCase(tenChiSo, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllTenChiSoNames() {
-        log.info("Getting all dust and water resistance index names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(ChiSoKhangBuiVaNuoc::getTenChiSo)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByTenChiSo(String tenChiSo, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByTenChiSoAndDeletedFalse(tenChiSo, excludeId);
-        }
-        return repository.existsByTenChiSoAndDeletedFalse(tenChiSo);
-    }
-
+    // Chuyển đổi Entity sang Response DTO
     private ChiSoKhangBuiVaNuocResponse convertToResponse(ChiSoKhangBuiVaNuoc entity) {
         return ChiSoKhangBuiVaNuocResponse.builder()
                 .id(entity.getId())

@@ -25,15 +25,18 @@ public class CongNgheMangServiceImpl implements CongNgheMangService {
 
     @Override
     public Page<CongNgheMangResponse> getAllCongNgheMang(Pageable pageable) {
-        log.info("Getting all network technologies with pagination: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
-        return repository.findByDeletedFalse(pageable)
+        log.info("Getting all network technologies with pagination: page={}, size={} (newest first)",
+                pageable.getPageNumber(), pageable.getPageSize());
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.findByDeletedFalseOrderByIdDesc(pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
     public List<CongNgheMangResponse> getAllCongNgheMangList() {
-        log.info("Getting all network technologies as list");
-        return repository.findByDeletedFalse().stream()
+        log.info("Getting all network technologies as list (newest first)");
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.findByDeletedFalseOrderByIdDesc().stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -52,45 +55,36 @@ public class CongNgheMangServiceImpl implements CongNgheMangService {
     @Override
     @Transactional
     public CongNgheMangResponse createCongNgheMang(CongNgheMangRequest request) {
-        log.info("Creating new network technology with code: {}", request.getMa());
+        log.info("Creating new network technology");
 
-        if (repository.existsByMaAndDeletedFalse(request.getMa())) {
-            log.error("Network technology code already exists: {}", request.getMa());
-            throw new RuntimeException("Mã công nghệ mạng đã tồn tại!");
+        // Kiểm tra trùng lặp: tên công nghệ mạng
+        boolean exists = repository.existsByTenCongNgheMangAndDeletedFalse(
+                request.getTenCongNgheMang().trim());
+
+        if (exists) {
+            log.error("Network technology already exists with same name");
+            throw new RuntimeException("Công nghệ mạng với tên này đã tồn tại!");
         }
 
-        if (repository.existsByTenCongNgheMangAndDeletedFalse(request.getTenCongNgheMang())) {
-            log.error("Network technology name already exists: {}", request.getTenCongNgheMang());
-            throw new RuntimeException("Tên công nghệ mạng đã tồn tại!");
-        }
+        // Tìm công nghệ mạng đã bị xóa mềm có cùng tên
+        Optional<CongNgheMang> existingDeleted = repository.findByTenCongNgheMangAndDeletedTrue(
+                request.getTenCongNgheMang().trim());
 
-        Optional<CongNgheMang> existingByCode = repository.findByMaAndDeletedTrue(request.getMa());
-        Optional<CongNgheMang> existingByName = repository.findByTenCongNgheMangAndDeletedTrue(request.getTenCongNgheMang());
-
-        if (existingByCode.isPresent()) {
-            log.info("Restoring soft-deleted network technology by code: {}", request.getMa());
-            CongNgheMang entity = existingByCode.get();
+        if (existingDeleted.isPresent()) {
+            log.info("Restoring soft-deleted network technology with same name");
+            CongNgheMang entity = existingDeleted.get();
             entity.setDeleted(false);
-            entity.setTenCongNgheMang(request.getTenCongNgheMang());
-            return convertToResponse(repository.save(entity));
-        }
-
-        if (existingByName.isPresent()) {
-            log.info("Restoring soft-deleted network technology by name: {}", request.getTenCongNgheMang());
-            CongNgheMang entity = existingByName.get();
-            entity.setDeleted(false);
-            entity.setMa(request.getMa());
             return convertToResponse(repository.save(entity));
         }
 
         CongNgheMang entity = CongNgheMang.builder()
-                .ma(request.getMa())
-                .tenCongNgheMang(request.getTenCongNgheMang())
+                .ma("") // Không sử dụng mã nữa
+                .tenCongNgheMang(request.getTenCongNgheMang().trim())
                 .deleted(false)
                 .build();
 
         CongNgheMang savedEntity = repository.save(entity);
-        log.info("Created new network technology with id: {}", savedEntity.getId());
+        log.info("Created new network technology with id: {} (will appear at top of list)", savedEntity.getId());
         return convertToResponse(savedEntity);
     }
 
@@ -105,20 +99,23 @@ public class CongNgheMangServiceImpl implements CongNgheMangService {
                     return new RuntimeException("Công nghệ mạng không tồn tại hoặc đã bị xóa!");
                 });
 
-        if (!entity.getMa().equals(request.getMa()) &&
-                repository.existsByMaAndDeletedFalse(request.getMa(), id)) {
-            log.error("Network technology code already exists during update: {}", request.getMa());
-            throw new RuntimeException("Mã công nghệ mạng đã tồn tại!");
+        String newTenCongNgheMang = request.getTenCongNgheMang().trim();
+
+        // Nếu không thay đổi gì thì cho phép update
+        boolean isUnchanged = entity.getTenCongNgheMang().equals(newTenCongNgheMang);
+
+        if (!isUnchanged) {
+            // Nếu có thay đổi, kiểm tra trùng lặp với công nghệ mạng khác
+            boolean existsOther = repository.existsByTenCongNgheMangAndDeletedFalseAndIdNot(
+                    newTenCongNgheMang, id);
+
+            if (existsOther) {
+                log.error("Network technology already exists with same name during update");
+                throw new RuntimeException("Công nghệ mạng với tên này đã tồn tại!");
+            }
         }
 
-        if (!entity.getTenCongNgheMang().equals(request.getTenCongNgheMang()) &&
-                repository.existsByTenCongNgheMangAndDeletedFalse(request.getTenCongNgheMang(), id)) {
-            log.error("Network technology name already exists during update: {}", request.getTenCongNgheMang());
-            throw new RuntimeException("Tên công nghệ mạng đã tồn tại!");
-        }
-
-        entity.setMa(request.getMa());
-        entity.setTenCongNgheMang(request.getTenCongNgheMang());
+        entity.setTenCongNgheMang(newTenCongNgheMang);
 
         CongNgheMang updatedEntity = repository.save(entity);
         log.info("Updated network technology with id: {}", id);
@@ -126,62 +123,14 @@ public class CongNgheMangServiceImpl implements CongNgheMangService {
     }
 
     @Override
-    @Transactional
-    public void deleteCongNgheMang(Integer id) {
-        log.info("Soft deleting network technology with id: {}", id);
-
-        CongNgheMang entity = repository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> {
-                    log.error("Network technology not found for deletion with id: {}", id);
-                    return new RuntimeException("Công nghệ mạng không tồn tại hoặc đã bị xóa!");
-                });
-
-        entity.setDeleted(true);
-        repository.save(entity);
-        log.info("Soft deleted network technology with id: {}", id);
-    }
-
-    @Override
     public Page<CongNgheMangResponse> searchCongNgheMang(String keyword, Pageable pageable) {
-        log.info("Searching network technologies with keyword: {}", keyword);
-        return repository.searchByKeyword(keyword, pageable)
+        log.info("Searching network technologies with keyword: {} (newest first)", keyword);
+        // Sử dụng method mới để sắp xếp theo ID giảm dần (mới nhất lên đầu)
+        return repository.searchByKeywordOrderByIdDesc(keyword, pageable)
                 .map(this::convertToResponse);
     }
 
-    @Override
-    public Page<CongNgheMangResponse> filterByTenCongNgheMang(String tenCongNgheMang, Pageable pageable) {
-        log.info("Filtering network technologies by name: {}", tenCongNgheMang);
-        return repository.findByTenCongNgheMangIgnoreCase(tenCongNgheMang, pageable)
-                .map(this::convertToResponse);
-    }
-
-    @Override
-    public List<String> getAllTenCongNgheMangNames() {
-        log.info("Getting all network technology names");
-        return repository.findByDeletedFalse()
-                .stream()
-                .map(CongNgheMang::getTenCongNgheMang)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean existsByMa(String ma, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByMaAndDeletedFalse(ma, excludeId);
-        }
-        return repository.existsByMaAndDeletedFalse(ma);
-    }
-
-    @Override
-    public boolean existsByTenCongNgheMang(String tenCongNgheMang, Integer excludeId) {
-        if (excludeId != null) {
-            return repository.existsByTenCongNgheMangAndDeletedFalse(tenCongNgheMang, excludeId);
-        }
-        return repository.existsByTenCongNgheMangAndDeletedFalse(tenCongNgheMang);
-    }
-
+    // Chuyển đổi Entity sang Response DTO
     private CongNgheMangResponse convertToResponse(CongNgheMang entity) {
         return CongNgheMangResponse.builder()
                 .id(entity.getId())

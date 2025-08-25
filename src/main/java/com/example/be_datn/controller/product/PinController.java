@@ -60,7 +60,7 @@ public class PinController {
     public ResponseEntity<?> create(
             @Valid @RequestBody PinRequest request,
             BindingResult result) {
-        log.info("Creating new battery with code: {}", request.getMa());
+        log.info("Creating new battery");
 
         if (result.hasErrors()) {
             log.warn("Validation errors in create request: {}", result.getAllErrors());
@@ -99,64 +99,21 @@ public class PinController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        log.info("Deleting battery with id: {}", id);
-        try {
-            service.deletePin(id);
-            log.info("Successfully deleted battery with id: {}", id);
-            return ResponseEntity.ok(Map.of("message", "Xóa thành công!"));
-        } catch (RuntimeException e) {
-            log.error("Error deleting battery with id {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
     @GetMapping("/search")
     public ResponseEntity<Page<PinResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String loaiPin,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        log.info("Searching batteries - keyword: {}, loaiPin: {}, page: {}, size: {}",
-                keyword, loaiPin, page, size);
+        log.info("Searching batteries - keyword: {}, page: {}, size: {}",
+                keyword, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-
-        if (loaiPin != null && !loaiPin.trim().isEmpty()) {
-            return ResponseEntity.ok(service.filterByLoaiPin(loaiPin.trim(), pageable));
-        }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             return ResponseEntity.ok(service.searchPin(keyword.trim(), pageable));
         }
 
         return ResponseEntity.ok(service.getAllPin(pageable));
-    }
-
-    @GetMapping("/all-names")
-    public ResponseEntity<List<String>> getAllLoaiPinNames() {
-        log.info("Getting all battery type names");
-        List<String> names = service.getAllLoaiPinNames();
-        return ResponseEntity.ok(names);
-    }
-
-    @GetMapping("/exists/ma")
-    public ResponseEntity<Boolean> checkMaExists(
-            @RequestParam String ma,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if battery code exists: {}, excludeId: {}", ma, excludeId);
-        boolean exists = service.existsByMa(ma, excludeId);
-        return ResponseEntity.ok(exists);
-    }
-
-    @GetMapping("/exists/loai-pin")
-    public ResponseEntity<Boolean> checkLoaiPinExists(
-            @RequestParam String loaiPin,
-            @RequestParam(required = false) Integer excludeId) {
-        log.info("Checking if battery type exists: {}, excludeId: {}", loaiPin, excludeId);
-        boolean exists = service.existsByLoaiPin(loaiPin, excludeId);
-        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/stats")

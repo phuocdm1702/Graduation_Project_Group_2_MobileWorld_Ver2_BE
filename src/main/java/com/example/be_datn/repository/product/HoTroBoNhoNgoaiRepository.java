@@ -14,11 +14,11 @@ import java.util.Optional;
 @Repository
 public interface HoTroBoNhoNgoaiRepository extends JpaRepository<HoTroBoNhoNgoai, Integer> {
 
-    // Tìm tất cả các hỗ trợ bộ nhớ ngoài chưa bị xóa
-    List<HoTroBoNhoNgoai> findByDeletedFalse();
+    @Query("SELECT h FROM HoTroBoNhoNgoai h WHERE h.deleted = false ORDER BY h.id DESC")
+    List<HoTroBoNhoNgoai> findByDeletedFalseOrderByIdDesc();
 
-    // Tìm tất cả các hỗ trợ bộ nhớ ngoài chưa bị xóa với phân trang
-    Page<HoTroBoNhoNgoai> findByDeletedFalse(Pageable pageable);
+    @Query("SELECT h FROM HoTroBoNhoNgoai h WHERE h.deleted = false ORDER BY h.id DESC")
+    Page<HoTroBoNhoNgoai> findByDeletedFalseOrderByIdDesc(Pageable pageable);
 
     // Tìm hỗ trợ bộ nhớ ngoài theo ID và chưa bị xóa
     Optional<HoTroBoNhoNgoai> findByIdAndDeletedFalse(Integer id);
@@ -26,8 +26,9 @@ public interface HoTroBoNhoNgoaiRepository extends JpaRepository<HoTroBoNhoNgoai
     // Tìm kiếm theo từ khóa
     @Query("SELECT h FROM HoTroBoNhoNgoai h WHERE h.deleted = false AND " +
             "(LOWER(h.ma) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(h.hoTroBoNhoNgoai) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<HoTroBoNhoNgoai> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+            "LOWER(h.hoTroBoNhoNgoai) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+            "ORDER BY h.id DESC")
+    Page<HoTroBoNhoNgoai> searchByKeywordOrderByIdDesc(@Param("keyword") String keyword, Pageable pageable);
 
     // Kiểm tra tên hỗ trợ bộ nhớ ngoài đã tồn tại (chưa bị xóa)
     boolean existsByHoTroBoNhoNgoaiAndDeletedFalse(String hoTroBoNhoNgoai);

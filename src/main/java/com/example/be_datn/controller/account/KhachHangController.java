@@ -104,6 +104,17 @@ public class KhachHangController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body((e.getMessage()));
         }
     }
+
+    //update dia chi client
+    @PutMapping("/client/updateDiaChi/{id}")
+    public ResponseEntity<?> updateDiaChiClient(@PathVariable Integer id, @RequestBody KhachHangResponse addressDTO) {
+        try {
+            DiaChiKhachHang updatedAddress = khachHangServices.updateDiaChiClient(id, addressDTO);
+            return ResponseEntity.ok(updatedAddress);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body((e.getMessage()));
+        }
+    }
     //thay doi trang thai khach hang
     @PutMapping("/trang-thai/{id}")
     public ResponseEntity<?> trangthai(@PathVariable Integer id) {
@@ -191,6 +202,17 @@ public class KhachHangController {
             return ResponseEntity.ok("Xóa địa chỉ thành công!");
         } catch (Exception e) {
             return ResponseEntity.status(404).body(e.getMessage());
+        }
+    }
+
+    // Xóa vĩnh viễn địa chỉ cho client
+    @DeleteMapping("/client/deleteDiaChi/{id}")
+    public ResponseEntity<String> hardDeleteDiaChi(@PathVariable Integer id) {
+        try {
+            khachHangServices.hardDeleteDiaChi(id);
+            return ResponseEntity.ok("Xóa địa chỉ vĩnh viễn thành công!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 

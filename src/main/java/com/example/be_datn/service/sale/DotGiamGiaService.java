@@ -125,8 +125,11 @@ public class DotGiamGiaService {
     @Transactional
     public void addDotGiamGia(DotGiamGiaDTO dotGiamGiaDTO, List<Integer> idSanPham, List<ViewCTSPDTO> dsCTSP) throws ParseException {
         try {
+            //Chuyển đổi ngày từ DTO sang date
             Date ngayBatDau = new Date(dotGiamGiaDTO.getNgayBatDau().getTime());
             Date ngayKetThuc = new Date(dotGiamGiaDTO.getNgayKetThuc().getTime());
+
+            //Tạo đối tượng DotGiamGia từ data sang DTO
             DotGiamGia dotGiamGia = new DotGiamGia();
             dotGiamGia.setTenDotGiamGia(dotGiamGiaDTO.getTenDotGiamGia());
             dotGiamGia.setLoaiGiamGiaApDung(dotGiamGiaDTO.getLoaiGiamGiaApDung());
@@ -135,6 +138,8 @@ public class DotGiamGiaService {
             dotGiamGia.setNgayBatDau(ngayBatDau);
             dotGiamGia.setNgayKetThuc(ngayKetThuc);
             dotGiamGia.setDeleted(false);
+
+            //Chuẩn hóa ngày bắt đầu để so sánh trạng thái
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             Date ngayBatDauChuanHoa;
             try {
@@ -142,25 +147,34 @@ public class DotGiamGiaService {
             } catch (ParseException e) {
                 throw new RuntimeException("Lỗi khi parse ngày: " + e.getMessage());
             }
+            //So sánh ngày bắt đầu với ngày hiện tại
             dotGiamGia.setTrangThai(ngayBatDauChuanHoa.after(Date.valueOf(LocalDate.now())));
             repository.save(dotGiamGia);
+
+            //Lấy ds sản phẩm từ danh sách idSanPham
             List<SanPham> dsSanPham = sanPhamRepository.findAllById(idSanPham);
+
+            //Tạo map chứa các ctsp được chọn
             Map<Integer, ViewCTSPDTO> selectedCTSPMap = dsCTSP.stream()
                     .filter(ctsp -> ctsp.getSelected() != null && ctsp.getSelected())
                     .collect(Collectors.toMap(ctsp -> ctsp.getCtsp().getId(), ctsp -> ctsp, (e, r) -> e));
             List<ChiTietSanPham> dsChiTietSanPham = chiTietSanPhamRepository.findAllByIdSanPhamIn(idSanPham);
-
             Set<String> addedCTSP = new HashSet<>();
             Date today = Date.valueOf(LocalDate.now());
 
+            //Duyệt danh sách ctsp đượcc họn
             for (ViewCTSPDTO ctspDTO : dsCTSP) {
+                //Bỏ qua nếu ko đc chọn
                 if (ctspDTO.getSelected() == null || !ctspDTO.getSelected()) continue;
+
+                //Tìm ctsp tương ứng trong ds
                 Integer idCTSP = ctspDTO.getCtsp().getId();
                 ChiTietSanPham selectedChiTietSanPham = dsChiTietSanPham.stream()
                         .filter(ctsp -> ctsp.getId().equals(idCTSP))
                         .findFirst().orElse(null);
                 if (selectedChiTietSanPham == null) continue;
 
+                // Lấy danh sách các chi tiết sản phẩm cùng thuộc một sản phẩm, màu sắc và bộ nhớ
                 List<ChiTietSanPham> matchingChiTietSanPhams = dsChiTietSanPham.stream()
                         .filter(ctsp -> ctsp.getIdSanPham().getId().equals(selectedChiTietSanPham.getIdSanPham().getId()) &&
                                 ctsp.getIdMauSac().getId().equals(selectedChiTietSanPham.getIdMauSac().getId()) &&
@@ -171,14 +185,18 @@ public class DotGiamGiaService {
                 BigDecimal giaBanDau = selectedChiTietSanPham.getGiaBan();
                 BigDecimal giaSauKhiGiamMoi = calculateGiaSauKhiGiam(giaBanDau, dotGiamGia.getGiaTriGiamGia(), dotGiamGia.getSoTienGiamToiDa());
 
+                // Duyệt qua danh sách các chi tiết sản phẩm tương ứng
                 for (ChiTietSanPham chiTietSanPham : matchingChiTietSanPhams) {
+                    // Tạo key duy nhất để kiểm tra xem chi tiết sản phẩm đã được xử lý chưa
                     Integer idCTSPInGroup = chiTietSanPham.getId();
                     String key = idCTSPInGroup + "_" + giaBanDau;
                     if (addedCTSP.contains(key)) continue;
 
+                    // Lấy danh sách chi tiết đợt giảm giá đang hoạt động cho chi tiết sản phẩm này
                     List<ChiTietDotGiamGia> activeCtggList = repo2.findActiveChiTietDotGiamGiaByCtspId(idCTSPInGroup, today);
                     BigDecimal finalGiaSauKhiGiam = giaSauKhiGiamMoi;
 
+                    // Kiểm tra xem có đợt giảm giá nào đang hoạt động và trùng lặp với đợt hiện tại
                     if (!activeCtggList.isEmpty()) {
                         boolean isOverlappingAndActive = false;
                         for (ChiTietDotGiamGia existingCtgg : activeCtggList) {
@@ -192,22 +210,30 @@ public class DotGiamGiaService {
                             }
                         }
 
+                        // Nếu có trùng lặp, tính giá trung bình từ các đợt giảm giá
                         if (isOverlappingAndActive) {
                             List<DotGiamGia> overlappingDots = new ArrayList<>();
                             overlappingDots.add(dotGiamGia);
                             for (ChiTietDotGiamGia ctgg : activeCtggList) {
                                 overlappingDots.add(ctgg.getIdDotGiamGia());
                             }
+
+                            //Tính giá trị giảm giá trung bình
                             BigDecimal avgGiaTriGiamGia = overlappingDots.stream()
                                     .map(DotGiamGia::getGiaTriGiamGia)
                                     .reduce(BigDecimal.ZERO, BigDecimal::add)
                                     .divide(BigDecimal.valueOf(overlappingDots.size()), 2, RoundingMode.HALF_UP);
+
+                            //Tính số tiền giảm tối đa trung bình
                             BigDecimal avgSoTienGiamToiDa = overlappingDots.stream()
                                     .map(DotGiamGia::getSoTienGiamToiDa)
                                     .reduce(BigDecimal.ZERO, BigDecimal::add)
                                     .divide(BigDecimal.valueOf(overlappingDots.size()), 2, RoundingMode.HALF_UP);
+
+                            // Tính giá sau khi giảm dựa trên giá trị trung bình
                             finalGiaSauKhiGiam = calculateGiaSauKhiGiam(giaBanDau, avgGiaTriGiamGia, avgSoTienGiamToiDa);
 
+                            // Cập nhật giá sau khi giảm cho các chi tiết đợt giảm giá hiện có
                             for (ChiTietDotGiamGia ctgg : activeCtggList) {
                                 ctgg.setGiaSauKhiGiam(finalGiaSauKhiGiam);
                                 repo2.save(ctgg);
@@ -215,6 +241,7 @@ public class DotGiamGiaService {
                         }
                     }
 
+                    //Lưu ctđgg
                     ChiTietDotGiamGia chiTiet = new ChiTietDotGiamGia();
                     chiTiet.setIdDotGiamGia(dotGiamGia);
                     chiTiet.setIdChiTietSanPham(chiTietSanPham);
@@ -353,6 +380,7 @@ public class DotGiamGiaService {
     @Transactional
     public void updateDotGiamGia(Integer dotGiamGiaId, DotGiamGiaDTO dotGiamGiaDTO, List<Integer> idSanPham, List<ViewCTSPDTO> dsCTSP) {
         try {
+            // Tìm dgg theo ID
             DotGiamGia dotGiamGia = repository.findById(dotGiamGiaId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt giảm giá với id: " + dotGiamGiaId));
             Date today = Date.valueOf(LocalDate.now());
@@ -364,6 +392,7 @@ public class DotGiamGiaService {
                     .atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay();
             Date ngayKetThuc = new Date(Timestamp.valueOf(ngayKetThucFormatted).getTime());
 
+            //Cập nhật thông tin dgg
             dotGiamGia.setNgayBatDau(ngayBatDau);
             dotGiamGia.setNgayKetThuc(ngayKetThuc);
             dotGiamGia.setTenDotGiamGia(dotGiamGiaDTO.getTenDotGiamGia());
@@ -373,23 +402,32 @@ public class DotGiamGiaService {
             dotGiamGia.setTrangThai(ngayBatDau.after(today));
             repository.save(dotGiamGia);
 
+            // Lấy ds sản phẩm theo ID
             List<SanPham> dsSanPham = sanPhamRepository.findAllById(idSanPham);
+
+            // Tạo map các chi tiết sản phẩm được chọn
             Map<Integer, ViewCTSPDTO> selectedCTSPMap = dsCTSP.stream()
                     .filter(ctsp -> ctsp.getSelected() != null && ctsp.getSelected())
                     .collect(Collectors.toMap(ctsp -> ctsp.getCtsp().getId(), ctsp -> ctsp, (e, r) -> e));
+
+            // Lấy danh sách chi tiết sản phẩm theo ID sản phẩm
             List<ChiTietSanPham> dsChiTietSanPham = chiTietSanPhamRepository.findAllByIdSanPhamIn(idSanPham);
 
+            // Theo dõi các chi tiết sản phẩm đã xử lý
             Set<String> addedCTSP = new HashSet<>();
             Set<Integer> selectedCTSPIds = selectedCTSPMap.keySet();
 
-            // Bước 1: Xóa bản ghi không được chọn (theo nhóm)
+            // Lấy danh sách chi tiết đợt giảm giá hiện có
             List<ChiTietDotGiamGia> existingChiTietList = repo2.findByIdDotGiamGia(dotGiamGia);
+
+            // Nhóm chi tiết đợt giảm giá theo sản phẩm, màu sắc, bộ nhớ
             Map<String, List<ChiTietDotGiamGia>> groupedByAttributes = existingChiTietList.stream()
                     .collect(Collectors.groupingBy(ctdg ->
                             ctdg.getIdChiTietSanPham().getIdSanPham().getId() + "_" +
                                     ctdg.getIdChiTietSanPham().getIdMauSac().getId() + "_" +
                                     ctdg.getIdChiTietSanPham().getIdBoNhoTrong().getId()));
 
+            // Xóa các chi tiết đợt giảm giá không được chọn
             for (List<ChiTietDotGiamGia> group : groupedByAttributes.values()) {
                 boolean groupSelected = group.stream()
                         .anyMatch(ctdg -> selectedCTSPIds.contains(ctdg.getIdChiTietSanPham().getId()));
@@ -401,16 +439,19 @@ public class DotGiamGiaService {
                 }
             }
 
-            // Bước 2: Thêm hoặc cập nhật bản ghi
+            // Xử lý thêm hoặc cập nhật chi tiết đợt giảm giá
             for (ViewCTSPDTO ctspDTO : dsCTSP) {
                 if (ctspDTO.getSelected() == null || !ctspDTO.getSelected()) continue;
                 Integer idCTSP = ctspDTO.getCtsp().getId();
+
+                // Tìm chi tiết sản phẩm tương ứng
                 ChiTietSanPham selectedChiTietSanPham = dsChiTietSanPham.stream()
                         .filter(ctsp -> ctsp.getId().equals(idCTSP))
                         .findFirst()
                         .orElse(null);
                 if (selectedChiTietSanPham == null) continue;
 
+                // Lấy các chi tiết sản phẩm cùng thuộc tính
                 List<ChiTietSanPham> matchingChiTietSanPhams = dsChiTietSanPham.stream()
                         .filter(ctsp -> ctsp.getIdSanPham().getId().equals(selectedChiTietSanPham.getIdSanPham().getId()) &&
                                 ctsp.getIdMauSac().getId().equals(selectedChiTietSanPham.getIdMauSac().getId()) &&
@@ -418,6 +459,7 @@ public class DotGiamGiaService {
                                 !ctsp.getDeleted())
                         .collect(Collectors.toList());
 
+                // Tính giá sau khi giảm
                 BigDecimal giaBanDau = selectedChiTietSanPham.getGiaBan();
                 BigDecimal giaSauKhiGiamMoi = calculateGiaSauKhiGiam(giaBanDau, dotGiamGia.getGiaTriGiamGia(), dotGiamGia.getSoTienGiamToiDa());
 
@@ -432,6 +474,7 @@ public class DotGiamGiaService {
                             .collect(Collectors.toList());
 
                     if (!existingRecords.isEmpty()) {
+                        // Cập nhật bản ghi hiện có
                         for (ChiTietDotGiamGia existing : existingRecords) {
                             existing.setGiaSauKhiGiam(giaSauKhiGiamMoi);
                             if (existing.getDeleted()) { // Khôi phục nếu đã bị xóa
@@ -440,6 +483,7 @@ public class DotGiamGiaService {
                             repo2.save(existing);
                         }
                     } else {
+                        // Tạo bản ghi chi tiết đợt giảm giá mới
                         ChiTietDotGiamGia chiTiet = new ChiTietDotGiamGia();
                         chiTiet.setIdDotGiamGia(dotGiamGia);
                         chiTiet.setIdChiTietSanPham(chiTietSanPham);

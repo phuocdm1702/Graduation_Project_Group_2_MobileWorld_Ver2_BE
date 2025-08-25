@@ -18,12 +18,22 @@ public class RealTimeAppConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // Existing endpoint for /ws with SockJS and all origins
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
 
-        // Endpoint cho WebSocket thuần (Android)
+        // Existing endpoint for /ws without SockJS (for native WebSocket clients like Android)
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
+
+        // Endpoints from the other WebSocketConfig.java
+        registry.addEndpoint("/chat")
+                .setAllowedOriginPatterns("http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "*") // Added "*" to cover all
+                .withSockJS();
+
+        registry.addEndpoint("/chat-sockjs")
+                .setAllowedOriginPatterns("http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "*") // Added "*" to cover all
+                .withSockJS();
     }
 }

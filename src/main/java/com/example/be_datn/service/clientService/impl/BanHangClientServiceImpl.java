@@ -286,6 +286,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             gh.setTongTien(BigDecimal.ZERO);
         }
 
+        // Always add a new item with quantity 1, as each HoaDonChiTiet represents a single physical item
         ChiTietGioHangDTO newItem = new ChiTietGioHangDTO();
         newItem.setChiTietSanPhamId(chiTietGioHangDTO.getChiTietSanPhamId());
         newItem.setMaImel(""); // Để IMEI rỗng
@@ -309,11 +310,10 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         newItem.setGiaBan(giaSauGiam);
         newItem.setGiaBanGoc(giaSauGiam);
         newItem.setGhiChuGia(ghiChuGia);
-        newItem.setSoLuong(1);
-        newItem.setTongTien(giaSauGiam);
+        newItem.setSoLuong(1); // Always set quantity to 1 for new entries
+        newItem.setTongTien(giaSauGiam); // Total price for a single item
         newItem.setImage(chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null);
 
-        // Thêm sản phẩm vào giỏ hàng
         gh.getChiTietGioHangDTOS().add(newItem);
 
         // Lưu vào GioHangTam
@@ -343,7 +343,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
 
         // Cập nhật tổng tiền
         gh.setTongTien(gh.getChiTietGioHangDTOS().stream()
-                .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)
+                .map(item -> (item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO).multiply(BigDecimal.valueOf(item.getSoLuong())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
         hoaDon.setTongTien(gh.getTongTien());
@@ -388,11 +388,11 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 item.setGiaBan(giaSauGiam);
                 item.setGiaBanGoc(giaSauGiam);
                 item.setGhiChuGia(ghiChuGia);
-                item.setTongTien(giaSauGiam);
+                item.setTongTien(giaSauGiam.multiply(BigDecimal.valueOf(item.getSoLuong())));
                 item.setImage(chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null); // Thêm ánh xạ image
             }
             gioHangDTO.setTongTien(gioHangDTO.getChiTietGioHangDTOS().stream()
-                    .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)
+                    .map(item -> (item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO).multiply(BigDecimal.valueOf(item.getSoLuong())))
                     .reduce(BigDecimal.ZERO, BigDecimal::add));
             redisTemplate.opsForValue().set(ghKey, gioHangDTO, 24, TimeUnit.HOURS);
         }

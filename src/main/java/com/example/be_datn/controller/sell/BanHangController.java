@@ -237,6 +237,20 @@ public class BanHangController {
         Map<String, Object> product = banHangService.findProductByBarcodeOrImei(code);
         return ResponseEntity.ok(product);
     }
+
+    @PostMapping("/products/by-barcode-or-imei/add-to-cart")
+    public ResponseEntity<Map<String, Object>> findProductByBarcodeOrImeiAndAddToCart(@RequestParam Integer idHD, @RequestParam String code) {
+        try {
+            Map<String, Object> product = banHangService.findProductByBarcodeOrImeiAndAddToCart(idHD, code);
+            return ResponseEntity.ok(product);
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", true);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+    }
+
     @PutMapping("/updatePhieuGiamGia")
     public ResponseEntity<HoaDon> updatePhieuGiamGia(
             @RequestParam("hoaDonId") Integer hoaDonId,

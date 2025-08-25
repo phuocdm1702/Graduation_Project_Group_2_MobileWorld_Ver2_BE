@@ -986,6 +986,128 @@ public class BanHangServiceImpl implements BanHangService {
         return result;
     }
 
+    @Override
+    @Transactional
+    public Map<String, Object> findProductByBarcodeOrImeiAndAddToCart(Integer idHD, String code) {
+        if (code == null || code.trim().isEmpty()) {
+            throw new RuntimeException("Mã barcode/IMEI không được để trống!");
+        }
+
+        String cleanedCode = code.trim().replaceAll("[^a-zA-Z0-9-]", "");
+        if (cleanedCode.isEmpty()) {
+            throw new RuntimeException("Mã barcode/IMEI không hợp lệ sau khi làm sạch!");
+        }
+
+        Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(cleanedCode);
+        if (chiTietSanPhamOpt.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy sản phẩm với mã barcode/IMEI: " + code);
+        }
+
+        ChiTietSanPham chiTietSanPham = chiTietSanPhamOpt.get();
+        Imel imel = chiTietSanPham.getIdImel();
+        if (imel.getDeleted()) {
+            throw new RuntimeException("IMEI " + code + " đã được sử dụng hoặc không khả dụng!");
+        }
+
+        // Kiểm tra hóa đơn
+        HoaDon hoaDon = hoaDonRepository.findById(idHD)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
+        if (hoaDon.getTrangThai() != 0) {
+            throw new RuntimeException("Hóa đơn này không phải hóa đơn chờ!");
+        }
+
+
+        // Tạo ChiTietGioHangDTO từ thông tin sản phẩm
+        ChiTietGioHangDTO chiTietGioHangDTO = new ChiTietGioHangDTO();
+        chiTietGioHangDTO.setChiTietSanPhamId(chiTietSanPham.getId());
+        chiTietGioHangDTO.setMaImel(cleanedCode);
+        chiTietGioHangDTO.setTenSanPham(chiTietSanPham.getIdSanPham().getTenSanPham());
+        chiTietGioHangDTO.setMauSac(chiTietSanPham.getIdMauSac().getMauSac());
+        chiTietGioHangDTO.setRam(chiTietSanPham.getIdRam().getDungLuongRam());
+        chiTietGioHangDTO.setBoNhoTrong(chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong());
+        chiTietGioHangDTO.setImage(chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null);
+
+        // Kiểm tra giá giảm từ ChiTietDotGiamGia
+        BigDecimal giaBan = chiTietSanPham.getGiaBan() != null ? chiTietSanPham.getGiaBan() : BigDecimal.ZERO;
+        BigDecimal giaSauGiam = giaBan;
+        String ghiChuGia = "";
+        Optional<ChiTietDotGiamGia> chiTietDotGiamGiaOpt = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdAndActive(chiTietSanPham.getId());
+        if (chiTietDotGiamGiaOpt.isPresent()) {
+            ChiTietDotGiamGia chiTietDotGiamGia = chiTietDotGiamGiaOpt.get();
+            giaSauGiam = chiTietDotGiamGia.getGiaSauKhiGiam() != null ? chiTietDotGiamGia.getGiaSauKhiGiam() : giaBan;
+            ghiChuGia = String.format("Giá gốc ban đầu: %s", giaBan);
+        }
+
+        chiTietGioHangDTO.setGiaBan(giaSauGiam);
+        chiTietGioHangDTO.setGiaBanGoc(giaSauGiam);
+        chiTietGioHangDTO.setGhiChuGia(ghiChuGia);
+        chiTietGioHangDTO.setSoLuong(1);
+        chiTietGioHangDTO.setTongTien(giaSauGiam);
+
+        // Thêm vào giỏ hàng (sử dụng logic tương tự themVaoGH)
+        String ghKey = GH_PREFIX + idHD;
+        GioHangDTO gh = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
+        if (gh == null) {
+            gh = new GioHangDTO();
+            gh.setGioHangId(ghKey);
+            gh.setKhachHangId(hoaDon.getIdKhachHang() != null ? hoaDon.getIdKhachHang().getId() : null);
+            gh.setChiTietGioHangDTOS(new ArrayList<>());
+            gh.setTongTien(BigDecimal.ZERO);
+        }
+
+        // Kiểm tra IMEI đã có trong giỏ chưa
+        boolean imeiExists = gh.getChiTietGioHangDTOS().stream()
+                .anyMatch(item -> item.getMaImel().equals(cleanedCode));
+        if (imeiExists) {
+            throw new RuntimeException("IMEI " + cleanedCode + " đã có trong giỏ hàng!");
+        }
+
+        // Cập nhật trạng thái IMEI
+        imel.setDeleted(true);
+        imelRepository.save(imel);
+
+        // Thêm vào giỏ hàng
+        gh.getChiTietGioHangDTOS().add(chiTietGioHangDTO);
+
+        // Lưu vào GioHangTam
+        GioHangTam gioHangTam = GioHangTam.builder()
+                .idHoaDon(idHD)
+                .imei(cleanedCode)
+                .chiTietSanPhamId(chiTietSanPham.getId())
+                .createdAt(new Date().toInstant())
+                .deleted(false)
+                .build();
+        gioHangTamRepository.save(gioHangTam);
+
+        // Cập nhật tổng tiền giỏ hàng
+        BigDecimal tongTien = gh.getChiTietGioHangDTOS().stream()
+                .map(ChiTietGioHangDTO::getTongTien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        gh.setTongTien(tongTien);
+
+        // Lưu giỏ hàng vào Redis
+        redisTemplate.opsForValue().set(ghKey, gh, 24, TimeUnit.HOURS);
+
+        // Gửi cập nhật giỏ hàng qua WebSocket
+        sendGioHangUpdate(idHD, gh);
+
+        // Trả về thông tin sản phẩm (giữ nguyên response gốc)
+        Map<String, Object> result = new HashMap<>();
+        result.put("chiTietSanPhamId", chiTietSanPham.getId());
+        result.put("maImel", imel.getImel());
+        result.put("tenSanPham", chiTietSanPham.getIdSanPham().getTenSanPham());
+        result.put("mauSac", chiTietSanPham.getIdMauSac().getMauSac());
+        result.put("ram", chiTietSanPham.getIdRam().getDungLuongRam());
+        result.put("boNhoTrong", chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong());
+        result.put("giaBan", giaSauGiam);
+        result.put("giaBanGoc", giaSauGiam);
+        result.put("giaBanBanDau", giaBan);
+        result.put("stock", 1);
+        result.put("addedToCart", true); // Thêm flag để báo đã thêm vào giỏ
+
+        return result;
+    }
+
     private ChiTietSanPhamGroupDTO convertToChiTietSanPhamGroupDTO(Object[] result) {
         ChiTietSanPhamGroupDTO dto = new ChiTietSanPhamGroupDTO();
         dto.setMa((String) result[0]);

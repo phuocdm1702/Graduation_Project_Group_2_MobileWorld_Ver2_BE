@@ -35,6 +35,8 @@ public interface KhachHangServices {
 
     DiaChiKhachHang updateDchi(Integer id, KhachHangResponse khachHangDTO);
 
+    DiaChiKhachHang updateDiaChiClient(Integer id, KhachHangResponse khachHangDTO);
+
     boolean delete(Integer id);
 
     List<KhachHang> searchKhachHang(String keyword);
@@ -46,6 +48,8 @@ public interface KhachHangServices {
     void setMacDinh(Integer id, Boolean macDinh);
 
     void deleteDiaChi(Integer id);
+
+    void hardDeleteDiaChi(Integer id);
 
     DiaChiKhachHang addDiaChi(DiaChiKhachHangResponse khachHangDTO);
 

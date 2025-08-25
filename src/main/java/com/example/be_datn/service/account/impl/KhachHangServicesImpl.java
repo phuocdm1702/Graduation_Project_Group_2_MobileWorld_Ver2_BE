@@ -302,6 +302,20 @@ public class KhachHangServicesImpl implements KhachHangServices {
         return diaChiKhachHangRepository.save(address);
     }
 
+    @Override
+    public DiaChiKhachHang updateDiaChiClient(Integer addressId, KhachHangResponse addressDTO) {
+        DiaChiKhachHang address = diaChiKhachHangRepository.findById(addressId)
+                .orElseThrow(() -> new RuntimeException("Địa chỉ không tồn tại"));
+
+        address.setDiaChiCuThe(addressDTO.getDiaChiCuThe());
+        address.setThanhPho(addressDTO.getThanhPho());
+        address.setQuan(addressDTO.getQuan());
+        address.setPhuong(addressDTO.getPhuong());
+        address.setMacDinh(addressDTO.getMacDinh() != null ? addressDTO.getMacDinh() : false);
+
+        return diaChiKhachHangRepository.save(address);
+    }
+
     //thay doi trang thai
     public KhachHang trangthai(Integer id) {
         Optional<KhachHang> optionalKhachHang = khachHangRepository.findById(id);
@@ -455,8 +469,17 @@ public class KhachHangServicesImpl implements KhachHangServices {
         Optional<DiaChiKhachHang> diaChiOptional = diaChiKhachHangRepository.findById(id);
         if (diaChiOptional.isPresent()) {
             DiaChiKhachHang diaChiKhachHang = diaChiOptional.get();
-            diaChiKhachHang.setDeleted(false);
-            diaChiKhachHangRepository.save(diaChiKhachHang); // Xóa hoàn toàn
+            diaChiKhachHang.setDeleted(true);
+            diaChiKhachHangRepository.save(diaChiKhachHang);
+        } else {
+            throw new RuntimeException("Không tìm thấy địa chỉ với id: " + id);
+        }
+    }
+
+    @Override
+    public void hardDeleteDiaChi(Integer id) {
+        if (diaChiKhachHangRepository.existsById(id)) {
+            diaChiKhachHangRepository.deleteById(id);
         } else {
             throw new RuntimeException("Không tìm thấy địa chỉ với id: " + id);
         }

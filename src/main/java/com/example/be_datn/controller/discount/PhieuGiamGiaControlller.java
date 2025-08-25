@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
 
 @RequestMapping("/api/phieu-giam-gia")
 @RestController
@@ -285,31 +286,37 @@ public class PhieuGiamGiaControlller {
                         // Gửi email cho khách hàng mới được thêm
                         if (addedCustomerIds.contains(khachHangID)) {
                             if (email != null && !email.isEmpty()) {
-                                emailSend.sendDiscountEmail(
-                                        email,
-                                        dtoPGG.getMa(),
-                                        updatedPgg.getTenPhieuGiamGia(),
-                                        dateFormat.format(updatedPgg.getNgayKetThuc()),
-                                        updatedPgg.getPhanTramGiamGia(),
-                                        updatedPgg.getSoTienGiamToiDa(),
-                                        updatedPgg.getHoaDonToiThieu(),
-                                        updatedPgg.getMoTa()
-                                );
+                                String finalEmail = email;
+                                CompletableFuture.runAsync(() -> {
+                                    emailSend.sendDiscountEmail(
+                                            finalEmail,
+                                            dtoPGG.getMa(),
+                                            updatedPgg.getTenPhieuGiamGia(),
+                                            dateFormat.format(updatedPgg.getNgayKetThuc()),
+                                            updatedPgg.getPhanTramGiamGia(),
+                                            updatedPgg.getSoTienGiamToiDa(),
+                                            updatedPgg.getHoaDonToiThieu(),
+                                            updatedPgg.getMoTa()
+                                    );
+                                });
                             }
                         }
                         // Gửi email cho khách hàng được khôi phục
                         else if (restoredCustomerIds.contains(khachHangID)) {
                             if (email != null && !email.isEmpty()) {
-                                emailSend.sendDiscountEmail(
-                                        email,
-                                        dtoPGG.getMa(),
-                                        updatedPgg.getTenPhieuGiamGia(),
-                                        dateFormat.format(updatedPgg.getNgayKetThuc()),
-                                        updatedPgg.getPhanTramGiamGia(),
-                                        updatedPgg.getSoTienGiamToiDa(),
-                                        updatedPgg.getHoaDonToiThieu(),
-                                        updatedPgg.getMoTa()
-                                );
+                                String finalEmail = email;
+                                CompletableFuture.runAsync(() -> {
+                                    emailSend.sendDiscountEmail(
+                                            finalEmail,
+                                            dtoPGG.getMa(),
+                                            updatedPgg.getTenPhieuGiamGia(),
+                                            dateFormat.format(updatedPgg.getNgayKetThuc()),
+                                            updatedPgg.getPhanTramGiamGia(),
+                                            updatedPgg.getSoTienGiamToiDa(),
+                                            updatedPgg.getHoaDonToiThieu(),
+                                            updatedPgg.getMoTa()
+                                    );
+                                });
                             }
                         }
                     }
@@ -326,13 +333,16 @@ public class PhieuGiamGiaControlller {
                         // Lấy email từ TaiKhoan thay vì KhachHang
                         String email = (kh.getIdTaiKhoan() != null) ? kh.getIdTaiKhoan().getEmail() : null;
                         if (email != null && !email.isEmpty()) {
-                            emailSend.sendUpdateDiscountEmail(
-                                    email,
-                                    dtoPGG.getMa(),
-                                    dateFormat.format(updatedPgg.getNgayKetThuc()),
-                                    updatedPgg.getPhanTramGiamGia(),
-                                    updatedPgg.getSoTienGiamToiDa()
-                            );
+                            String finalEmail = email;
+                            CompletableFuture.runAsync(() -> {
+                                emailSend.sendUpdateDiscountEmail(
+                                        finalEmail,
+                                        dtoPGG.getMa(),
+                                        dateFormat.format(updatedPgg.getNgayKetThuc()),
+                                        updatedPgg.getPhanTramGiamGia(),
+                                        updatedPgg.getSoTienGiamToiDa()
+                                );
+                            });
                         }
                     }
                 }
@@ -344,7 +354,10 @@ public class PhieuGiamGiaControlller {
                         // Lấy email từ TaiKhoan thay vì KhachHang
                         String email = (kh.getIdTaiKhoan() != null) ? kh.getIdTaiKhoan().getEmail() : null;
                         if (email != null && !email.isEmpty()) {
-                            emailSend.sendRevokeDiscountEmail(email, dtoPGG.getMa());
+                            String finalEmail = email;
+                            CompletableFuture.runAsync(() -> {
+                                emailSend.sendRevokeDiscountEmail(finalEmail, dtoPGG.getMa());
+                            });
                         }
                     }
                 }
@@ -356,7 +369,10 @@ public class PhieuGiamGiaControlller {
                     // Lấy email từ TaiKhoan thay vì KhachHang
                     String email = (kh.getIdTaiKhoan() != null) ? kh.getIdTaiKhoan().getEmail() : null;
                     if (email != null && !email.isEmpty()) {
-                        emailSend.sendRevokeDiscountEmail(email, dtoPGG.getMa());
+                        String finalEmail = email;
+                        CompletableFuture.runAsync(() -> {
+                            emailSend.sendRevokeDiscountEmail(finalEmail, dtoPGG.getMa());
+                        });
                     }
                 }
                 phieuGiamGiaCaNhanService.deleteByPhieuGiamGiaId(id);
@@ -446,7 +462,30 @@ public class PhieuGiamGiaControlller {
         }
 
         PhieuGiamGia pgg = optionalPGG.get();
-        // (các kiểm tra khác như bạn đang làm)
+
+        if (!Boolean.TRUE.equals(pgg.getTrangThai()) || Boolean.TRUE.equals(pgg.getDeleted())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mã giảm giá không còn hiệu lực.");
+        }
+
+        if (pgg.getNgayBatDau() != null && pgg.getNgayBatDau().after(currentDate)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mã giảm giá chưa đến ngày bắt đầu.");
+        }
+
+        if (pgg.getNgayKetThuc() != null && pgg.getNgayKetThuc().before(currentDate)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mã giảm giá đã hết hạn.");
+        }
+
+        if (pgg.getSoLuongDung() != null && pgg.getSoLuongDung() <= 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mã giảm giá đã hết lượt sử dụng.");
+        }
+
+        BigDecimal hoaDonToiThieu = pgg.getHoaDonToiThieu() != null
+                ? BigDecimal.valueOf(pgg.getHoaDonToiThieu())
+                : BigDecimal.ZERO;
+
+        if (totalPrice.compareTo(hoaDonToiThieu) < 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Tổng tiền chưa đủ để áp dụng mã giảm giá.");
+        }
 
         return ResponseEntity.ok(pgg);
     }

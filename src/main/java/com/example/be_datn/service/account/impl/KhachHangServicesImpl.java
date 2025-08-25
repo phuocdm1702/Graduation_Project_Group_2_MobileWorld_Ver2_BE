@@ -150,6 +150,31 @@ public class KhachHangServicesImpl implements KhachHangServices {
         if (!taiKhoanRepository.findBySoDienThoai(khachHangResponse.getSoDienThoai()).isEmpty()) {
             throw new RuntimeException("SDT đã được sử dụng!");
         }
+        Date ngaySinh = khachHangResponse.getNgaySinh();
+        if (ngaySinh != null) {
+            Date today = new Date();
+
+            // Ngày sinh không được lớn hơn hiện tại
+            if (ngaySinh.after(today)) {
+                throw new RuntimeException("Ngày sinh không được vượt quá ngày hiện tại!");
+            }
+
+            // Tính tuổi >= 18
+            Calendar calNgaySinh = Calendar.getInstance();
+            calNgaySinh.setTime(ngaySinh);
+
+            Calendar calNow = Calendar.getInstance();
+            calNow.setTime(today);
+
+            int age = calNow.get(Calendar.YEAR) - calNgaySinh.get(Calendar.YEAR);
+            if (calNow.get(Calendar.DAY_OF_YEAR) < calNgaySinh.get(Calendar.DAY_OF_YEAR)) {
+                age--; // chưa đến sinh nhật năm nay
+            }
+
+            if (age < 18) {
+                throw new RuntimeException("Khách hàng phải đủ 18 tuổi trở lên!");
+            }
+        }
         QuyenHan quyenHan = new QuyenHan();
         quyenHan.setId(3); // Quyền khách hàng
 
@@ -257,7 +282,6 @@ public class KhachHangServicesImpl implements KhachHangServices {
     public KhachHang updateKhachHang(Integer id, KhachHangResponse khachHangResponse) {
         return khachHangRepository.findById(id)
                 .map(existingNhanVien -> {
-
                     TaiKhoan taiKhoan = taiKhoanRepository.findById(existingNhanVien.getIdTaiKhoan().getId())
                             .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại!"));
                     taiKhoanRepository.findByEmail(khachHangResponse.getEmail()).ifPresent(tk -> {
@@ -271,7 +295,29 @@ public class KhachHangServicesImpl implements KhachHangServices {
                             throw new RuntimeException("Số điện thoại đã được sử dụng bởi tài khoản khác!");
                         }
                     }
+                    Date ngaySinh = khachHangResponse.getNgaySinh();
+                    if (ngaySinh != null) {
+                        Date today = new Date();
 
+                        if (ngaySinh.after(today)) {
+                            throw new RuntimeException("Ngày sinh không được vượt quá ngày hiện tại!");
+                        }
+
+                        Calendar calNgaySinh = Calendar.getInstance();
+                        calNgaySinh.setTime(ngaySinh);
+
+                        Calendar calNow = Calendar.getInstance();
+                        calNow.setTime(today);
+
+                        int age = calNow.get(Calendar.YEAR) - calNgaySinh.get(Calendar.YEAR);
+                        if (calNow.get(Calendar.DAY_OF_YEAR) < calNgaySinh.get(Calendar.DAY_OF_YEAR)) {
+                            age--; // chưa đến sinh nhật năm nay
+                        }
+
+                        if (age < 18) {
+                            throw new RuntimeException("Khách hàng phải đủ 18 tuổi trở lên!");
+                        }
+                    }
                     existingNhanVien.setCccd(khachHangResponse.getCccd());
                     existingNhanVien.setNgaySinh(khachHangResponse.getNgaySinh());
                     existingNhanVien.setTen(khachHangResponse.getTenKH());

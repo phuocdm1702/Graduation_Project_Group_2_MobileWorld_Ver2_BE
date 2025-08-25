@@ -144,6 +144,29 @@ public class NhanVienServicesImpl implements NhanVienServices {
         if (taiKhoanRepository.existsBySoDienThoai(nhanVienResponse.getSoDienThoai())) {
             throw new RuntimeException("Số điện thoại đã được sử dụng!");
         }
+        Date ngaySinh = nhanVienResponse.getNgaySinh();
+        if (ngaySinh != null) {
+            Date today = new Date();
+
+            if (ngaySinh.after(today)) {
+                throw new RuntimeException("Ngày sinh không được vượt quá ngày hiện tại!");
+            }
+
+            Calendar calNgaySinh = Calendar.getInstance();
+            calNgaySinh.setTime(ngaySinh);
+
+            Calendar calNow = Calendar.getInstance();
+            calNow.setTime(today);
+
+            int age = calNow.get(Calendar.YEAR) - calNgaySinh.get(Calendar.YEAR);
+            if (calNow.get(Calendar.DAY_OF_YEAR) < calNgaySinh.get(Calendar.DAY_OF_YEAR)) {
+                age--; // chưa tới sinh nhật
+            }
+
+            if (age < 18) {
+                throw new RuntimeException("Nhân viên phải đủ 18 tuổi trở lên!");
+            }
+        }
 
         // 2. Upload ảnh sau khi validate
         String fileName = nhanVienResponse.getAnhNhanVien().getOriginalFilename();
@@ -230,6 +253,29 @@ public class NhanVienServicesImpl implements NhanVienServices {
                     for (TaiKhoan tk : taiKhoanList) {
                         if (!tk.getId().equals(taiKhoan.getId())) {
                             throw new RuntimeException("Số điện thoại đã được sử dụng bởi tài khoản khác!");
+                        }
+                    }
+                    Date ngaySinh = nhanVienResponse.getNgaySinh();
+                    if (ngaySinh != null) {
+                        Date today = new Date();
+
+                        if (ngaySinh.after(today)) {
+                            throw new RuntimeException("Ngày sinh không được vượt quá ngày hiện tại!");
+                        }
+
+                        Calendar calNgaySinh = Calendar.getInstance();
+                        calNgaySinh.setTime(ngaySinh);
+
+                        Calendar calNow = Calendar.getInstance();
+                        calNow.setTime(today);
+
+                        int age = calNow.get(Calendar.YEAR) - calNgaySinh.get(Calendar.YEAR);
+                        if (calNow.get(Calendar.DAY_OF_YEAR) < calNgaySinh.get(Calendar.DAY_OF_YEAR)) {
+                            age--; // chưa tới sinh nhật
+                        }
+
+                        if (age < 18) {
+                            throw new RuntimeException("Nhân viên phải đủ 18 tuổi trở lên!");
                         }
                     }
                     String anhNhanVienUrl = existingNhanVien.getAnhNhanVien();

@@ -1107,7 +1107,7 @@ public class BanHangServiceImpl implements BanHangService {
         // Gửi cập nhật giỏ hàng qua WebSocket
         sendGioHangUpdate(idHD, gh);
 
-        // Trả về thông tin sản phẩm (giữ nguyên response gốc)
+        // Trả về thông tin sản phẩm
         Map<String, Object> result = new HashMap<>();
         result.put("chiTietSanPhamId", chiTietSanPham.getId());
         result.put("maImel", imel.getImel());
@@ -1119,7 +1119,9 @@ public class BanHangServiceImpl implements BanHangService {
         result.put("giaBanGoc", giaSauGiam);
         result.put("giaBanBanDau", giaBan);
         result.put("stock", 1);
-        result.put("addedToCart", true); // Thêm flag để báo đã thêm vào giỏ
+        result.put("addedToCart", true);
+        result.put("image", chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null); // Thêm image
+        result.put("tongTien", giaSauGiam.multiply(BigDecimal.valueOf(1))); // Thêm tổng tiền
 
         return result;
     }

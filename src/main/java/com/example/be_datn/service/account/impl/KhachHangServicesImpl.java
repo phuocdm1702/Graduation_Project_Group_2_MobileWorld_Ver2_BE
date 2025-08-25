@@ -331,7 +331,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
     @Override
     public List<KhachHang> searchKhachHang(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return List.of(); //tra ve tat ca du lieu neu k tim thay
+            return khachHangRepository.findAll(); //tra ve tat ca du lieu neu k tim thay
         }
         return khachHangRepository.searchBh(keyword.trim());
     }

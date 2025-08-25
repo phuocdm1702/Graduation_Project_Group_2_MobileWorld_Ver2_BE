@@ -48,5 +48,7 @@ public interface BanHangService {
 
     Map<String, Object> findProductByBarcodeOrImei(String code);
 
+    Map<String, Object> findProductByBarcodeOrImeiAndAddToCart(Integer idHD, String code); // Thêm phương thức mới
+
     HoaDonDTO taoHD(Integer idKhachHangToUse, Integer idNhanVienToUse);
 }

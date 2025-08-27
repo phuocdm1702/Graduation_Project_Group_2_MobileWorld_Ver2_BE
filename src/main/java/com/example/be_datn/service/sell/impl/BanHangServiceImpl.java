@@ -160,6 +160,10 @@ public class BanHangServiceImpl implements BanHangService {
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hoá đơn có id: " + idHD));
 
+        // Lưu thông tin hóa đơn trước khi xóa để gửi notification
+        String maHoaDon = hoaDon.getMa();
+        String tenKhachHang = hoaDon.getTenKhachHang();
+
         String ghKey = GH_PREFIX + idHD;
         GioHangDTO gh = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
 
@@ -205,6 +209,10 @@ public class BanHangServiceImpl implements BanHangService {
 
         // Xóa hóa đơn
         hoaDonRepository.delete(hoaDon);
+
+        // Gửi WebSocket notification về việc hủy hóa đơn
+        String lyDoHuy = "Hủy hóa đơn chờ - " + (tenKhachHang != null ? tenKhachHang : "Khách lẻ");
+        sendHoaDonCancelledUpdate(idHD, maHoaDon, lyDoHuy);
     }
 
     @Override
@@ -1261,6 +1269,24 @@ public class BanHangServiceImpl implements BanHangService {
             System.out.println("Đã gửi thông báo thanh toán thành công qua WebSocket: " + hoaDonDTO.getMa());
         } catch (Exception e) {
             System.err.println("Lỗi khi gửi thông báo thanh toán thành công qua WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void sendHoaDonCancelledUpdate(Integer hoaDonId, String maHoaDon, String lyDoHuy) {
+        try {
+            Map<String, Object> cancelInfo = new HashMap<>();
+            cancelInfo.put("action", "HOA_DON_CANCELLED");
+            cancelInfo.put("hoaDonId", hoaDonId);
+            cancelInfo.put("maHoaDon", maHoaDon);
+            cancelInfo.put("lyDoHuy", lyDoHuy != null ? lyDoHuy : "Hủy hóa đơn");
+            cancelInfo.put("timestamp", Instant.now());
+            cancelInfo.put("message", "Hóa đơn " + maHoaDon + " đã được hủy thành công");
+
+            messagingTemplate.convertAndSend("/topic/hoa-don-cancelled", cancelInfo);
+            System.out.println("Đã gửi thông báo hủy hóa đơn qua WebSocket: " + maHoaDon);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông báo hủy hóa đơn qua WebSocket: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

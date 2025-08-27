@@ -304,7 +304,16 @@ public class BanHangServiceImpl implements BanHangService {
             }
 
             Optional<ChiTietSanPham> imelChiTietSanPham = chiTietSanPhamRepository.findByImel(imei.trim());
-            if (imelChiTietSanPham.isEmpty() || !imelChiTietSanPham.get().getId().equals(chiTietGioHangDTO.getChiTietSanPhamId())) {
+            if (imelChiTietSanPham.isEmpty()) {
+                throw new RuntimeException("IMEI " + imei + " không tồn tại!");
+            }
+
+            ChiTietSanPham foundCtsp = imelChiTietSanPham.get();
+            // So sánh các thuộc tính thay vì ID
+            if (!foundCtsp.getIdSanPham().getId().equals(chiTietSanPham.getIdSanPham().getId()) ||
+                    !foundCtsp.getIdMauSac().getMauSac().equals(chiTietSanPham.getIdMauSac().getMauSac()) ||
+                    !foundCtsp.getIdRam().getDungLuongRam().equals(chiTietSanPham.getIdRam().getDungLuongRam()) ||
+                    !foundCtsp.getIdBoNhoTrong().getDungLuongBoNhoTrong().equals(chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong())) {
                 throw new RuntimeException("IMEI " + imei + " không thuộc chi tiết sản phẩm này!");
             }
 

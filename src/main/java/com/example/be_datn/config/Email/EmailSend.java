@@ -172,7 +172,7 @@ public class EmailSend {
             }
             """;
 
-    public void sendDiscountEmail(String toEmail, String maPhieu, String tenPhieu, String ngayHetHan, double phanTram, double soTienGiamToiDa, double hoaDonToiThieu, String moTa) {
+    public void sendDiscountEmail(String toEmail, String maPhieu, String tenPhieu, String ngayHetHan, String loaiPhieuGiamGia, double phanTram, double soTienGiamToiDa, double hoaDonToiThieu, String moTa) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -180,7 +180,17 @@ public class EmailSend {
             helper.setTo(toEmail);
             helper.setSubject("🎉 MobileWorld Tặng Bạn Phiếu Giảm Giá Đặc Biệt!");
 
-            String htmlContent = """
+            String discountText;
+            if ("Phần trăm".equals(loaiPhieuGiamGia)) {
+                double maxDiscount = (phanTram / 100.0) * hoaDonToiThieu;
+                discountText = String.format("Tặng quý khách ưu đãi %.0f%% (Tối đa %,.0fđ)", phanTram, maxDiscount);
+            } else { // Loại tiền mặt
+                discountText = String.format("Tặng quý khách ưu đãi giảm %,.0fđ", soTienGiamToiDa);
+            }
+
+            System.out.println("hoaDonToiThieu: " + hoaDonToiThieu);
+
+            String htmlContent = String.format("""
                     <!DOCTYPE html>
                     <html lang="vi">
                     <head>
@@ -192,40 +202,35 @@ public class EmailSend {
                             %s
                         </style>
                     </head>
-                    <body>
-                        <div class="container">
-                            <div class="header">
-                                <h1>Mobile World</h1>
-                            </div>
-                            <div class="content">
-                                <div class="thank-you-section">
-                                    <h2>Cảm ơn!</h2>
-                                    <p>MobileWorld gửi tặng quý khách phiếu giảm giá cho lần mua sắm tiếp theo.</p>
-                                </div>
-                                <div class="discount-box">
-                                    Tặng quý khách ưu đãi %s%% (Tối đa %sđ)
-                                </div>
-                                <div class="coupon-details">
-                                    <p><strong>Tên phiếu:</strong> %s</p>
-                                    <p class="coupon-code"><strong>Mã phiếu:</strong> %s</p>
-                                    <p><strong>Hạn sử dụng:</strong> %s</p>
-                                    <p><strong>Áp dụng cho hóa đơn tối thiểu:</strong> %sđ</p>
-                                    <p><strong>Mô tả:</strong> %s</p>
-                                    <p>Lưu ý: Mã chỉ sử dụng được 1 lần cho khách hàng có đăng ký nhận tin email từ MobileWorld (ứng với 1 số điện thoại đã đăng ký). Sử dụng mã giảm giá để được giảm giá trực tiếp, và tất cả mã giảm giá đều không có giá trị quy đổi thành tiền mặt.</p>
-                                </div>
-                                <p>
-                                    <a href="http://localhost:3000" class="cta-button">MUA SẮM NGAY</a>
-                                </p>
-                            </div>
-                            <div class="footer">
-                                <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
-                                <p>Trân trọng, <strong>MobileWorld</strong></p>
-                                <p>Liên hệ: <a href="mailto:support@mobileworld.com.vn">support@mobileworld.com.vn</a></p>
-                            </div>
+                    <div class="container">
+                        <div class="header">
+                            <h1>Mobile World</h1>
                         </div>
-                    </body>
-                    </html>
-                    """.formatted(EMAIL_CSS, String.valueOf(phanTram), String.format("%,.0f", soTienGiamToiDa), tenPhieu, maPhieu, ngayHetHan, String.format("%,.0f", hoaDonToiThieu), moTa);
+                        <div class="content">
+                            <div class="thank-you-section">
+                                <h2>Cảm ơn!</h2>
+                                <p>MobileWorld gửi tặng quý khách phiếu giảm giá cho lần mua sắm tiếp theo.</p>
+                            </div>
+                            <div class="discount-box">
+                                %s
+                            </div>
+                            <div class="coupon-details">
+                                <p><strong>Tên phiếu:</strong> %s</p>
+                                <p><strong>Mã phiếu:</strong> <span class="coupon-code">%s</span></p>
+                                <p><strong>Hạn sử dụng:</strong> %s</p>
+                                <p><strong>Áp dụng cho hóa đơn tối thiểu:</strong> %,.0f</p>
+                                <p><strong>Mô tả:</strong> %s</p>
+                                <p><strong>Lưu ý:</strong> Mã chỉ sử dụng được 1 lần cho khách hàng có đăng ký nhận tin email từ MobileWorld (ứng với 1 số điện thoại đã đăng ký). Sử dụng mã giảm giá để được giảm giá trực tiếp, và tất cả mã giảm giá đều không có giá trị quy đổi thành tiền mặt.</p>
+                            </div>
+                            <a href="http://localhost:3000/" class="cta-button">MUA SẮM NGAY</a>
+                        </div>
+                        <div class="footer">
+                            <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                            <p>Trân trọng, MobileWorld</p>
+                            <p>Liên hệ: <a href="mailto:support@mobileworld.com.vn">support@mobileworld.com.vn</a></p>
+                        </div>
+                    </div>
+                    """, EMAIL_CSS, discountText, tenPhieu, maPhieu, ngayHetHan, hoaDonToiThieu, moTa);
 
             helper.setText(htmlContent, true);
             mailSender.send(message);
@@ -236,13 +241,8 @@ public class EmailSend {
         }
     }
 
-    // Phương thức public với 5 tham số (giữ nguyên để tương thích với các đoạn code khác)
-    public void sendDiscountEmail(String toEmail, String maPhieu, String ngayHetHan, double phanTram, double STGTD) {
-        sendDiscountEmail(toEmail, maPhieu, "Phiếu giảm giá", ngayHetHan, phanTram, STGTD, 0, "");
-    }
-
-    public void sendUpdateDiscountEmail(String toEmail, String maPhieu, String ngayHetHan, double phanTram, double STGTD) {
-        sendDiscountEmail(toEmail, maPhieu, "Phiếu giảm giá của bạn đã được cập nhật", ngayHetHan, phanTram, STGTD, 0, "Nội dung phiếu đã được cập nhật.");
+    public void sendUpdateDiscountEmail(String toEmail, String maPhieu, String ngayHetHan, String loaiPhieuGiamGia, double phanTram, double STGTD) {
+        sendDiscountEmail(toEmail, maPhieu, "Phiếu giảm giá của bạn đã được cập nhật", ngayHetHan, loaiPhieuGiamGia, phanTram, STGTD, 0, "Nội dung phiếu đã được cập nhật.");
     }
 
     public void sendRevokeDiscountEmail(String toEmail, String maPhieu) {

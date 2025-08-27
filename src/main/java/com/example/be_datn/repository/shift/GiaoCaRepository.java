@@ -1,4 +1,4 @@
-package com.example.be_datn.repository.giao_ca;
+package com.example.be_datn.repository.shift;
 
 import com.example.be_datn.entity.giao_ca.GiaoCa;
 import org.springframework.data.jpa.repository.JpaRepository;

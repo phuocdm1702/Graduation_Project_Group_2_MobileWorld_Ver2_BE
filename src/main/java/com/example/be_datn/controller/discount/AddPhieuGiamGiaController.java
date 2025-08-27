@@ -37,12 +37,6 @@ public class AddPhieuGiamGiaController {
     private PhieuGiamGiaCaNhanService phieuGiamGiaCaNhanService;
 
     @Autowired
-    private TaiKhoanService taiKhoanServices;
-
-    @Autowired
-    private EmailSend emailSend;
-
-    @Autowired
     private EmailNotificationService emailNotificationService;
 
     @GetMapping("/data-kh")

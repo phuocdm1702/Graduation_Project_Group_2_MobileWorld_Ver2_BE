@@ -1,8 +1,8 @@
-package com.example.be_datn.controller.giao_ca;
+package com.example.be_datn.controller.shift;
 
 import com.example.be_datn.dto.giao_ca.GiaoCaDTO;
 import com.example.be_datn.entity.giao_ca.GiaoCa;
-import com.example.be_datn.service.giao_ca.GiaoCaService;
+import com.example.be_datn.service.shift.GiaoCaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;

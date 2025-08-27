@@ -42,12 +42,6 @@ public class EmailNotificationService {
             if (kh != null && pgg != null) {
                 PhieuGiamGiaCaNhan pggcn = phieuGiamGiaCaNhanService.findByKhachHangAndPhieuGiamGia(kh, pgg);
                 if (pggcn == null) {
-                    // If personal voucher not found, it might be a public voucher or an error.
-                    // For now, we'll assume it's a public voucher and try to send email with general voucher code.
-                    // Or, if it's a private voucher and pggcn is null, it means something went wrong.
-                    // For this task, we'll proceed with sending email if pggcn is found.
-                    // If it's a public voucher, the email sending logic might be different or not needed here.
-                    // For now, we'll only send for private vouchers where pggcn is created.
                     System.err.println("PhieuGiamGiaCaNhan not found for customer " + khachHangID + " and voucher " + phieuGiamGiaID + ". Skipping email.");
                     return;
                 }
@@ -56,7 +50,7 @@ public class EmailNotificationService {
                 if (email != null && !email.trim().isEmpty()) {
                     SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
                     String ngayHH = dateFormat.format(pgg.getNgayKetThuc());
-                    emailSend.sendDiscountEmail(email, pggcn.getMa(), pgg.getTenPhieuGiamGia(), ngayHH, pgg.getPhanTramGiamGia(), pgg.getSoTienGiamToiDa(), pgg.getHoaDonToiThieu(), pgg.getMoTa());
+                    emailSend.sendDiscountEmail(email, pggcn.getMa(), pgg.getTenPhieuGiamGia(), ngayHH, pgg.getLoaiPhieuGiamGia() ,pgg.getPhanTramGiamGia(), pgg.getSoTienGiamToiDa(), pgg.getHoaDonToiThieu(), pgg.getMoTa());
                 }
             } else {
                 System.err.println("Customer or Voucher not found for email notification. Customer ID: " + khachHangID + ", Voucher ID: " + phieuGiamGiaID);

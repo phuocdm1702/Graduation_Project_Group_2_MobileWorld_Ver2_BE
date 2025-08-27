@@ -293,6 +293,7 @@ public class PhieuGiamGiaControlller {
                                             dtoPGG.getMa(),
                                             updatedPgg.getTenPhieuGiamGia(),
                                             dateFormat.format(updatedPgg.getNgayKetThuc()),
+                                            updatedPgg.getLoaiPhieuGiamGia(),
                                             updatedPgg.getPhanTramGiamGia(),
                                             updatedPgg.getSoTienGiamToiDa(),
                                             updatedPgg.getHoaDonToiThieu(),
@@ -311,6 +312,7 @@ public class PhieuGiamGiaControlller {
                                             dtoPGG.getMa(),
                                             updatedPgg.getTenPhieuGiamGia(),
                                             dateFormat.format(updatedPgg.getNgayKetThuc()),
+                                            updatedPgg.getLoaiPhieuGiamGia(),
                                             updatedPgg.getPhanTramGiamGia(),
                                             updatedPgg.getSoTienGiamToiDa(),
                                             updatedPgg.getHoaDonToiThieu(),
@@ -339,6 +341,7 @@ public class PhieuGiamGiaControlller {
                                         finalEmail,
                                         dtoPGG.getMa(),
                                         dateFormat.format(updatedPgg.getNgayKetThuc()),
+                                        updatedPgg.getLoaiPhieuGiamGia(),
                                         updatedPgg.getPhanTramGiamGia(),
                                         updatedPgg.getSoTienGiamToiDa()
                                 );

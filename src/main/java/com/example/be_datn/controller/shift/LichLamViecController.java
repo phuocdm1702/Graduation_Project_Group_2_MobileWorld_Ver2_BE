@@ -1,7 +1,7 @@
-package com.example.be_datn.controller.giao_ca;
+package com.example.be_datn.controller.shift;
 
 import com.example.be_datn.dto.giao_ca.LichLamViecDTO;
-import com.example.be_datn.service.giao_ca.LichLamViecService;
+import com.example.be_datn.service.shift.LichLamViecService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;

@@ -60,6 +60,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
     public List<KhachHangDTO> getKHPgg() {
         List<KhachHang> khachHangs = khachHangRepository.findAll();
         return khachHangs.stream()
+                .filter(kh -> !"KH00001".equals(kh.getMa()))
                 .map(this::mapToKhachHangDTO)
                 .collect(Collectors.toList());
     }

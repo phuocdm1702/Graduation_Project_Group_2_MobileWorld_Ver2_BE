@@ -610,13 +610,13 @@ public class KhachHangServicesImpl implements KhachHangServices {
             KhachHang khachHang;
 
             if (keyword == null || keyword.trim().isEmpty()) {
+                // Nếu không nhập keyword thì mặc định khách vãng lai
                 khachHang = khachHangRepository.findById(1)
                         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng mặc định với ID = 1"));
             } else {
                 List<KhachHang> khachHangs = searchKhachHang(keyword);
                 if (khachHangs.isEmpty()) {
-                    khachHang = khachHangRepository.findById(1)
-                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng mặc định với ID = 1"));
+                    throw new IllegalArgumentException("Không tìm thấy khách hàng với từ khóa: " + keyword);
                 } else {
                     khachHang = khachHangs.get(0);
                 }
@@ -643,6 +643,7 @@ public class KhachHangServicesImpl implements KhachHangServices {
             throw new RuntimeException("Lỗi khi tìm kiếm khách hàng hoặc cập nhật hóa đơn: " + e.getMessage(), e);
         }
     }
+
 
     private void sendKhachHangUpdate(Integer khachHangId) {
         try {

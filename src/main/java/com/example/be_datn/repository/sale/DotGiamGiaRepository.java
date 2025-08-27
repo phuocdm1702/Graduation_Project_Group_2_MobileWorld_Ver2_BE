@@ -43,30 +43,6 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
 
 
 
-//    @Query("SELECT new com.example.graduation_project_group_2_mobileworld.dto.dot_giam_gia.viewCTSPDTO(sp, ctsp, anh, bnt, ms) " +
-//            "FROM SanPham sp " +
-//            "INNER JOIN ChiTietSanPham ctsp ON ctsp.idSanPham.id = sp.id " +
-//            "INNER JOIN AnhSanPham anh ON ctsp.idAnhSanPham.id = anh.id " +
-//            "INNER JOIN BoNhoTrong bnt ON ctsp.idBoNhoTrong.id = bnt.id " +
-//            "INNER JOIN MauSac ms ON ctsp.idMauSac.id = ms.id " +
-//            "WHERE sp.id IN :ids " +
-//            "AND (:idBoNhoTrongs IS NULL OR bnt.id IN :idBoNhoTrongs) " +
-//            "AND (:idMauSacs IS NULL OR ms.id IN :idMauSacs) " +
-//            "AND ctsp.deleted = false " +
-//            "AND ctsp.id IN (" +
-//            "    SELECT MIN(ctsp2.id) " +
-//            "    FROM ChiTietSanPham ctsp2 " +
-//            "    WHERE ctsp2.idSanPham.id = sp.id " +
-//            "    AND ctsp2.idMauSac.id = ms.id " +
-//            "    AND ctsp2.idBoNhoTrong.id = bnt.id " +
-//            "    AND ctsp2.deleted = false " +
-//            "    GROUP BY ctsp2.idSanPham.id, ctsp2.idMauSac.id, ctsp2.idBoNhoTrong.id" +
-//            ")")
-//    Page<viewCTSPDTO> getAllCTSP(@Param("ids") List<Integer> ids,
-//                                 @Param("idBoNhoTrongs") List<Integer> idBoNhoTrongs,
-//                                 @Param("idMauSacs") List<Integer> idMauSacs,
-//                                 Pageable pageable);
-
     @Query("SELECT new com.example.be_datn.dto.sale.respone.ViewCTSPDTO(sp, ctsp, anh, bnt, ms, " +
             "(SELECT COUNT(DISTINCT ctdg.idDotGiamGia.id) " +
             " FROM ChiTietDotGiamGia ctdg " +
@@ -109,7 +85,7 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
     @Query("SELECT DISTINCT ctsp.idSanPham FROM ChiTietSanPham ctsp " +
             "JOIN ctsp.idSanPham sp " +
             "JOIN ChiTietDotGiamGia ctdgg ON ctdgg.idChiTietSanPham.id = ctsp.id " +
-            "WHERE ctdgg.idDotGiamGia.id = :id AND ctdgg.deleted = false")
+            "WHERE ctdgg.idDotGiamGia.id = :id")
     List<SanPham> getThatDongSanPham(@Param("id") Integer id);
 
     @Query("SELECT COUNT(dgg) > 0 FROM DotGiamGia dgg WHERE dgg.ma = :ma")
@@ -125,7 +101,8 @@ public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, Integer>
             + "(:ngayBatDau IS NULL OR d.ngayBatDau >= :ngayBatDau) AND "
             + "(:ngayKetThuc IS NULL OR d.ngayKetThuc <= :ngayKetThuc) AND "
             + "(:trangThai IS NULL OR d.trangThai = :trangThai) AND "
-            + "((:deleted IS NULL AND d.deleted = false) OR (:deleted IS NOT NULL AND d.deleted = :deleted))")
+            + "((:deleted IS NULL AND d.deleted = false) OR (:deleted IS NOT NULL AND d.deleted = :deleted)) "
+            + "ORDER BY d.id DESC")
     Page<DotGiamGia> timKiem(
             Pageable pageable,
             @Param("maDGG") String maDGG,

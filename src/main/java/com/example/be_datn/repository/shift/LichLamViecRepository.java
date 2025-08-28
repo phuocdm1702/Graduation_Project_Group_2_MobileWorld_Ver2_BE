@@ -1,10 +1,9 @@
-package com.example.be_datn.repository.giao_ca;
+package com.example.be_datn.repository.shift;
 
 import com.example.be_datn.entity.giao_ca.LichLamViec;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;

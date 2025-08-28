@@ -14,9 +14,11 @@ import com.example.be_datn.repository.product.ChiTietSanPhamRepository;
 import com.example.be_datn.service.clientService.BanHangClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -138,8 +140,54 @@ public class BanHangClientController {
     }
 
     @PostMapping("/hoa-don/xac-nhan-imei/{idHD}")
-    public ResponseEntity<HoaDonDetailResponse> xacNhanVaGanImei(@PathVariable Integer idHD, @RequestBody Map<Integer, String> imelMap) {
-        HoaDonDetailResponse response = banHangClientService.xacNhanVaGanImei(idHD, imelMap);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<HoaDonDetailResponse> xacNhanVaGanImei(@PathVariable Integer idHD, @RequestBody Object payload) {
+        try {
+            System.out.println("=== Client IMEI Confirmation Controller ===");
+            System.out.println("HoaDon ID: " + idHD);
+            System.out.println("Received payload: " + payload);
+            System.out.println("Payload type: " + payload.getClass().getName());
+            
+            // Convert payload to Map<Integer, String>
+            Map<Integer, String> imelMap = new HashMap<>();
+            
+            if (payload instanceof Map) {
+                Map<?, ?> rawMap = (Map<?, ?>) payload;
+                for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+                    try {
+                        Integer key = null;
+                        String value = null;
+                        
+                        // Handle different key types
+                        if (entry.getKey() instanceof Integer) {
+                            key = (Integer) entry.getKey();
+                        } else if (entry.getKey() instanceof String) {
+                            key = Integer.parseInt((String) entry.getKey());
+                        }
+                        
+                        // Handle different value types
+                        if (entry.getValue() instanceof String) {
+                            value = (String) entry.getValue();
+                        }
+                        
+                        if (key != null && value != null) {
+                            imelMap.put(key, value);
+                            System.out.println("Mapped: " + key + " -> " + value);
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Failed to parse entry: " + entry.getKey() + " -> " + entry.getValue());
+                    }
+                }
+            }
+            
+            System.out.println("Final IMEI Map: " + imelMap);
+            
+            HoaDonDetailResponse response = banHangClientService.xacNhanVaGanImei(idHD, imelMap);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("ERROR in xacNhanVaGanImei controller: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        }
     }
 }

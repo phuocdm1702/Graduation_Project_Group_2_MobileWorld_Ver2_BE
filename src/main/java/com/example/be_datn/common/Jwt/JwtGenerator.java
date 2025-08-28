@@ -10,7 +10,7 @@ import java.util.Map;
 public class JwtGenerator {
     public static void main(String[] args) {
         // Secret key (phải giữ bí mật, không để lộ)
-        String secretKey = "your-secure-secret-key-1234567890abcdef"; // Thay bằng key của bạn
+        String secretKey = "284962ef-8363-11f0-9fb9-b62928d3d46c"; // Thay bằng key của bạn
 
         // Payload (dữ liệu mã hóa trong token)
         Map<String, Object> claims = new HashMap<>();

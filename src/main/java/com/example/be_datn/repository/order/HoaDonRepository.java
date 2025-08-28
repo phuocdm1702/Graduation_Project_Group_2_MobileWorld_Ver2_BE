@@ -38,7 +38,50 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             ORDER BY h.id DESC
             """)
     Page<HoaDonResponse> getHoaDon(@Param("loaiDon") String loaiDon, Pageable pageable);
+// bộ lọc cũ
+//    @Query("""
+//            SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
+//                h.id,
+//                h.ma,
+//                h.idNhanVien.ma,
+//                h.tenKhachHang,
+//                h.soDienThoaiKhachHang,
+//                h.tongTienSauGiam,
+//                h.phiVanChuyen,
+//                h.ngayTao,
+//                h.loaiDon,
+//                h.trangThai,
+//                h.deleted
+//            )
+//            FROM HoaDon h
+//            WHERE (
+//                :keyword IS NULL
+//                OR h.ma LIKE %:keyword%
+//                OR h.tenKhachHang LIKE %:keyword%
+//                OR h.soDienThoaiKhachHang LIKE %:keyword%
+//            )
+//            AND (:minAmount IS NULL OR h.tongTienSauGiam >= :minAmount)
+//            AND (:maxAmount IS NULL OR h.tongTienSauGiam <= :maxAmount)
+//            AND (:startDate IS NULL OR h.ngayTao >= :startDate)
+//            AND (:endDate IS NULL OR h.ngayTao <= :endDate)
+//            AND (:trangThai IS NULL OR h.trangThai = :trangThai)
+//            AND (:deleted IS NULL OR h.deleted = :deleted)
+//            AND (:loaiDon IS NULL OR h.loaiDon = :loaiDon)
+//
+//            ORDER BY h.id DESC
+//            """)
+//    Page<HoaDonResponse> getHoaDonAndFilters(
+//            @Param("keyword") String keyword,
+//            @Param("minAmount") Long minAmount,
+//            @Param("maxAmount") Long maxAmount,
+//            @Param("startDate") Timestamp startDate,
+//            @Param("endDate") Timestamp endDate,
+//            @Param("trangThai") Short trangThai,
+//            @Param("deleted") Boolean deleted,
+//            @Param("loaiDon") String loaiDon,
+//            Pageable pageable);
 
+    // Bộ lọc mới
     @Query("""
             SELECT new com.example.be_datn.dto.order.response.HoaDonResponse(
                 h.id, 
@@ -67,9 +110,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
             AND (:trangThai IS NULL OR h.trangThai = :trangThai)
             AND (:deleted IS NULL OR h.deleted = :deleted)
             AND (:loaiDon IS NULL OR h.loaiDon = :loaiDon)
-           
-            ORDER BY h.id DESC
-            """)
+            """)  // Xóa ORDER BY, để Pageable sort động
     Page<HoaDonResponse> getHoaDonAndFilters(
             @Param("keyword") String keyword,
             @Param("minAmount") Long minAmount,

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -56,14 +57,16 @@ public class HoaDonController {
     @GetMapping("/home")
     public ResponseEntity<?> getAllHoaDon(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "20") int size,  // Default size nhỏ hơn để phân trang thực
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long minAmount,
             @RequestParam(required = false) Long maxAmount,
             @RequestParam(required = false) Timestamp startDate,
             @RequestParam(required = false) Timestamp endDate,
             @RequestParam(required = false) Short trangThai,
-            @RequestParam(required = false) String loaiDon) {
+            @RequestParam(required = false) String loaiDon,
+            @RequestParam(defaultValue = "id") String sortBy,  // Mới: Field sắp xếp
+            @RequestParam(defaultValue = "DESC") String sortDir) {  // Mới: Hướng sắp xếp
         if (loaiDon != null) {
             loaiDon = loaiDon.toLowerCase();
             if (!loaiDon.equals("trực tiếp") && !loaiDon.equals("online")) {
@@ -76,11 +79,40 @@ public class HoaDonController {
         if (startDate != null && endDate != null && startDate.after(endDate)) {
             return ResponseEntity.badRequest().body("startDate phải trước hoặc bằng endDate");
         }
-        Pageable pageable = PageRequest.of(page, size);
-        // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);  // Xây sort động
+        Pageable pageable = PageRequest.of(page, size, sort);
         Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
         return ResponseEntity.ok(response);
     }
+
+//    @GetMapping("/home")
+//    public ResponseEntity<?> getAllHoaDon(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "5") int size,
+//            @RequestParam(required = false) String keyword,
+//            @RequestParam(required = false) Long minAmount,
+//            @RequestParam(required = false) Long maxAmount,
+//            @RequestParam(required = false) Timestamp startDate,
+//            @RequestParam(required = false) Timestamp endDate,
+//            @RequestParam(required = false) Short trangThai,
+//            @RequestParam(required = false) String loaiDon) {
+//        if (loaiDon != null) {
+//            loaiDon = loaiDon.toLowerCase();
+//            if (!loaiDon.equals("trực tiếp") && !loaiDon.equals("online")) {
+//                loaiDon = null;
+//            }
+//        }
+//        if (minAmount != null && maxAmount != null && minAmount > maxAmount) {
+//            return ResponseEntity.badRequest().body("minAmount phải nhỏ hơn hoặc bằng maxAmount");
+//        }
+//        if (startDate != null && endDate != null && startDate.after(endDate)) {
+//            return ResponseEntity.badRequest().body("startDate phải trước hoặc bằng endDate");
+//        }
+//        Pageable pageable = PageRequest.of(page, size);
+//        // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
+//        Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
+//        return ResponseEntity.ok(response);
+//    }
 
     @GetMapping("/my-orders")
     public ResponseEntity<?> getMyOrders(

@@ -80,6 +80,27 @@ public class HoaDonServiceImpl implements HoaDonService {
         return hoaDonRepository.getHoaDon("Tại quầy", pageable);
     }
 
+//    @Override
+//    @Cacheable(value = "hoaDonFiltered", key = "#keyword + '-' + #minAmount + '-' + #maxAmount + '-' + #startDate + '-' + #endDate + '-' + #trangThai + '-' + (#loaiDon != null ? #loaiDon : '') + '-' + #pageable")
+//    public Page<HoaDonResponse> getHoaDonAndFilters(String keyword,
+//                                                    Long minAmount,
+//                                                    Long maxAmount,
+//                                                    Timestamp startDate,
+//                                                    Timestamp endDate,
+//                                                    Short trangThai,
+//                                                    String loaiDon,
+//                                                    Pageable pageable) {
+//        return hoaDonRepository.getHoaDonAndFilters(keyword,
+//                minAmount,
+//                maxAmount,
+//                startDate,
+//                endDate,
+//                trangThai,
+//                false,
+//                loaiDon,
+//                pageable);
+//    }
+
     @Override
     @Cacheable(value = "hoaDonFiltered", key = "#keyword + '-' + #minAmount + '-' + #maxAmount + '-' + #startDate + '-' + #endDate + '-' + #trangThai + '-' + (#loaiDon != null ? #loaiDon : '') + '-' + #pageable")
     public Page<HoaDonResponse> getHoaDonAndFilters(String keyword,
@@ -89,17 +110,11 @@ public class HoaDonServiceImpl implements HoaDonService {
                                                     Timestamp endDate,
                                                     Short trangThai,
                                                     String loaiDon,
-                                                    Pageable pageable) {
-        return hoaDonRepository.getHoaDonAndFilters(keyword,
-                minAmount,
-                maxAmount,
-                startDate,
-                endDate,
-                trangThai,
-                false,
-                loaiDon,
-                pageable);
+                                                    Pageable pageable) {  // Truyền Pageable đầy đủ (với sort)
+        return hoaDonRepository.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, false, loaiDon, pageable);
     }
+
+
 
     @Override
     public Page<HoaDonResponse> getHoaDonOfCustomerAndFilters(Integer idKhachHang, Timestamp startDate, Timestamp endDate, Short trangThai, Boolean deleted, Pageable pageable) {
@@ -210,16 +225,13 @@ public class HoaDonServiceImpl implements HoaDonService {
 
     @Override
     public HoaDonResponse confirmAndAssignIMEI(Integer idHD, Map<Integer, String> imelMap) {
-        // Kiểm tra imelMap
         if (imelMap == null || imelMap.isEmpty()) {
             throw new IllegalArgumentException("imelMap cannot be null or empty");
         }
 
-        // Tìm hóa đơn
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new IllegalArgumentException("Hóa đơn không tồn tại hoặc đã bị xóa: idHD=" + idHD));
 
-        // Kiểm tra loại hóa đơn và trạng thái
         if (!"online".equalsIgnoreCase(hoaDon.getLoaiDon())) {
             throw new IllegalArgumentException("Chỉ có thể gán IMEI cho hóa đơn online");
         }
@@ -227,68 +239,64 @@ public class HoaDonServiceImpl implements HoaDonService {
             throw new IllegalArgumentException("Chỉ có thể gán IMEI cho hóa đơn ở trạng thái chờ xác nhận (trangThai = 0)");
         }
 
-        // Lấy danh sách HoaDonChiTiet hiện tại
         List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(idHD);
         if (chiTietList.isEmpty()) {
             throw new IllegalArgumentException("Không tìm thấy chi tiết hóa đơn cho idHD: " + idHD);
         }
 
-        for (HoaDonChiTiet chiTiet : chiTietList) {
-            Integer chiTietId = chiTiet.getIdChiTietSanPham().getId();
-            String newImel = imelMap.get(chiTietId);
-            if (newImel == null || newImel.trim().isEmpty()) {
-                throw new IllegalArgumentException("IMEI cho sản phẩm ID " + chiTietId + " không được cung cấp!");
+        Map<String, List<HoaDonChiTiet>> groupedChiTiet = new HashMap<>();
+        chiTietList.forEach(chiTiet -> {
+            String groupKey = chiTiet.getIdChiTietSanPham().getIdSanPham().getId() + "_" +
+                    chiTiet.getIdChiTietSanPham().getIdMauSac().getId() + "_" +
+                    chiTiet.getIdChiTietSanPham().getIdRam().getId() + "_" +
+                    chiTiet.getIdChiTietSanPham().getIdBoNhoTrong().getId();
+            groupedChiTiet.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(chiTiet);
+        });
+
+        for (Map.Entry<Integer, String> entry : imelMap.entrySet()) {
+            String key = entry.getKey().toString();
+            String imel = entry.getValue();
+
+            // Xử lý key có dạng groupKey_index cho sản phẩm gộp
+            String groupKey = key.contains("_") ? key.substring(0, key.lastIndexOf("_")) : key;
+            int index = key.contains("_") ? Integer.parseInt(key.substring(key.lastIndexOf("_") + 1)) : 0;
+
+            List<HoaDonChiTiet> chiTiets = groupedChiTiet.get(groupKey);
+            if (chiTiets == null || index >= chiTiets.size()) {
+                throw new IllegalArgumentException("Không tìm thấy chi tiết hóa đơn cho groupKey: " + groupKey);
             }
 
+            HoaDonChiTiet chiTiet = chiTiets.get(index);
             ChiTietSanPham chiTietSanPham = chiTiet.getIdChiTietSanPham();
 
-            // Kiểm tra và xử lý IMEI cũ
+            // Xử lý IMEI cũ
             ImelDaBan oldImelDaBan = chiTiet.getIdImelDaBan();
             if (oldImelDaBan != null) {
-                // Gỡ tham chiếu trong HoaDonChiTiet trước khi xóa
                 chiTiet.setIdImelDaBan(null);
-                try {
-                    hoaDonChiTietRepository.save(chiTiet);
-                } catch (Exception e) {
-                    throw new RuntimeException("Lỗi khi gỡ tham chiếu ImelDaBan cũ: " + e.getMessage());
-                }
+                hoaDonChiTietRepository.save(chiTiet);
 
-                Imel oldImel = imelRepository.findByImelAndDeleted(oldImelDaBan.getImel(), true)
-                        .orElse(null);
+                Imel oldImel = imelRepository.findByImelAndDeleted(oldImelDaBan.getImel(), true).orElse(null);
                 if (oldImel != null) {
                     oldImel.setDeleted(false);
-                    try {
-                        imelRepository.save(oldImel);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Lỗi khi khôi phục Imel cũ: " + e.getMessage());
-                    }
+                    imelRepository.save(oldImel);
                 }
 
-                // Khôi phục trạng thái ChiTietSanPham cũ
                 ChiTietSanPham oldChiTietSanPham = chiTiet.getIdChiTietSanPham();
                 if (oldChiTietSanPham != null) {
                     oldChiTietSanPham.setDeleted(false);
-                    try {
-                        chiTietSanPhamRepository.save(oldChiTietSanPham);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Lỗi khi khôi phục ChiTietSanPham cũ: " + e.getMessage());
-                    }
+                    chiTietSanPhamRepository.save(oldChiTietSanPham);
                 }
 
-                try {
-                    imelDaBanRepository.delete(oldImelDaBan);
-                } catch (Exception e) {
-                    throw new RuntimeException("Lỗi khi xóa ImelDaBan cũ: " + e.getMessage());
-                }
+                imelDaBanRepository.delete(oldImelDaBan);
             }
 
-            // Kiểm tra IMEI mới hợp lệ
-            Imel newImelEntity = imelRepository.findByImelAndDeleted(newImel, false)
-                    .orElseThrow(() -> new IllegalArgumentException("IMEI " + newImel + " không tồn tại hoặc đã được sử dụng!"));
+            // Kiểm tra IMEI mới
+            Imel newImelEntity = imelRepository.findByImelAndDeleted(imel, false)
+                    .orElseThrow(() -> new IllegalArgumentException("IMEI " + imel + " không tồn tại hoặc đã được sử dụng!"));
 
-            Optional<ChiTietSanPham> newChiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(newImel);
+            Optional<ChiTietSanPham> newChiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(imel);
             if (newChiTietSanPhamOpt.isEmpty()) {
-                throw new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm cho IMEI " + newImel);
+                throw new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm cho IMEI " + imel);
             }
             ChiTietSanPham newChiTietSanPham = newChiTietSanPhamOpt.get();
 
@@ -296,48 +304,32 @@ public class HoaDonServiceImpl implements HoaDonService {
             if (!newChiTietSanPham.getIdSanPham().getId().equals(chiTietSanPham.getIdSanPham().getId()) ||
                     !newChiTietSanPham.getIdRam().getId().equals(chiTietSanPham.getIdRam().getId()) ||
                     !newChiTietSanPham.getIdBoNhoTrong().getId().equals(chiTietSanPham.getIdBoNhoTrong().getId())) {
-                throw new IllegalArgumentException("IMEI " + newImel + " không khớp với thông số sản phẩm!");
+                throw new IllegalArgumentException("IMEI " + imel + " không khớp với thông số sản phẩm!");
             }
 
-            // Đặt trạng thái deleted của IMEI mới
+            // Cập nhật trạng thái IMEI mới
             newImelEntity.setDeleted(true);
-            try {
-                imelRepository.save(newImelEntity);
-            } catch (Exception e) {
-                throw new RuntimeException("Lỗi khi cập nhật trạng thái Imel mới: " + e.getMessage());
-            }
+            imelRepository.save(newImelEntity);
 
             // Tạo và lưu ImelDaBan mới
             ImelDaBan imelDaBan = ImelDaBan.builder()
-                    .imel(newImel)
+                    .imel(imel)
                     .ngayBan(new Date())
                     .ghiChu("Đã gán cho hóa đơn " + hoaDon.getMa())
                     .deleted(false)
                     .build();
-            try {
-                imelDaBanRepository.save(imelDaBan);
-            } catch (Exception e) {
-                throw new RuntimeException("Lỗi khi lưu ImelDaBan mới: " + e.getMessage());
-            }
+            imelDaBanRepository.save(imelDaBan);
 
             // Cập nhật ChiTietSanPham mới
             chiTiet.setIdChiTietSanPham(newChiTietSanPham);
             newChiTietSanPham.setDeleted(true);
-            try {
-                chiTietSanPhamRepository.save(newChiTietSanPham);
-            } catch (Exception e) {
-                throw new RuntimeException("Lỗi khi cập nhật trạng thái ChiTietSanPham mới: " + e.getMessage());
-            }
+            chiTietSanPhamRepository.save(newChiTietSanPham);
 
             // Cập nhật HoaDonChiTiet
             chiTiet.setIdImelDaBan(imelDaBan);
             chiTiet.setGia(newChiTietSanPham.getGiaBan());
             chiTiet.setTrangThai((short) 2);
-            try {
-                hoaDonChiTietRepository.save(chiTiet);
-            } catch (Exception e) {
-                throw new RuntimeException("Lỗi khi lưu HoaDonChiTiet: " + e.getMessage());
-            }
+            hoaDonChiTietRepository.save(chiTiet);
         }
 
         // Cập nhật tổng tiền hóa đơn
@@ -347,7 +339,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         hoaDon.setTienSanPham(tongTienSanPham);
 
-        // Cập nhật tổng tiền sau giảm (nếu có phiếu giảm giá)
+        // Cập nhật tổng tiền sau giảm
         BigDecimal giamGia = BigDecimal.ZERO;
         if (hoaDon.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = hoaDon.getIdPhieuGiamGia();
@@ -363,15 +355,9 @@ public class HoaDonServiceImpl implements HoaDonService {
             }
         }
         hoaDon.setTongTienSauGiam(tongTienSanPham.subtract(giamGia));
-//        hoaDon.setTrangThai((short) 1);
         hoaDon.setUpdatedAt(new Date());
 
-        // Lưu hóa đơn
-        try {
-            hoaDonRepository.save(hoaDon);
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi lưu HoaDon: " + e.getMessage());
-        }
+        hoaDonRepository.save(hoaDon);
 
         // Ghi lịch sử hóa đơn
         LichSuHoaDon lichSu = LichSuHoaDon.builder()
@@ -383,11 +369,8 @@ public class HoaDonServiceImpl implements HoaDonService {
                         .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại")))
                 .deleted(false)
                 .build();
-        try {
-            lichSuHoaDonRepository.save(lichSu);
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi lưu LichSuHoaDon: " + e.getMessage());
-        }
+        lichSuHoaDonRepository.save(lichSu);
+
         return hoaDonMapper.mapToDto(hoaDon);
     }
 

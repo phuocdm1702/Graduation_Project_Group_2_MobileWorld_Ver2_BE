@@ -258,6 +258,7 @@ public class BanHangServiceImpl implements BanHangService {
 
         hoaDon = hoaDonRepository.save(hoaDon);
 
+        // Tạo giỏ hàng trống trong Redis
         GioHangDTO gioHangDTO = new GioHangDTO();
         gioHangDTO.setGioHangId(GH_PREFIX + hoaDon.getId());
         gioHangDTO.setKhachHangId(khachHangId);
@@ -265,7 +266,30 @@ public class BanHangServiceImpl implements BanHangService {
         gioHangDTO.setTongTien(BigDecimal.ZERO);
         redisTemplate.opsForValue().set(GH_PREFIX + hoaDon.getId(), gioHangDTO, 24, TimeUnit.HOURS);
 
-        return mapToHoaDonDto(hoaDon);
+        // Tạo HoaDonDTO để gửi qua socket
+        HoaDonDTO hoaDonDTO = mapToHoaDonDto(hoaDon);
+
+        // Gửi realtime update cho giỏ hàng trống
+        sendGioHangUpdate(hoaDon.getId(), gioHangDTO);
+
+        return hoaDonDTO;
+    }
+
+    // Thêm phương thức mới để gửi thông báo tạo hóa đơn mới
+    private void sendNewHoaDonUpdate(HoaDonDTO hoaDonDTO) {
+        try {
+            Map<String, Object> newHoaDonUpdate = new HashMap<>();
+            newHoaDonUpdate.put("action", "NEW_HOA_DON_CREATED");
+            newHoaDonUpdate.put("hoaDon", hoaDonDTO);
+            newHoaDonUpdate.put("timestamp", Instant.now());
+            newHoaDonUpdate.put("message", "Đã tạo hóa đơn mới: " + hoaDonDTO.getMa());
+
+            messagingTemplate.convertAndSend("/topic/hoa-don-new", newHoaDonUpdate);
+            System.out.println("Đã gửi thông báo tạo hóa đơn mới qua WebSocket: " + hoaDonDTO.getMa());
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi thông báo tạo hóa đơn mới qua WebSocket: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -1255,10 +1279,12 @@ public class BanHangServiceImpl implements BanHangService {
                 gioHangUpdate.put("idPhieuGiamGia", phieuGiamGia.getId());
                 gioHangUpdate.put("maPhieuGiamGia", phieuGiamGia.getMa());
                 gioHangUpdate.put("soTienGiam", phieuGiamGia.getSoTienGiamToiDa());
+                gioHangUpdate.put("phanTramGiamGia", phieuGiamGia.getPhanTramGiamGia());
             } else {
                 gioHangUpdate.put("idPhieuGiamGia", null);
                 gioHangUpdate.put("maPhieuGiamGia", null);
                 gioHangUpdate.put("soTienGiam", null);
+                gioHangUpdate.put("phanTramGiamGia", null);
             }
 
             gioHangUpdate.put("timestamp", Instant.now());

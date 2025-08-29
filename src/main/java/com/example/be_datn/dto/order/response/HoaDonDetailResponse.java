@@ -65,7 +65,9 @@ public class HoaDonDetailResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SanPhamChiTietInfo {
+        private Integer hoaDonChiTietId;
         private Integer chiTietSanPhamId; // Thêm trường này để lưu ID của ChiTietSanPham
+        private Integer idSanPham;
         private String maHinhSanPhamChiTiet;
         private Integer idHoaDon;
         private String maSanPham;
@@ -78,12 +80,14 @@ public class HoaDonDetailResponse {
         private String dungLuongBoNhoTrong;
         private String duongDan;
 
-        public SanPhamChiTietInfo(Integer chiTietSanPhamId, Integer idHoaDon, String maSanPham, String tenSanPham,
+        public SanPhamChiTietInfo(Integer hoaDonChiTietId,Integer chiTietSanPhamId,Integer idSanPham, Integer idHoaDon, String maSanPham, String tenSanPham,
                                   String imel, BigDecimal giaBan, String ghiChu, String mauSac,
                                   String dungLuongRam, String dungLuongBoNhoTrong, String duongDan) {
+            this.hoaDonChiTietId = hoaDonChiTietId;
             this.chiTietSanPhamId = chiTietSanPhamId;
             this.idHoaDon = idHoaDon;
             this.maSanPham = maSanPham;
+            this.idSanPham = idSanPham;
             this.tenSanPham = tenSanPham;
             this.imel = imel;
             this.giaBan = giaBan;

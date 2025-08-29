@@ -830,29 +830,107 @@ public class BanHangClientServiceImpl implements BanHangClientService {
     @Override
     @Transactional
     public HoaDonDetailResponse xacNhanVaGanImei(Integer idHD, Map<Integer, String> imelMap) {
-        HoaDon hoaDon = hoaDonRepository.findById(idHD)
-                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại!"));
-        if (hoaDon.getTrangThai() != 0) {
-            throw new RuntimeException("Hóa đơn không ở trạng thái chờ xác nhận IMEI!");
-        }
+        try {
+            System.out.println("=== IMEI Confirmation Debug ===");
+            System.out.println("HoaDon ID: " + idHD);
+            System.out.println("IMEI Map: " + imelMap);
+            
+            HoaDon hoaDon = hoaDonRepository.findById(idHD)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + idHD));
 
-        List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(idHD);
-        for (HoaDonChiTiet chiTiet : chiTietList) {
-            Integer chiTietId = chiTiet.getIdChiTietSanPham().getId();
-            String newImel = imelMap.get(chiTietId);
-            if (newImel == null || newImel.trim().isEmpty()) {
-                throw new RuntimeException("IMEI cho sản phẩm ID " + chiTietId + " không được cung cấp!");
+            if (hoaDon.getTrangThai() != 0) {
+                throw new RuntimeException("Hóa đơn không ở trạng thái chờ xác nhận IMEI!");
             }
 
-            ChiTietSanPham chiTietSanPham = chiTiet.getIdChiTietSanPham();
+            List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(idHD);
+            System.out.println("Found " + chiTietList.size() + " HoaDonChiTiet records");
+            
+            // Validate that provided IMEIs exist and are valid
+            for (Map.Entry<Integer, String> entry : imelMap.entrySet()) {
+                Integer chiTietSanPhamId = entry.getKey();
+                String imeiValue = entry.getValue();
+                
+                System.out.println("Validating chiTietSanPhamId: " + chiTietSanPhamId + ", IMEI: " + imeiValue);
+                
+                boolean found = chiTietList.stream()
+                        .anyMatch(chiTiet -> chiTiet.getIdChiTietSanPham().getId().equals(chiTietSanPhamId));
+                
+                if (!found) {
+                    System.out.println("ERROR: Chi tiết sản phẩm không tìm thấy với ID: " + chiTietSanPhamId);
+                    throw new RuntimeException("Không tìm thấy chi tiết sản phẩm với ID: " + chiTietSanPhamId);
+                }
+                
+                if (imeiValue == null || imeiValue.trim().isEmpty()) {
+                    System.out.println("ERROR: IMEI trống cho sản phẩm ID: " + chiTietSanPhamId);
+                    throw new RuntimeException("IMEI không được để trống cho sản phẩm ID: " + chiTietSanPhamId);
+                }
+            }
 
-            // Kiểm tra và xử lý IMEI cũ
-            // Trong BanHangClientServiceImpl.java
-// Kiểm tra và xử lý IMEI cũ
-            ImelDaBan oldImelDaBan = chiTiet.getIdImelDaBan();
-            if (oldImelDaBan != null) {
-                // Gỡ tham chiếu trong HoaDonChiTiet trước khi xóa
-                chiTiet.setIdImelDaBan(null);
+        // Group HoaDonChiTiet by chiTietSanPhamId and process each group
+        Map<Integer, List<HoaDonChiTiet>> productGroups = chiTietList.stream()
+                .collect(Collectors.groupingBy(
+                        chiTiet -> chiTiet.getIdChiTietSanPham().getId()
+                ));
+
+        // Track used IMEIs to prevent conflicts
+        Set<String> usedImeis = new HashSet<>();
+
+        for (Map.Entry<Integer, List<HoaDonChiTiet>> entry : productGroups.entrySet()) {
+            Integer chiTietSanPhamId = entry.getKey();
+            List<HoaDonChiTiet> chiTietGroup = entry.getValue();
+            String providedImel = imelMap.get(chiTietSanPhamId);
+            
+            System.out.println("Processing group for chiTietSanPhamId: " + chiTietSanPhamId + ", provided IMEI: " + providedImel);
+            
+            // If no IMEI provided for this specific chiTietSanPhamId, throw error
+            if (providedImel == null || providedImel.trim().isEmpty()) {
+                System.out.println("ERROR: No IMEI provided for chiTietSanPhamId: " + chiTietSanPhamId);
+                throw new RuntimeException("IMEI cho sản phẩm ID " + chiTietSanPhamId + " không được cung cấp!");
+            }
+
+            // Get the product specifications from the first item to find similar IMEIs
+            ChiTietSanPham sampleProduct = chiTietGroup.get(0).getIdChiTietSanPham();
+
+            // Find available IMEIs for this product type
+            List<Imel> allImeis = imelRepository.findAll();
+            List<Imel> availableImeis = allImeis.stream()
+                    .filter(imel -> !imel.getDeleted())
+                    .filter(imel -> {
+                        Optional<ChiTietSanPham> ctspOpt = chiTietSanPhamRepository.findByImel(imel.getImel());
+                        if (ctspOpt.isPresent()) {
+                            ChiTietSanPham ctsp = ctspOpt.get();
+                            return ctsp.getIdSanPham().getId().equals(sampleProduct.getIdSanPham().getId()) &&
+                                   ctsp.getIdRam().getId().equals(sampleProduct.getIdRam().getId()) &&
+                                   ctsp.getIdBoNhoTrong().getId().equals(sampleProduct.getIdBoNhoTrong().getId()) &&
+                                   ctsp.getIdMauSac().getId().equals(sampleProduct.getIdMauSac().getId());
+                        }
+                        return false;
+                    })
+                    .collect(Collectors.toList());
+
+            if (availableImeis.size() < chiTietGroup.size()) {
+                throw new RuntimeException("Không đủ IMEI khả dụng cho sản phẩm ID " + chiTietSanPhamId +
+                        ". Cần " + chiTietGroup.size() + " IMEI nhưng chỉ có " + availableImeis.size());
+            }
+
+            // Process each HoaDonChiTiet in the group with different IMEIs
+            for (int i = 0; i < chiTietGroup.size(); i++) {
+                HoaDonChiTiet chiTiet = chiTietGroup.get(i);
+                String newImel = availableImeis.get(i).getImel();
+
+                // Check if this IMEI is already used
+                if (usedImeis.contains(newImel)) {
+                    throw new RuntimeException("IMEI " + newImel + " đã được sử dụng cho sản phẩm khác!");
+                }
+                usedImeis.add(newImel);
+
+                ChiTietSanPham chiTietSanPham = chiTiet.getIdChiTietSanPham();
+
+                // Kiểm tra và xử lý IMEI cũ
+                ImelDaBan oldImelDaBan = chiTiet.getIdImelDaBan();
+                if (oldImelDaBan != null) {
+                    // Gỡ tham chiếu trong HoaDonChiTiet trước khi xóa
+                    chiTiet.setIdImelDaBan(null);
                 hoaDonChiTietRepository.save(chiTiet);
 
                 Imel oldImel = imelRepository.findByImelAndDeleted(oldImelDaBan.getImel(), true)
@@ -906,10 +984,11 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             newChiTietSanPham.setDeleted(true);
             chiTietSanPhamRepository.save(newChiTietSanPham);
 
-            // Cập nhật HoaDonChiTiet
-            chiTiet.setIdImelDaBan(imelDaBan);
-            chiTiet.setTrangThai((short) 2);
-            hoaDonChiTietRepository.save(chiTiet);
+                // Cập nhật HoaDonChiTiet
+                chiTiet.setIdImelDaBan(imelDaBan);
+                chiTiet.setTrangThai((short) 2);
+                hoaDonChiTietRepository.save(chiTiet);
+            }
         }
 
         hoaDon.setTrangThai((short) 1);
@@ -925,7 +1004,12 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         lichSu.setDeleted(false);
         lichSuHoaDonRepository.save(lichSu);
 
-        return mapToHoaDonDetailResponse(hoaDon);
+            return mapToHoaDonDetailResponse(hoaDon);
+        } catch (Exception e) {
+            System.out.println("ERROR in xacNhanVaGanImei: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 
@@ -1132,8 +1216,10 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 .map(hdct -> {
                     ChiTietSanPham ctsp = hdct.getIdChiTietSanPham();
                     return new HoaDonDetailResponse.SanPhamChiTietInfo(
-                            ctsp.getId(),
-                            hoaDon.getId(),
+                            hdct.getId(),                    // hoaDonChiTietId
+                            ctsp.getId(),                    // chiTietSanPhamId
+                            ctsp.getIdSanPham().getId(),     // idSanPham (fixed)
+                            hoaDon.getId(),                  // idHoaDon (fixed)
                             ctsp.getIdSanPham().getMa(),
                             ctsp.getIdSanPham().getTenSanPham(),
                             hdct.getIdImelDaBan() != null ? hdct.getIdImelDaBan().getImel() : null,

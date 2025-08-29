@@ -508,7 +508,8 @@ public class HoaDonServiceImpl implements HoaDonService {
             voucherUpdate.put("phieuGiamGiaId", phieuGiamGia.getId());
             voucherUpdate.put("maPhieu", phieuGiamGia.getMa());
             voucherUpdate.put("tenPhieu", phieuGiamGia.getTenPhieuGiamGia()); // Thêm tên phiếu nếu có
-            voucherUpdate.put("giaTriGiam", phieuGiamGia.getSoTienGiamToiDa()); // Thêm giá trị giảm
+            voucherUpdate.put("giaTriGiam", phieuGiamGia.getSoTienGiamToiDa());
+            voucherUpdate.put("phanTramGiamGia", phieuGiamGia.getPhanTramGiamGia());// Thêm giá trị giảm
             voucherUpdate.put("soLuongDung", phieuGiamGia.getSoLuongDung());
             voucherUpdate.put("trangThai", phieuGiamGia.getTrangThai());
             voucherUpdate.put("timestamp", Instant.now());

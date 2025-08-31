@@ -22,4 +22,7 @@ public interface GioHangTamRepository extends JpaRepository<GioHangTam, Integer>
     @Modifying
     @Query("UPDATE GioHangTam ght SET ght.deleted = true WHERE ght.idHoaDon = :idHoaDon AND ght.imei = :imei")
     void markAsDeletedByIdHoaDonAndImei(Integer idHoaDon, String imei);
+
+    // Trong GioHangTamRepository
+    List<GioHangTam> findByIdHoaDonAndChiTietSanPhamIdAndDeletedFalse(Integer idHoaDon, Integer chiTietSanPhamId);
 }

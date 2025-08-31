@@ -738,11 +738,11 @@ public class BanHangServiceImpl implements BanHangService {
         // Gán tenKhachHang và soDienThoaiKhachHang từ hoaDonRequest
         hoaDon.setTenKhachHang(hoaDonRequest.getTenKhachHang() != null ? hoaDonRequest.getTenKhachHang() : (khachHang != null ? khachHang.getTen() : "Khách lẻ"));
         String sdt = null;
-        if (khachHang.getIdTaiKhoan() != null) {
+        if (khachHang != null && khachHang.getIdTaiKhoan() != null) {
             sdt = khachHang.getIdTaiKhoan().getSoDienThoai();
         }
-
         hoaDon.setSoDienThoaiKhachHang(sdt);
+
         // Xử lý diaChiKhachHang
         if ("online".equals(hoaDonRequest.getLoaiDon()) && hoaDonRequest.getDiaChiKhachHang() != null) {
             DiaChiKhachHang diaChi = hoaDonRequest.getDiaChiKhachHang();

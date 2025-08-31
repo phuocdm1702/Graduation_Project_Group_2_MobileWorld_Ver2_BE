@@ -286,49 +286,77 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             gh.setTongTien(BigDecimal.ZERO);
         }
 
-        // Always add a new item with quantity 1, as each HoaDonChiTiet represents a single physical item
-        ChiTietGioHangDTO newItem = new ChiTietGioHangDTO();
-        newItem.setChiTietSanPhamId(chiTietGioHangDTO.getChiTietSanPhamId());
-        newItem.setMaImel(""); // Để IMEI rỗng
-        newItem.setTenSanPham(chiTietSanPham.getIdSanPham().getTenSanPham());
-        newItem.setMauSac(chiTietSanPham.getIdMauSac().getMauSac());
-        newItem.setRam(chiTietSanPham.getIdRam().getDungLuongRam());
-        newItem.setBoNhoTrong(chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong());
+        // ✅ KIỂM TRA SẢN PHẨM ĐÃ TỒN TẠI TRONG GIỎ HÀNG CHƯA
+        Optional<ChiTietGioHangDTO> existingItem = gh.getChiTietGioHangDTOS().stream()
+                .filter(item -> item.getChiTietSanPhamId().equals(chiTietGioHangDTO.getChiTietSanPhamId()))
+                .findFirst();
 
-        // Kiểm tra giá giảm từ ChiTietDotGiamGia
-        BigDecimal giaBan = chiTietSanPham.getGiaBan() != null ? chiTietSanPham.getGiaBan() : BigDecimal.ZERO;
-        BigDecimal giaSauGiam = giaBan;
-        String ghiChuGia = "";
+        if (existingItem.isPresent()) {
+            // ✅ NẾU ĐÃ CÓ → CỘNG SỐ LƯỢNG
+            ChiTietGioHangDTO item = existingItem.get();
+            int newQuantity = item.getSoLuong() + (chiTietGioHangDTO.getSoLuong() != null ? chiTietGioHangDTO.getSoLuong() : 1);
+            item.setSoLuong(newQuantity);
 
-        Optional<ChiTietDotGiamGia> chiTietDotGiamGiaOpt = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdAndActive(chiTietGioHangDTO.getChiTietSanPhamId());
-        if (chiTietDotGiamGiaOpt.isPresent()) {
-            ChiTietDotGiamGia chiTietDotGiamGia = chiTietDotGiamGiaOpt.get();
-            giaSauGiam = chiTietDotGiamGia.getGiaSauKhiGiam() != null ? chiTietDotGiamGia.getGiaSauKhiGiam() : giaBan;
-            ghiChuGia = String.format("Giá gốc ban đầu: %s", giaBan);
+            // Cập nhật tổng tiền cho item này
+            BigDecimal giaBan = item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO;
+            item.setTongTien(giaBan.multiply(BigDecimal.valueOf(newQuantity)));
+
+            // Cập nhật GioHangTam - thêm 1 record mới
+            GioHangTam gioHangTam = GioHangTam.builder()
+                    .idHoaDon(idHD)
+                    .imei("") // Để IMEI rỗng
+                    .chiTietSanPhamId(chiTietGioHangDTO.getChiTietSanPhamId())
+                    .idPhieuGiamGia(chiTietGioHangDTO.getIdPhieuGiamGia())
+                    .createdAt(new Date().toInstant())
+                    .deleted(false)
+                    .build();
+            gioHangTamRepository.save(gioHangTam);
+
+        } else {
+            // ✅ NẾU CHƯA CÓ → TẠO MỚI
+            ChiTietGioHangDTO newItem = new ChiTietGioHangDTO();
+            newItem.setChiTietSanPhamId(chiTietGioHangDTO.getChiTietSanPhamId());
+            newItem.setMaImel(""); // Để IMEI rỗng
+            newItem.setTenSanPham(chiTietSanPham.getIdSanPham().getTenSanPham());
+            newItem.setMauSac(chiTietSanPham.getIdMauSac().getMauSac());
+            newItem.setRam(chiTietSanPham.getIdRam().getDungLuongRam());
+            newItem.setBoNhoTrong(chiTietSanPham.getIdBoNhoTrong().getDungLuongBoNhoTrong());
+
+            // Kiểm tra giá giảm từ ChiTietDotGiamGia
+            BigDecimal giaBan = chiTietSanPham.getGiaBan() != null ? chiTietSanPham.getGiaBan() : BigDecimal.ZERO;
+            BigDecimal giaSauGiam = giaBan;
+            String ghiChuGia = "";
+
+            Optional<ChiTietDotGiamGia> chiTietDotGiamGiaOpt = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdAndActive(chiTietGioHangDTO.getChiTietSanPhamId());
+            if (chiTietDotGiamGiaOpt.isPresent()) {
+                ChiTietDotGiamGia chiTietDotGiamGia = chiTietDotGiamGiaOpt.get();
+                giaSauGiam = chiTietDotGiamGia.getGiaSauKhiGiam() != null ? chiTietDotGiamGia.getGiaSauKhiGiam() : giaBan;
+                ghiChuGia = String.format("Giá gốc ban đầu: %s", giaBan);
+            }
+
+            newItem.setGiaBan(giaSauGiam);
+            newItem.setGiaBanGoc(giaSauGiam);
+            newItem.setGhiChuGia(ghiChuGia);
+            newItem.setSoLuong(chiTietGioHangDTO.getSoLuong() != null ? chiTietGioHangDTO.getSoLuong() : 1);
+            newItem.setTongTien(giaSauGiam.multiply(BigDecimal.valueOf(newItem.getSoLuong())));
+            newItem.setImage(chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null);
+
+            gh.getChiTietGioHangDTOS().add(newItem);
+
+            // Lưu vào GioHangTam
+            GioHangTam gioHangTam = GioHangTam.builder()
+                    .idHoaDon(idHD)
+                    .imei("") // Để IMEI rỗng
+                    .chiTietSanPhamId(chiTietGioHangDTO.getChiTietSanPhamId())
+                    .idPhieuGiamGia(chiTietGioHangDTO.getIdPhieuGiamGia())
+                    .createdAt(new Date().toInstant())
+                    .deleted(false)
+                    .build();
+            gioHangTamRepository.save(gioHangTam);
         }
 
-        newItem.setGiaBan(giaSauGiam);
-        newItem.setGiaBanGoc(giaSauGiam);
-        newItem.setGhiChuGia(ghiChuGia);
-        newItem.setSoLuong(1); // Always set quantity to 1 for new entries
-        newItem.setTongTien(giaSauGiam); // Total price for a single item
-        newItem.setImage(chiTietSanPham.getIdAnhSanPham() != null ? chiTietSanPham.getIdAnhSanPham().getDuongDan() : null);
-
-        gh.getChiTietGioHangDTOS().add(newItem);
-
-        // Lưu vào GioHangTam
-        GioHangTam gioHangTam = GioHangTam.builder()
-                .idHoaDon(idHD)
-                .imei("") // Để IMEI rỗng
-                .chiTietSanPhamId(chiTietGioHangDTO.getChiTietSanPhamId())
-                .idPhieuGiamGia(chiTietGioHangDTO.getIdPhieuGiamGia())
-                .createdAt(new Date().toInstant())
-                .deleted(false)
-                .build();
-        gioHangTamRepository.save(gioHangTam);
-
-        // Xử lý phiếu giảm giá
-        if (chiTietGioHangDTO.getIdPhieuGiamGia() != null) {
+        // Xử lý phiếu giảm giá (chỉ khi thêm mới)
+        if (!existingItem.isPresent() && chiTietGioHangDTO.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(chiTietGioHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy mã giảm giá!"));
             if (phieuGiamGia.getSoLuongDung() <= 0 || !phieuGiamGia.getTrangThai()) {
@@ -414,35 +442,40 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             throw new RuntimeException("Giỏ hàng trống hoặc không tồn tại!");
         }
 
-        // Lọc các sản phẩm cần xóa
-        List<ChiTietGioHangDTO> updatedItems = gioHangDTO.getChiTietGioHangDTOS().stream()
+        // Tìm sản phẩm cần giảm số lượng
+        Optional<ChiTietGioHangDTO> itemToUpdate = gioHangDTO.getChiTietGioHangDTOS().stream()
                 .filter(item -> {
                     if (maImel != null && !maImel.isEmpty()) {
-                        return !item.getMaImel().equals(maImel.trim());
+                        return item.getMaImel().equals(maImel.trim());
                     } else {
-                        return !item.getChiTietSanPhamId().equals(spId);
+                        return item.getChiTietSanPhamId().equals(spId);
                     }
                 })
-                .collect(Collectors.toList());
+                .findFirst();
 
-        // Khôi phục trạng thái IMEI và phiếu giảm giá
-        List<ChiTietGioHangDTO> removedItems = gioHangDTO.getChiTietGioHangDTOS().stream()
-                .filter(item -> (maImel != null && !maImel.isEmpty()) ? item.getMaImel().equals(maImel.trim()) : item.getChiTietSanPhamId().equals(spId))
-                .collect(Collectors.toList());
+        if (itemToUpdate.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy sản phẩm trong giỏ hàng!");
+        }
 
-        for (ChiTietGioHangDTO item : removedItems) {
-            Imel imel = imelRepository.findByImelAndDeleted(item.getMaImel(), true)
-                    .orElse(null);
-            if (imel != null && !imelDaBanRepository.existsByMa(item.getMaImel())) {
-                imel.setDeleted(false);
-                imelRepository.save(imel);
+        ChiTietGioHangDTO item = itemToUpdate.get();
+
+        // Giảm số lượng đi 1
+        int newQuantity = item.getSoLuong() - 1;
+
+        if (newQuantity <= 0) {
+            // Nếu số lượng <= 0, xóa hoàn toàn khỏi giỏ hàng
+            gioHangDTO.getChiTietGioHangDTOS().remove(item);
+
+            // Khôi phục trạng thái IMEI và phiếu giảm giá
+            if (item.getMaImel() != null && !item.getMaImel().isEmpty()) {
+                Imel imel = imelRepository.findByImelAndDeleted(item.getMaImel(), true)
+                        .orElse(null);
+                if (imel != null && !imelDaBanRepository.existsByMa(item.getMaImel())) {
+                    imel.setDeleted(false);
+                    imelRepository.save(imel);
+                }
             }
-            Optional<ChiTietDotGiamGia> chiTietDotGiamGiaOpt = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdAndActive(item.getChiTietSanPhamId());
-            if (chiTietDotGiamGiaOpt.isPresent()) {
-                ChiTietDotGiamGia chiTietDotGiamGia = chiTietDotGiamGiaOpt.get();
-                chiTietDotGiamGia.setDeleted(false);
-                chiTietDotGiamGiaRepository.save(chiTietDotGiamGia);
-            }
+
             // Khôi phục phiếu giảm giá
             if (item.getIdPhieuGiamGia() != null) {
                 PhieuGiamGia pgg = phieuGiamGiaRepository.findById(item.getIdPhieuGiamGia())
@@ -453,187 +486,33 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                     phieuGiamGiaRepository.save(pgg);
                 }
             }
+        } else {
+            // Cập nhật số lượng mới và tính lại tổng tiền cho item
+            item.setSoLuong(newQuantity);
+            BigDecimal giaBan = item.getGiaBan() != null ? item.getGiaBan() : BigDecimal.ZERO;
+            item.setTongTien(giaBan.multiply(BigDecimal.valueOf(newQuantity)));
         }
 
-        gioHangDTO.setChiTietGioHangDTOS(updatedItems);
-        gioHangDTO.setTongTien(updatedItems.stream()
-                .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)
+        List<GioHangTam> gioHangTamList = gioHangTamRepository.findByIdHoaDonAndDeletedFalse(idHD);
+        for (GioHangTam gioHangTam : gioHangTamList) {
+            gioHangTam.setDeleted(true);
+            gioHangTamRepository.save(gioHangTam);
+        }
+
+        // Tính lại tổng tiền cho toàn bộ giỏ hàng
+        gioHangDTO.setTongTien(gioHangDTO.getChiTietGioHangDTOS().stream()
+                .map(cartItem -> cartItem.getTongTien() != null ? cartItem.getTongTien() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
+        // Cập nhật tổng tiền trong hóa đơn
         hoaDon.setTongTien(gioHangDTO.getTongTien());
         hoaDonRepository.save(hoaDon);
 
+        // Lưu lại giỏ hàng vào Redis
         redisTemplate.opsForValue().set(ghKey, gioHangDTO, 24, TimeUnit.HOURS);
+
         return gioHangDTO;
     }
-
-//    @Override
-//    @Transactional
-//    public HoaDonDetailResponse thanhToan(Integer idHD, HoaDonRequest hoaDonRequest) {
-//        // Kiểm tra hóa đơn
-//        HoaDon hoaDon = hoaDonRepository.findById(idHD)
-//                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại!"));
-//        if (hoaDon.getTrangThai() != 6) {
-//            throw new RuntimeException("Hóa đơn không ở trạng thái chờ thanh toán!");
-//        }
-//
-//        // Kiểm tra giỏ hàng
-//        String ghKey = GH_PREFIX + idHD;
-//        GioHangDTO gioHangDTO = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
-//        if (gioHangDTO == null || gioHangDTO.getChiTietGioHangDTOS().isEmpty()) {
-//            throw new RuntimeException("Giỏ hàng trống, không thể thanh toán!");
-//        }
-//
-//        // Kiểm tra thông tin bắt buộc
-//        if (hoaDonRequest.getTenKhachHang() == null || hoaDonRequest.getTenKhachHang().trim().isEmpty()) {
-//            throw new RuntimeException("Tên khách hàng là bắt buộc!");
-//        }
-//        if (hoaDonRequest.getSoDienThoaiKhachHang() == null || hoaDonRequest.getSoDienThoaiKhachHang().trim().isEmpty()) {
-//            throw new RuntimeException("Số điện thoại khách hàng là bắt buộc!");
-//        }
-//        if (hoaDonRequest.getDiaChiKhachHang() == null || hoaDonRequest.getDiaChiKhachHang().getDiaChiCuThe() == null || hoaDonRequest.getDiaChiKhachHang().getDiaChiCuThe().trim().isEmpty()) {
-//            throw new RuntimeException("Địa chỉ khách hàng là bắt buộc!");
-//        }
-//        if (hoaDonRequest.getEmail() == null || hoaDonRequest.getEmail().trim().isEmpty()) {
-//            throw new RuntimeException("Email là bắt buộc để gửi thông tin đơn hàng!");
-//        }
-//
-//        // Kiểm tra trạng thái Imel của ChiTietSanPham
-//        for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
-//            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
-//                    .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
-//            if (chiTietSanPham.getIdImel() == null) {
-//                throw new RuntimeException("Sản phẩm ID " + item.getChiTietSanPhamId() + " không có IMEI liên kết!");
-//            }
-//            Imel imel = imelRepository.findById(chiTietSanPham.getIdImel().getId())
-//                    .orElseThrow(() -> new RuntimeException("IMEI của sản phẩm ID " + item.getChiTietSanPhamId() + " không tồn tại!"));
-//            if (imel.getDeleted()) {
-//                throw new RuntimeException("IMEI của sản phẩm ID " + item.getChiTietSanPhamId() + " đã được sử dụng!");
-//            }
-//        }
-//
-//        // Xử lý khách hàng và địa chỉ
-//        KhachHang khachHang = null;
-//        if (hoaDonRequest.getIdKhachHang() != null && hoaDonRequest.getIdKhachHang() > 0) {
-//            khachHang = khachHangRepository.findById(hoaDonRequest.getIdKhachHang())
-//                    .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với ID: " + hoaDonRequest.getIdKhachHang()));
-//            hoaDon.setIdKhachHang(khachHang);
-//            // Đồng bộ thông tin khách hàng từ KhachHang nếu có, trừ khi được cung cấp trong request
-//            hoaDon.setTenKhachHang(hoaDonRequest.getTenKhachHang() != null ? hoaDonRequest.getTenKhachHang() : khachHang.getTen());
-//            hoaDon.setSoDienThoaiKhachHang(hoaDonRequest.getSoDienThoaiKhachHang() != null ? hoaDonRequest.getSoDienThoaiKhachHang() :
-//                    (khachHang.getIdTaiKhoan() != null ? khachHang.getIdTaiKhoan().getSoDienThoai() : "N/A"));
-//            hoaDon.setEmail(hoaDonRequest.getEmail() != null ? hoaDonRequest.getEmail() : "N/A");
-//        } else {
-//            // Khách vãng lai
-//            hoaDon.setIdKhachHang(khachHangRepository.findById(1)
-//                    .orElseThrow(() -> new RuntimeException("Khách hàng mặc định không tồn tại!")));
-//            hoaDon.setTenKhachHang(hoaDonRequest.getTenKhachHang());
-//            hoaDon.setSoDienThoaiKhachHang(hoaDonRequest.getSoDienThoaiKhachHang());
-//            hoaDon.setEmail(hoaDonRequest.getEmail());
-//        }
-//
-//        // Xử lý địa chỉ
-//        String diaChiCuThe = hoaDonRequest.getDiaChiKhachHang().getDiaChiCuThe();
-//        if ("online".equals(hoaDonRequest.getLoaiDon())) {
-//            diaChiCuThe = String.format("%s, %s, %s, %s",
-//                    hoaDonRequest.getDiaChiKhachHang().getDiaChiCuThe(),
-//                    hoaDonRequest.getDiaChiKhachHang().getPhuong(),
-//                    hoaDonRequest.getDiaChiKhachHang().getQuan(),
-//                    hoaDonRequest.getDiaChiKhachHang().getThanhPho());
-//        }
-//        hoaDon.setDiaChiKhachHang(diaChiCuThe);
-//
-//        // Tính tổng tiền sản phẩm
-//        BigDecimal tienSanPham = gioHangDTO.getChiTietGioHangDTOS().stream()
-//                .map(ChiTietGioHangDTO::getTongTien)
-//                .reduce(BigDecimal.ZERO, BigDecimal::add);
-//
-//        // Xử lý phí vận chuyển
-//        BigDecimal phiVanChuyen = "online".equals(hoaDonRequest.getLoaiDon()) ? new BigDecimal("30000") : BigDecimal.ZERO;
-//        hoaDon.setPhiVanChuyen(phiVanChuyen);
-//
-//        // Xử lý phiếu giảm giá
-//        BigDecimal tienGiam = BigDecimal.ZERO;
-//        if (hoaDonRequest.getIdPhieuGiamGia() != null) {
-//            PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(hoaDonRequest.getIdPhieuGiamGia())
-//                    .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại!"));
-//            if (phieuGiamGia.getSoLuongDung() <= 0 || !phieuGiamGia.getTrangThai()) {
-//                throw new RuntimeException("Phiếu giảm giá không khả dụng!");
-//            }
-//            tienGiam = BigDecimal.valueOf(phieuGiamGia.getSoTienGiamToiDa());
-//            phieuGiamGia.setSoLuongDung(phieuGiamGia.getSoLuongDung() - 1);
-//            if (phieuGiamGia.getSoLuongDung() == 0) {
-//                phieuGiamGia.setTrangThai(false);
-//            }
-//            phieuGiamGiaRepository.save(phieuGiamGia);
-//            hoaDon.setIdPhieuGiamGia(phieuGiamGia);
-//        }
-//
-//        // Tính tổng tiền sau giảm
-//        BigDecimal tongTienSauGiam = tienSanPham.add(phiVanChuyen).subtract(tienGiam);
-//        hoaDon.setTienSanPham(tienSanPham);
-//        hoaDon.setTongTien(tongTienSauGiam);
-//        hoaDon.setTongTienSauGiam(tongTienSauGiam);
-//
-//        // Lưu chi tiết hóa đơn mà không gán IMEI ngay
-//        List<HoaDonChiTiet> chiTietList = new ArrayList<>();
-//        for (ChiTietGioHangDTO item : gioHangDTO.getChiTietGioHangDTOS()) {
-//            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
-//                    .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
-//
-//            HoaDonChiTiet chiTiet = new HoaDonChiTiet();
-//            chiTiet.setHoaDon(hoaDon);
-//            chiTiet.setIdChiTietSanPham(chiTietSanPham);
-//            chiTiet.setGia(item.getGiaBan());
-//            chiTiet.setIdImelDaBan(null); // Không gán IMEI lúc này
-//            chiTiet.setTrangThai((short) 1); // Đặt trạng thái chờ xác nhận
-//            chiTiet.setDeleted(false);
-//            chiTietList.add(chiTiet);
-//        }
-//        hoaDonChiTietRepository.saveAll(chiTietList);
-//
-//        // Xử lý phương thức thanh toán (COD)
-//        HinhThucThanhToan hinhThuc = new HinhThucThanhToan();
-//        List<PhuongThucThanhToan> phuongThucList = phuongThucThanhToanRepository.findAllByKieuThanhToan("Tiền mặt");
-//        if (phuongThucList.isEmpty()) {
-//            throw new RuntimeException("Phương thức thanh toán COD không tồn tại!");
-//        }
-//        PhuongThucThanhToan phuongThuc = phuongThucList.get(0);
-//        hinhThuc.setHoaDon(hoaDon);
-//        hinhThuc.setIdPhuongThucThanhToan(phuongThuc);
-//        hinhThuc.setTienMat(tongTienSauGiam);
-//        hinhThuc.setTienChuyenKhoan(BigDecimal.ZERO);
-//        hinhThuc.setMa(generateUniqueMaHinhThucThanhToan());
-//        hinhThuc.setDeleted(false);
-//        hinhThucThanhToanRepository.save(hinhThuc);
-//
-//        // Cập nhật trạng thái hóa đơn
-//        hoaDon.setLoaiDon(hoaDonRequest.getLoaiDon());
-//        hoaDon.setTrangThai((short) 0); // Đã thanh toán, chờ xác nhận IMEI
-//        hoaDon.setNgayThanhToan(Instant.now());
-//        hoaDon.setDeleted(false);
-//        hoaDon = hoaDonRepository.save(hoaDon);
-//
-//        // Lưu lịch sử hóa đơn
-//        LichSuHoaDon lichSu = new LichSuHoaDon();
-//        lichSu.setHoaDon(hoaDon);
-//        lichSu.setIdNhanVien(nhanVienRepository.findById(1)
-//                .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại")));
-//        lichSu.setMa(hoaDon.getMa());
-//        lichSu.setHanhDong("Thanh toán hóa đơn qua client (COD), chờ xác nhận IMEI");
-//        lichSu.setThoiGian(Instant.now());
-//        lichSu.setDeleted(false);
-//        lichSuHoaDonRepository.save(lichSu);
-//
-//        // Xóa giỏ hàng
-//        redisTemplate.delete(ghKey);
-//
-//        // Gửi email
-//        HoaDonDetailResponse response = mapToHoaDonDetailResponse(hoaDon);
-//        guiEmailThongTinDonHang(response, hoaDonRequest.getEmail());
-//
-//        return response;
-//    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -748,14 +627,19 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại!"));
 
-            HoaDonChiTiet chiTiet = new HoaDonChiTiet();
-            chiTiet.setHoaDon(hoaDon);
-            chiTiet.setIdChiTietSanPham(chiTietSanPham);
-            chiTiet.setGia(item.getGiaBan());
-            chiTiet.setIdImelDaBan(null); // Không gán IMEI lúc này
-            chiTiet.setTrangThai((short) 1); // Đặt trạng thái chờ xác nhận
-            chiTiet.setDeleted(false);
-            chiTietList.add(chiTiet);
+            // ✅ TẠO NHIỀU HoaDonChiTiet THEO SỐ LƯỢNG
+            int soLuong = item.getSoLuong() != null ? item.getSoLuong() : 1;
+
+            for (int i = 0; i < soLuong; i++) {
+                HoaDonChiTiet chiTiet = new HoaDonChiTiet();
+                chiTiet.setHoaDon(hoaDon);
+                chiTiet.setIdChiTietSanPham(chiTietSanPham);
+                chiTiet.setGia(item.getGiaBan());
+                chiTiet.setIdImelDaBan(null); // Không gán IMEI lúc này
+                chiTiet.setTrangThai((short) 1); // Đặt trạng thái chờ xác nhận
+                chiTiet.setDeleted(false);
+                chiTietList.add(chiTiet);
+            }
         }
         hoaDonChiTietRepository.saveAll(chiTietList);
 

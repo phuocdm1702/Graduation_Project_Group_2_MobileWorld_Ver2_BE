@@ -4,6 +4,7 @@ import com.example.be_datn.common.order.HoaDonDetailMapper;
 import com.example.be_datn.common.order.HoaDonMapper;
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
+import com.example.be_datn.dto.order.response.HoaDonChiTietImeiResponse;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.order.HoaDonChiTiet;
@@ -850,6 +851,65 @@ public class HoaDonServiceImpl implements HoaDonService {
         return hoaDonMapper.mapToDto(hoaDon);
     }
 
+    @Override
+    public Page<HoaDonChiTietImeiResponse> getImeiByHoaDonId(Integer hoaDonId, Pageable pageable) {
+        // Kiểm tra hóa đơn tồn tại
+        hoaDonRepository.findById(hoaDonId)
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
+
+        // Lấy danh sách HoaDonChiTiet của hóa đơn
+        List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(hoaDonId);
+        
+        // Chuyển đổi sang DTO
+        List<HoaDonChiTietImeiResponse> responseList = chiTietList.stream()
+                .map(this::mapToHoaDonChiTietImeiResponse)
+                .collect(Collectors.toList());
+
+        // Tạo Page từ List (simple pagination)
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), responseList.size());
+        List<HoaDonChiTietImeiResponse> pageContent = responseList.subList(start, end);
+        
+        return new org.springframework.data.domain.PageImpl<>(pageContent, pageable, responseList.size());
+    }
+
+    private HoaDonChiTietImeiResponse mapToHoaDonChiTietImeiResponse(HoaDonChiTiet chiTiet) {
+        ChiTietSanPham ctsp = chiTiet.getIdChiTietSanPham();
+        ImelDaBan imelDaBan = chiTiet.getIdImelDaBan();
+        HoaDon hoaDon = chiTiet.getHoaDon();
+
+        return HoaDonChiTietImeiResponse.builder()
+                .id(chiTiet.getId())
+                .ma(chiTiet.getMa())
+                .gia(chiTiet.getGia())
+                .trangThai(chiTiet.getTrangThai())
+                .ghiChu(chiTiet.getGhiChu())
+                
+                // Thông tin sản phẩm
+                .sanPhamId(ctsp != null ? ctsp.getIdSanPham().getId() : null)
+                .tenSanPham(ctsp != null ? ctsp.getIdSanPham().getTenSanPham() : null)
+                .anhSanPham(ctsp != null ? ctsp.getIdSanPham().getMa() : null)
+                .thuongHieu(ctsp != null ? ctsp.getIdSanPham().getIdNhaSanXuat().getNhaSanXuat() : null)
+                
+                // Thông tin chi tiết sản phẩm
+                .chiTietSanPhamId(ctsp != null ? ctsp.getId() : null)
+                .ram(ctsp != null ? ctsp.getIdRam().getDungLuongRam() : null)
+                .boNhoTrong(ctsp != null ? ctsp.getIdBoNhoTrong().getDungLuongBoNhoTrong() : null)
+                .mauSac(ctsp != null ? ctsp.getIdMauSac().getMauSac() : null)
+                .giaBan(ctsp != null ? ctsp.getGiaBan() : null)
+                
+                // Thông tin IMEI
+                .imei(imelDaBan != null ? imelDaBan.getImel() : null)
+                .ngayBan(imelDaBan != null ? imelDaBan.getNgayBan() : null)
+                .ghiChuImei(imelDaBan != null ? imelDaBan.getGhiChu() : null)
+                
+                // Thông tin hóa đơn
+                .hoaDonId(hoaDon.getId())
+                .maHoaDon(hoaDon.getMa())
+                .tenKhachHang(hoaDon.getTenKhachHang())
+                .soDienThoaiKhachHang(hoaDon.getSoDienThoaiKhachHang())
+                .build();
+    }
 
     // Phương thức gửi thông báo WebSocket
     private void sendHoaDonUpdate(Integer hoaDonId, HoaDon hoaDon) {

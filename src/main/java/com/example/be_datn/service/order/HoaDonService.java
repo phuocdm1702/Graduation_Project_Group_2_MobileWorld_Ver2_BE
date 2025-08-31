@@ -2,6 +2,7 @@ package com.example.be_datn.service.order;
 
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
+import com.example.be_datn.dto.order.response.HoaDonChiTietImeiResponse;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.product.Imel;
 import jakarta.servlet.http.HttpServletResponse;
@@ -48,5 +49,6 @@ public interface HoaDonService {
 
     HoaDonResponse deleteProductFromHoaDonChiTiet(Integer idHD, Integer idHoaDonChiTiet);
 
+    Page<HoaDonChiTietImeiResponse> getImeiByHoaDonId(Integer hoaDonId, Pageable pageable);
 
 }

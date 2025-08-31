@@ -47,18 +47,32 @@ public class ThongKeService {
     }
 
     public Map<String, Object> getThongKeTheoTuan() {
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+
+        // Đặt ngày bắt đầu tuần là Thứ Hai
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
         Date startOfWeek = cal.getTime();
-        cal.add(Calendar.WEEK_OF_YEAR, 1);
+
+        // Đặt ngày kết thúc tuần là Chủ Nhật (6 ngày sau Thứ Hai)
+        cal.add(Calendar.DAY_OF_WEEK, 6);
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 999);
         Date endOfWeek = cal.getTime();
+
+        // Gọi repository để lấy dữ liệu
         Map<String, Object> result = tkRepo.thongKeTheoTuan(startOfWeek, endOfWeek);
         return convertNumberValuesToInteger(result);
     }
 
     public Map<String, Object> getThongKeTheoThang() {
         Calendar cal = Calendar.getInstance();
-        int thang = cal.get(Calendar.MONTH) + 1; // +1 vì tháng bắt đầu từ 0
+        int thang = cal.get(Calendar.MONTH) + 1;
         int nam = cal.get(Calendar.YEAR);
         Map<String, Object> result = tkRepo.thongKeTheoThang(thang, nam);
         return convertNumberValuesToInteger(result);
@@ -86,6 +100,11 @@ public class ThongKeService {
 
 
     public List<Map<String, Object>> thongKeDoanhThuTheoQuy(int nam) {
+        // Kiểm tra năm hợp lệ
+        int currentYear = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")).get(Calendar.YEAR);
+        if (nam < 1900 || nam > currentYear) {
+            throw new IllegalArgumentException("Năm không hợp lệ: " + nam);
+        }
         return tkRepo.thongKeDoanhThuTheoQuy(nam);
     }
 
@@ -108,8 +127,7 @@ public class ThongKeService {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         sdf.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
 
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
 
         try {
             if ("day".equals(filterType)) {
@@ -130,7 +148,7 @@ public class ThongKeService {
                 cal.set(Calendar.SECOND, 0);
                 cal.set(Calendar.MILLISECOND, 0);
                 startDate = cal.getTime();
-                cal.add(Calendar.DAY_OF_WEEK, 6);
+                cal.add(Calendar.DAY_OF_WEEK, 6); // Di chuyển đến Chủ Nhật
                 cal.set(Calendar.HOUR_OF_DAY, 23);
                 cal.set(Calendar.MINUTE, 59);
                 cal.set(Calendar.SECOND, 59);
@@ -150,7 +168,7 @@ public class ThongKeService {
                 cal.set(Calendar.MILLISECOND, 999);
                 endDate = cal.getTime();
             } else if ("year".equals(filterType)) {
-                cal.set(Calendar.MONTH, 0);
+                cal.set(Calendar.MONTH, 0); // Tháng 1
                 cal.set(Calendar.DAY_OF_MONTH, 1);
                 cal.set(Calendar.HOUR_OF_DAY, 0);
                 cal.set(Calendar.MINUTE, 0);
@@ -169,8 +187,6 @@ public class ThongKeService {
                 }
                 startDate = sdf.parse(startDateStr);
                 endDate = sdf.parse(endDateStr);
-
-                // Đảm bảo endDate bao gồm cả ngày
                 cal.setTime(endDate);
                 cal.set(Calendar.HOUR_OF_DAY, 23);
                 cal.set(Calendar.MINUTE, 59);
@@ -215,21 +231,68 @@ public class ThongKeService {
 
         Calendar cal = Calendar.getInstance();
         if ("day".equals(filterType)) {
-            startDate = new Date();
-            endDate = startDate;
-        } else if ("month".equals(filterType)) {
-            cal.set(Calendar.DAY_OF_MONTH, 1);
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
             startDate = cal.getTime();
-            endDate = new Date();
+            cal.set(Calendar.HOUR_OF_DAY, 23);
+            cal.set(Calendar.MINUTE, 59);
+            cal.set(Calendar.SECOND, 59);
+            cal.set(Calendar.MILLISECOND, 999);
+            endDate = cal.getTime();
+        }
+        else if ("week".equals(filterType)) {
+            cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            startDate = cal.getTime();
+            cal.add(Calendar.DAY_OF_WEEK, 6); // Di chuyển đến Chủ Nhật
+            cal.set(Calendar.HOUR_OF_DAY, 23);
+            cal.set(Calendar.MINUTE, 59);
+            cal.set(Calendar.SECOND, 59);
+            cal.set(Calendar.MILLISECOND, 999);
+            endDate = cal.getTime();
+        }
+        else if ("month".equals(filterType)) {
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            startDate = cal.getTime();
+            cal.setTime(new Date());
+            cal.set(Calendar.HOUR_OF_DAY, 23);
+            cal.set(Calendar.MINUTE, 59);
+            cal.set(Calendar.SECOND, 59);
+            cal.set(Calendar.MILLISECOND, 999);
+            endDate = cal.getTime();
         } else if ("year".equals(filterType)) {
-            cal.set(Calendar.MONTH, 0);
+            cal.set(Calendar.MONTH, 0); // Tháng 1
             cal.set(Calendar.DAY_OF_MONTH, 1);
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
             startDate = cal.getTime();
-            endDate = new Date();
+            cal.setTime(new Date());
+            cal.set(Calendar.HOUR_OF_DAY, 23);
+            cal.set(Calendar.MINUTE, 59);
+            cal.set(Calendar.SECOND, 59);
+            cal.set(Calendar.MILLISECOND, 999);
+            endDate = cal.getTime();
         } else if ("custom".equals(filterType) && startDateStr != null && endDateStr != null) {
             try {
                 startDate = sdf.parse(startDateStr);
                 endDate = sdf.parse(endDateStr);
+                cal.setTime(endDate);
+                cal.set(Calendar.HOUR_OF_DAY, 23);
+                cal.set(Calendar.MINUTE, 59);
+                cal.set(Calendar.SECOND, 59);
+                cal.set(Calendar.MILLISECOND, 999);
+                endDate = cal.getTime();
             } catch (ParseException e) {
                 throw new RuntimeException("Invalid date format");
             }
@@ -348,6 +411,30 @@ public class ThongKeService {
     }
 
     public Map<String, Long> getOrderStatusStats(String filterType, Date date) {
+        // Chuẩn hóa date theo múi giờ Asia/Ho_Chi_Minh
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+        if (date != null) {
+            cal.setTime(date);
+            // Đặt thời gian về 00:00:00 để đảm bảo so sánh ngày chính xác
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            date = cal.getTime();
+        } else {
+            // Nếu date là null, sử dụng ngày hiện tại
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            date = cal.getTime();
+        }
+
+        // Kiểm tra filterType hợp lệ
+        if (!Arrays.asList("day", "month", "year").contains(filterType)) {
+            throw new IllegalArgumentException("Invalid filterType: " + filterType);
+        }
+
         List<Map<String, Object>> result = tkRepo.thongKeTrangThaiDonHang(filterType, date);
         Map<String, Long> statusStats = new HashMap<>();
 

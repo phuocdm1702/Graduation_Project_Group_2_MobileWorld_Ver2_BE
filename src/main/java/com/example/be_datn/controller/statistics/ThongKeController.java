@@ -150,7 +150,8 @@ public class ThongKeController {
         Map<String, Object> response = new HashMap<>();
         List<BigDecimal> data = new ArrayList<>();
         List<String> labels = new ArrayList<>();
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+
         switch (filterType) {
             case "day":
                 List<Map<String, Object>> dailyData = sr.thongKeDoanhThuTheoKhungGio(new Date());
@@ -163,12 +164,38 @@ public class ThongKeController {
                 }).collect(Collectors.toList());
                 break;
             case "week":
-                cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
-                Date startOfWeek = cal.getTime();
-                cal.add(Calendar.DAY_OF_WEEK, 6);
-                Date endOfWeek = cal.getTime();
+                Date startOfWeek;
+                Date endOfWeek;
+                if (startDate != null && endDate != null) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    try {
+                        startOfWeek = sdf.parse(startDate);
+                        cal.setTime(sdf.parse(endDate));
+                        cal.set(Calendar.HOUR_OF_DAY, 23);
+                        cal.set(Calendar.MINUTE, 59);
+                        cal.set(Calendar.SECOND, 59);
+                        cal.set(Calendar.MILLISECOND, 999);
+                        endOfWeek = cal.getTime();
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Invalid date format for startDate or endDate", e);
+                    }
+                } else {
+                    // Tính tuần hiện tại (Thứ Hai đến Chủ Nhật)
+                    cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+                    cal.set(Calendar.HOUR_OF_DAY, 0);
+                    cal.set(Calendar.MINUTE, 0);
+                    cal.set(Calendar.SECOND, 0);
+                    cal.set(Calendar.MILLISECOND, 0);
+                    startOfWeek = cal.getTime();
+                    cal.add(Calendar.DAY_OF_WEEK, 6);
+                    cal.set(Calendar.HOUR_OF_DAY, 23);
+                    cal.set(Calendar.MINUTE, 59);
+                    cal.set(Calendar.SECOND, 59);
+                    cal.set(Calendar.MILLISECOND, 999);
+                    endOfWeek = cal.getTime();
+                }
                 List<Map<String, Object>> weeklyData = sr.thongKeDoanhThuTheoNgayTrongTuan(startOfWeek, endOfWeek);
-                labels = Arrays.asList("T2", "T3", "T4", "T5", "T6");
+                labels = Arrays.asList("T2", "T3", "T4", "T5", "T6", "T7", "CN");
                 data = labels.stream().map(label -> {
                     Optional<Map<String, Object>> matchingData = weeklyData.stream()
                             .filter(d -> label.equals(d.get("ngayTrongTuan")))
@@ -177,24 +204,37 @@ public class ThongKeController {
                 }).collect(Collectors.toList());
                 break;
             case "month":
-                cal = Calendar.getInstance();
-                List<Map<String, Object>> monthlyData = sr.thongKeDoanhThuTheoTuanTrongThang(cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR));
-                labels = Arrays.asList("Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4");
+                Calendar calMonth = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+                int thang = calMonth.get(Calendar.MONTH) + 1;
+                int nam = calMonth.get(Calendar.YEAR);
+                List<Map<String, Object>> monthlyData = sr.thongKeDoanhThuTheoTuanTrongThang(thang, nam);
+                labels = Arrays.asList("Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4", "Tuần 5");
                 data = labels.stream().map(label -> {
+                    int weekNum = Integer.parseInt(label.split(" ")[1]);
                     Optional<Map<String, Object>> matchingData = monthlyData.stream()
-                            .filter(d -> ("Tuần " + d.get("tuan")).equals(label))
+                            .filter(d -> weekNum == ((Number) d.get("tuan")).intValue())
                             .findFirst();
                     return matchingData.map(d -> (BigDecimal) d.get("doanhThu")).orElse(BigDecimal.ZERO);
                 }).collect(Collectors.toList());
                 break;
             case "year":
-                List<Map<String, Object>> yearlyData = sr.thongKeDoanhThuTheoQuy(cal.get(Calendar.YEAR));
+                int year = cal.get(Calendar.YEAR); // Lấy năm từ cal đã khởi tạo
+                List<Map<String, Object>> yearlyData = sr.thongKeDoanhThuTheoQuy(year);
                 labels = Arrays.asList("Q1", "Q2", "Q3", "Q4");
                 data = labels.stream().map(label -> {
                     Optional<Map<String, Object>> matchingData = yearlyData.stream()
                             .filter(d -> ("Q" + d.get("quy")).equals(label))
                             .findFirst();
-                    return matchingData.map(d -> (BigDecimal) d.get("doanhThu")).orElse(BigDecimal.ZERO);
+                    return matchingData.map(d -> {
+                        Object doanhThu = d.get("doanhThu");
+                        if (doanhThu instanceof BigDecimal) {
+                            return (BigDecimal) doanhThu;
+                        } else if (doanhThu instanceof Number) {
+                            return new BigDecimal(doanhThu.toString());
+                        } else {
+                            return BigDecimal.ZERO;
+                        }
+                    }).orElse(BigDecimal.ZERO);
                 }).collect(Collectors.toList());
                 break;
             case "custom":
@@ -221,60 +261,30 @@ public class ThongKeController {
         return ResponseEntity.ok(response);
     }
 
-    // Helper method to generate daily labels
-    private List<String> generateDailyLabels(Date start, Date end) {
-        List<String> labels = new ArrayList<>();
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(start);
-        while (!cal.getTime().after(end)) {
-            labels.add(sdf.format(cal.getTime()));
-            cal.add(Calendar.DAY_OF_MONTH, 1);
-        }
-        return labels;
-    }
-
-    // Helper method to generate weekly labels
-    private List<String> generateWeeklyLabels(Date start, Date end) {
-        List<String> labels = new ArrayList<>();
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(start);
-        int week = 1;
-        while (!cal.getTime().after(end)) {
-            labels.add("Tuần " + week);
-            cal.add(Calendar.WEEK_OF_YEAR, 1);
-            week++;
-        }
-        return labels;
-    }
-
-    // Helper method to generate monthly labels
-    private List<String> generateMonthlyLabels(Date start, Date end) {
-        List<String> labels = new ArrayList<>();
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/yyyy");
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(start);
-        while (!cal.getTime().after(end)) {
-            labels.add(sdf.format(cal.getTime()));
-            cal.add(Calendar.MONTH, 1);
-        }
-        return labels;
-    }
-
-    // Helper method to safely handle null revenue values
-    private BigDecimal safeRevenue(BigDecimal revenue) {
-        return revenue != null ? revenue : BigDecimal.ZERO;
-    }
-
 
     @GetMapping("/order-status-stats")
     public ResponseEntity<Map<String, Long>> getOrderStatusStats(
             @RequestParam(defaultValue = "month") String filterType,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.util.Date date
     ) {
+        // Kiểm tra filterType hợp lệ
+        if (!Arrays.asList("day", "month", "year").contains(filterType)) {
+            throw new IllegalArgumentException("Invalid filterType: " + filterType);
+        }
+
+        // Chuẩn hóa date theo múi giờ Asia/Ho_Chi_Minh
+
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         if (date == null) {
             date = new java.util.Date();
         }
+        cal.setTime(date);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        date = cal.getTime();
+
         Map<String, Long> statusStats = sr.getOrderStatusStats(filterType, date);
         System.out.println("Order status stats: " + statusStats);
         return ResponseEntity.ok(statusStats);
@@ -292,7 +302,6 @@ public class ThongKeController {
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate
     ) {
-        // Lấy dữ liệu từ service với bộ lọc
         Map<String, Object> ngay = sr.getThongKeTheoNgay();
         Map<String, Object> tuan = sr.getThongKeTheoTuan();
         Map<String, Object> thang = sr.getThongKeTheoThang();

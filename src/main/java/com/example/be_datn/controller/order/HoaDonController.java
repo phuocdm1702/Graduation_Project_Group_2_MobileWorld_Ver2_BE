@@ -2,6 +2,7 @@ package com.example.be_datn.controller.order;
 
 import com.example.be_datn.dto.order.response.HoaDonDetailResponse;
 import com.example.be_datn.dto.order.response.HoaDonResponse;
+import com.example.be_datn.dto.order.response.HoaDonChiTietImeiResponse;
 import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.service.order.HoaDonService;
 import com.example.be_datn.service.order.InHoaDonService;
@@ -302,6 +303,22 @@ public class HoaDonController {
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", "Lỗi server: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/{hoaDonId}/imei")
+    public ResponseEntity<Page<HoaDonChiTietImeiResponse>> getImeiByHoaDonId(
+            @PathVariable Integer hoaDonId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<HoaDonChiTietImeiResponse> response = hoaDonService.getImeiByHoaDonId(hoaDonId, pageable);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }

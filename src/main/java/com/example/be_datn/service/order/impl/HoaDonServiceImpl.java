@@ -226,6 +226,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
+    @Transactional  // THÊM ANNOTATION NÀY
     public HoaDonResponse confirmAndAssignIMEI(Integer idHD, Map<Integer, String> imelMap) {
         if (imelMap == null || imelMap.isEmpty()) {
             throw new IllegalArgumentException("imelMap cannot be null or empty");
@@ -246,32 +247,21 @@ public class HoaDonServiceImpl implements HoaDonService {
             throw new IllegalArgumentException("Không tìm thấy chi tiết hóa đơn cho idHD: " + idHD);
         }
 
-        Map<String, List<HoaDonChiTiet>> groupedChiTiet = new HashMap<>();
-        chiTietList.forEach(chiTiet -> {
-            String groupKey = chiTiet.getIdChiTietSanPham().getIdSanPham().getId() + "_" +
-                    chiTiet.getIdChiTietSanPham().getIdMauSac().getId() + "_" +
-                    chiTiet.getIdChiTietSanPham().getIdRam().getId() + "_" +
-                    chiTiet.getIdChiTietSanPham().getIdBoNhoTrong().getId();
-            groupedChiTiet.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(chiTiet);
-        });
-
+        // SỬA LOGIC XỬ LÝ KEY - ĐƠN GIẢN HÓA
         for (Map.Entry<Integer, String> entry : imelMap.entrySet()) {
-            String key = entry.getKey().toString();
+            Integer chiTietSanPhamId = entry.getKey();  // Sử dụng trực tiếp chiTietSanPhamId
             String imel = entry.getValue();
 
-            // Xử lý key có dạng groupKey_index cho sản phẩm gộp
-            String groupKey = key.contains("_") ? key.substring(0, key.lastIndexOf("_")) : key;
-            int index = key.contains("_") ? Integer.parseInt(key.substring(key.lastIndexOf("_") + 1)) : 0;
+            // Tìm trực tiếp HoaDonChiTiet theo chiTietSanPhamId
+            HoaDonChiTiet chiTiet = chiTietList.stream()
+                    .filter(ct -> ct.getIdChiTietSanPham().getId().equals(chiTietSanPhamId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Không tìm thấy chi tiết hóa đơn cho chiTietSanPhamId: " + chiTietSanPhamId));
 
-            List<HoaDonChiTiet> chiTiets = groupedChiTiet.get(groupKey);
-            if (chiTiets == null || index >= chiTiets.size()) {
-                throw new IllegalArgumentException("Không tìm thấy chi tiết hóa đơn cho groupKey: " + groupKey);
-            }
-
-            HoaDonChiTiet chiTiet = chiTiets.get(index);
             ChiTietSanPham chiTietSanPham = chiTiet.getIdChiTietSanPham();
 
-            // Xử lý IMEI cũ
+            // Xử lý IMEI cũ (nếu có)
             ImelDaBan oldImelDaBan = chiTiet.getIdImelDaBan();
             if (oldImelDaBan != null) {
                 chiTiet.setIdImelDaBan(null);
@@ -305,7 +295,8 @@ public class HoaDonServiceImpl implements HoaDonService {
             // Kiểm tra khớp thông số sản phẩm
             if (!newChiTietSanPham.getIdSanPham().getId().equals(chiTietSanPham.getIdSanPham().getId()) ||
                     !newChiTietSanPham.getIdRam().getId().equals(chiTietSanPham.getIdRam().getId()) ||
-                    !newChiTietSanPham.getIdBoNhoTrong().getId().equals(chiTietSanPham.getIdBoNhoTrong().getId())) {
+                    !newChiTietSanPham.getIdBoNhoTrong().getId().equals(chiTietSanPham.getIdBoNhoTrong().getId()) ||
+                    !newChiTietSanPham.getIdMauSac().getId().equals(chiTietSanPham.getIdMauSac().getId())) {
                 throw new IllegalArgumentException("IMEI " + imel + " không khớp với thông số sản phẩm!");
             }
 
@@ -375,11 +366,6 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         return hoaDonMapper.mapToDto(hoaDon);
     }
-
-//    @Override
-//    public Page<HoaDonResponse> getHoaDonOfCustomerAndFilters(Integer idKhachHang, Timestamp startDate, Timestamp endDate, Short trangThai, Pageable pageable) {
-//        return hoaDonRepository.getHoaDonOfCustomerAndFilters(idKhachHang, startDate, endDate, trangThai, pageable);
-//    }
 
     @Override
     public HoaDonResponse updateHoaDonKH(Integer id, String tenKH, String sdt, String diaChi, String email) {
@@ -860,7 +846,7 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         // Lấy danh sách HoaDonChiTiet của hóa đơn
         List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(hoaDonId);
-        
+
         // Chuyển đổi sang DTO
         List<HoaDonChiTietImeiResponse> responseList = chiTietList.stream()
                 .map(this::mapToHoaDonChiTietImeiResponse)
@@ -870,7 +856,7 @@ public class HoaDonServiceImpl implements HoaDonService {
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), responseList.size());
         List<HoaDonChiTietImeiResponse> pageContent = responseList.subList(start, end);
-        
+
         return new org.springframework.data.domain.PageImpl<>(pageContent, pageable, responseList.size());
     }
 
@@ -885,45 +871,30 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .gia(chiTiet.getGia())
                 .trangThai(chiTiet.getTrangThai())
                 .ghiChu(chiTiet.getGhiChu())
-                
+
                 // Thông tin sản phẩm
                 .sanPhamId(ctsp != null ? ctsp.getIdSanPham().getId() : null)
                 .tenSanPham(ctsp != null ? ctsp.getIdSanPham().getTenSanPham() : null)
                 .anhSanPham(ctsp != null ? ctsp.getIdSanPham().getMa() : null)
                 .thuongHieu(ctsp != null ? ctsp.getIdSanPham().getIdNhaSanXuat().getNhaSanXuat() : null)
-                
+
                 // Thông tin chi tiết sản phẩm
                 .chiTietSanPhamId(ctsp != null ? ctsp.getId() : null)
                 .ram(ctsp != null ? ctsp.getIdRam().getDungLuongRam() : null)
                 .boNhoTrong(ctsp != null ? ctsp.getIdBoNhoTrong().getDungLuongBoNhoTrong() : null)
                 .mauSac(ctsp != null ? ctsp.getIdMauSac().getMauSac() : null)
                 .giaBan(ctsp != null ? ctsp.getGiaBan() : null)
-                
+
                 // Thông tin IMEI
                 .imei(imelDaBan != null ? imelDaBan.getImel() : null)
                 .ngayBan(imelDaBan != null ? imelDaBan.getNgayBan() : null)
                 .ghiChuImei(imelDaBan != null ? imelDaBan.getGhiChu() : null)
-                
+
                 // Thông tin hóa đơn
                 .hoaDonId(hoaDon.getId())
                 .maHoaDon(hoaDon.getMa())
                 .tenKhachHang(hoaDon.getTenKhachHang())
                 .soDienThoaiKhachHang(hoaDon.getSoDienThoaiKhachHang())
                 .build();
-    }
-
-    // Phương thức gửi thông báo WebSocket
-    private void sendHoaDonUpdate(Integer hoaDonId, HoaDon hoaDon) {
-        try {
-            Map<String, Object> hoaDonUpdate = new HashMap<>();
-            hoaDonUpdate.put("action", "DELETE_PRODUCT_FROM_HOA_DON_CHI_TIET");
-            hoaDonUpdate.put("hoaDonId", hoaDonId);
-            hoaDonUpdate.put("maHoaDon", hoaDon.getMa());
-            hoaDonUpdate.put("timestamp", Instant.now());
-            messagingTemplate.convertAndSend("/topic/hoa-don-update", hoaDonUpdate);
-            System.out.println("Đã gửi cập nhật hóa đơn qua WebSocket: " + hoaDonId);
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi cập nhật hóa đơn qua WebSocket: " + e.getMessage());
-        }
     }
 }

@@ -193,9 +193,10 @@ public class HoaDonServiceImpl implements HoaDonService {
         HoaDon hoaDon = hoaDonRepository.findHoaDonDetailById(id)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại hoặc đã bị xóa"));
 
-        if (!"online".equalsIgnoreCase(hoaDon.getLoaiDon())) {
-            throw new RuntimeException("Chỉ có thể cập nhật trạng thái cho hóa đơn online");
-        }
+        // Removed check for loaiDon to allow payment gateway updates
+        // if (!"online".equalsIgnoreCase(hoaDon.getLoaiDon())) {
+        //     throw new RuntimeException("Chỉ có thể cập nhật trạng thái cho hóa đơn online");
+        // }
 
         if (!isValidTrangThai(trangThai)) {
             throw new RuntimeException("Trạng thái không hợp lệ");

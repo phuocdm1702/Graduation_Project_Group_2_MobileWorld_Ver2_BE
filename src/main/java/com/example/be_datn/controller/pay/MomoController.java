@@ -1,17 +1,14 @@
-
 package com.example.be_datn.controller.pay;
 
 import com.example.be_datn.mservice.models.PaymentResponse;
 import com.example.be_datn.service.momoPayment.MomoService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
-import com.fasterxml.jackson.databind.JsonNode; // Added import
-import com.fasterxml.jackson.databind.ObjectMapper; // Added import
-
-import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/momo")
@@ -24,14 +21,22 @@ public class MomoController {
     public ResponseEntity<PaymentResponse> createPayment(@RequestParam("amount") String amount, @RequestParam("orderInfo") String orderInfo) {
         try {
             String orderId = String.valueOf(System.currentTimeMillis());
+            // The returnUrl and notifyUrl should ideally be configured in a properties file
             String returnUrl = "http://localhost:8080/api/momo/success";
             String notifyUrl = "http://localhost:8080/api/momo/notify";
             String requestId = String.valueOf(System.currentTimeMillis());
 
-            // Extract idHD from orderInfo (e.g., "Thanh toan hoa don 123")
+            // Extract idHD from orderInfo. This is fragile, but we keep it as per original logic.
+            // A more robust way would be to pass idHD as a separate parameter from the frontend.
             String idHD = null;
             if (orderInfo != null && orderInfo.startsWith("Thanh toan hoa don ")) {
+                // Corrected the substring to have one space and added trim() for safety
                 idHD = orderInfo.substring("Thanh toan hoa don ".length()).trim();
+            }
+
+            if (idHD == null || idHD.isEmpty()) {
+                // It's critical to have an idHD to proceed.
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
 
             PaymentResponse paymentResponse = momoService.createMomoPayment(orderId, returnUrl, notifyUrl, amount, orderInfo, requestId, idHD);
@@ -43,23 +48,20 @@ public class MomoController {
     }
 
     @GetMapping("/success")
-    public RedirectView success(@RequestParam("partnerCode") String partnerCode, @RequestParam("orderId") String orderId, @RequestParam("requestId") String requestId, @RequestParam("amount") String amount, @RequestParam("orderInfo") String orderInfo, @RequestParam("orderType") String orderType, @RequestParam("transId") String transId, @RequestParam("resultCode") String resultCode, @RequestParam("message") String message, @RequestParam("payType") String payType, @RequestParam("responseTime") String responseTime, @RequestParam("extraData") String extraData, @RequestParam("signature") String signature) {
-        // Extract idHD from orderInfo (e.g., "Thanh toan hoa don 123")
-        String idHD = null;
-        if (orderInfo != null && orderInfo.startsWith("Thanh toan hoa don ")) {
-            idHD = orderInfo.substring("Thanh toan hoa don ".length());
-        }
+    public RedirectView success(@RequestParam("resultCode") String resultCode, @RequestParam("extraData") String extraData) {
+        // The invoice ID (idHD) is now reliably passed in extraData
+        String idHD = extraData;
 
         // Process the payment result to update order status in DB
-        momoService.processMomoPaymentResult(orderId, resultCode);
+        momoService.processMomoPaymentResult(idHD, resultCode);
 
         // Determine frontend redirect URL based on payment status
         String frontendRedirectUrl;
-        if ("0".equals(resultCode) && idHD != null) { // MoMo success code
-            frontendRedirectUrl = "http://localhost:5173/hoaDon/" + idHD + "/detail";
+        if ("0".equals(resultCode) && idHD != null && !idHD.trim().isEmpty()) { // MoMo success code
+            frontendRedirectUrl = "http://localhost:5173/hoaDon/" + idHD.trim() + "/detail";
         } else {
-            // Handle payment failure or missing idHD
-            frontendRedirectUrl = "http://localhost:5173/banHang"; // Redirect to a general sales page or error page
+            // For failed payments, redirect to a failure page or back to the cart
+            frontendRedirectUrl = "http://localhost:5173/payment-failure"; // Example failure URL
         }
 
         return new RedirectView(frontendRedirectUrl);
@@ -68,18 +70,21 @@ public class MomoController {
     @PostMapping("/notify")
     public ResponseEntity<String> notify(@RequestBody String requestBody) {
         try {
-            // Parse the JSON request body
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readTree(requestBody);
 
-            String orderId = jsonNode.get("orderId").asText();
             String resultCode = jsonNode.get("resultCode").asText();
-            // You might also want to validate the signature here for security
-            // String signature = jsonNode.get("signature").asText();
+            // The invoice ID (idHD) is now reliably passed in extraData
+            String idHD = jsonNode.has("extraData") ? jsonNode.get("extraData").asText() : "";
 
-            momoService.processMomoPaymentResult(orderId, resultCode);
+            if (!idHD.isEmpty()) {
+                momoService.processMomoPaymentResult(idHD, resultCode);
+            } else {
+                System.err.println("Received MoMo IPN without extraData (idHD). Body: " + requestBody);
+            }
 
-            return new ResponseEntity<>("Received", HttpStatus.OK);
+            // Respond to MoMo that the notification has been received.
+            return new ResponseEntity<>("Notification received", HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

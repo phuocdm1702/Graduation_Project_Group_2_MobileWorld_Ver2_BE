@@ -1,47 +1,46 @@
-
 package com.example.be_datn.service.momoPayment;
 
 import com.example.be_datn.mservice.config.Environment;
 import com.example.be_datn.mservice.enums.RequestType;
 import com.example.be_datn.mservice.models.PaymentResponse;
 import com.example.be_datn.mservice.processor.CreateOrderMoMo;
-import org.springframework.stereotype.Service;
+import com.example.be_datn.service.order.HoaDonService;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.example.be_datn.service.order.HoaDonService; // Corrected import
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
+import org.springframework.stereotype.Service;
 
 @Service
 public class MomoService {
 
     @Autowired
-    private HoaDonService hoaDonService; // Injected HoaDonService
-
-    // Map to store MoMo orderId to internal idHD mapping
-    private final Map<String, String> momoOrderIdToIdHDMap = new ConcurrentHashMap<>();
+    private HoaDonService hoaDonService;
 
     public PaymentResponse createMomoPayment(String orderId, String returnUrl, String notifyUrl, String amount, String orderInfo, String requestId, String idHD) throws Exception {
-        momoOrderIdToIdHDMap.put(orderId, idHD); // Store the mapping
         Environment environment = Environment.selectEnv("dev");
-        PaymentResponse captureWalletMoMoResponse = CreateOrderMoMo.process(environment, orderId, requestId, amount, orderInfo, returnUrl, notifyUrl, "", RequestType.PAY_WITH_ATM, Boolean.TRUE);
+        // Pass idHD in the extraData field to make the process stateless
+        PaymentResponse captureWalletMoMoResponse = CreateOrderMoMo.process(environment, orderId, requestId, amount, orderInfo, returnUrl, notifyUrl, idHD, RequestType.PAY_WITH_ATM, Boolean.TRUE);
         return captureWalletMoMoResponse;
     }
 
-    public void processMomoPaymentResult(String momoOrderId, String resultCode) {
-        String idHD = momoOrderIdToIdHDMap.remove(momoOrderId); // Retrieve and remove mapping
-        if (idHD != null) {
-            // Assuming 1 for PAID and 2 for FAILED based on common status codes
-            // You might need to adjust these status codes based on your HoaDon entity
-            if ("0".equals(resultCode)) { // MoMo success code
-                hoaDonService.updateHoaDonStatus(Integer.parseInt(idHD), (short) 1, null); // Assuming 1 is PAID, null for idNhanVien
-                System.out.println("MoMo payment successful for order: " + idHD);
-            } else {
-                hoaDonService.updateHoaDonStatus(Integer.parseInt(idHD), (short) 2, null); // Assuming 2 is FAILED, null for idNhanVien
-                System.out.println("MoMo payment failed for order: " + idHD + " with result code: " + resultCode);
+    public void processMomoPaymentResult(String idHD, String resultCode) {
+        if (idHD != null && !idHD.trim().isEmpty()) {
+            try {
+                Integer hoaDonId = Integer.parseInt(idHD.trim());
+                if ("0".equals(resultCode)) { // MoMo success code
+                    // Status 1: Chờ giao hàng (Pending delivery)
+                    hoaDonService.updateHoaDonStatus(hoaDonId, (short) 1, null);
+                    System.out.println("MoMo payment successful for order: " + hoaDonId);
+                } else {
+                    // Status 4: Đã hủy (Cancelled) for failed payments
+                    hoaDonService.updateHoaDonStatus(hoaDonId, (short) 4, null);
+                    System.out.println("MoMo payment failed for order: " + hoaDonId + " with result code: " + resultCode);
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid order ID format received from MoMo extraData: " + idHD);
+            } catch (Exception e) {
+                System.err.println("Error processing MoMo payment result for order ID " + idHD + ": " + e.getMessage());
             }
         } else {
-            System.err.println("MoMo orderId " + momoOrderId + " not found in map. Cannot update order status.");
+            System.err.println("MoMo payment result processed without an order ID (idHD) in extraData.");
         }
     }
 }

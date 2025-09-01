@@ -1,6 +1,8 @@
 package com.example.be_datn.config.VNPAY;
 
+import com.example.be_datn.service.order.HoaDonService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
@@ -8,18 +10,26 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class VNPayService {
 
-    public String createOrder(HttpServletRequest request, long amount, String orderInfor, String urlReturn){
-        //Các bạn có thể tham khảo tài liệu hướng dẫn và điều chỉnh các tham số
+    @Autowired
+    private HoaDonService hoaDonService; // Inject HoaDonService
+
+    // Map to store VNPay vnp_TxnRef to internal idHD mapping
+    private final Map<String, String> vnpTxnRefToIdHDMap = new ConcurrentHashMap<>();
+
+    public String createOrder(HttpServletRequest request, long amount, String orderInfor, String urlReturn, String idHD){ // Added idHD parameter
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
-        String vnp_TxnRef = VNPayConfig.getRandomNumber(8);
+        String vnp_TxnRef = VNPayConfig.getRandomNumber(8) + System.currentTimeMillis(); // Appending timestamp for more uniqueness
         String vnp_IpAddr = VNPayConfig.getIpAddress(request);
         String vnp_TmnCode = VNPayConfig.vnp_TmnCode;
         String orderType = "250000";
+
+        vnpTxnRefToIdHDMap.put(vnp_TxnRef, idHD); // Store the mapping
 
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
@@ -81,7 +91,8 @@ public class VNPayService {
         return paymentUrl;
     }
 
-    public int orderReturn(HttpServletRequest request) {
+    public String orderReturn(HttpServletRequest request) { // Changed return type to String
+        System.out.println("VNPayService: Entering orderReturn method.");
         try {
             Map fields = new HashMap();
             for (Enumeration params = request.getParameterNames(); params.hasMoreElements();) {
@@ -92,6 +103,11 @@ public class VNPayService {
                 }
             }
             String vnp_SecureHash = request.getParameter("vnp_SecureHash");
+            String vnp_TxnRef = request.getParameter("vnp_TxnRef"); // Get vnp_TxnRef
+            String vnp_TransactionStatus = request.getParameter("vnp_TransactionStatus"); // Get transaction status
+
+            System.out.println("VNPayService: Received vnp_TxnRef: " + vnp_TxnRef + ", vnp_TransactionStatus: " + vnp_TransactionStatus);
+
             if (fields.containsKey("vnp_SecureHashType")) {
                 fields.remove("vnp_SecureHashType");
             }
@@ -99,25 +115,52 @@ public class VNPayService {
                 fields.remove("vnp_SecureHash");
             }
             String signValue = VNPayConfig.hashAllFields(fields);
-            System.out.println("VNPAY Callback Parameters: " + fields);
-            System.out.println("Calculated Hash: " + signValue);
-            System.out.println("Received Hash: " + vnp_SecureHash);
-            System.out.println("Transaction Status: " + request.getParameter("vnp_TransactionStatus"));
+            System.out.println("VNPayService: Calculated Hash: " + signValue + ", Received Hash: " + vnp_SecureHash);
+
+            String idHD = vnpTxnRefToIdHDMap.remove(vnp_TxnRef); // Retrieve and remove mapping
+            System.out.println("VNPayService: Retrieved idHD from map: " + idHD);
+
             if (signValue.equals(vnp_SecureHash)) {
-                if ("00".equals(request.getParameter("vnp_TransactionStatus"))) {
-                    return 1;
+                System.out.println("VNPayService: Signature valid.");
+                if ("00".equals(vnp_TransactionStatus)) { // VNPay success code
+                    System.out.println("VNPayService: Transaction status is SUCCESS (00).");
+                    if (idHD != null) {
+                        try {
+                            Integer orderIdInt = Integer.parseInt(idHD); // Parse to Integer
+                            System.out.println("VNPayService: Updating order status for idHD: " + idHD + " to PAID.");
+                            hoaDonService.updateHoaDonStatus(orderIdInt, (short) 1, null); // Assuming 1 is PAID
+                            System.out.println("VNPayService: Order status updated successfully for order: " + idHD);
+                            return idHD; // Return idHD for successful redirect
+                        } catch (NumberFormatException e) {
+                            System.err.println("VNPayService: Error parsing idHD from vnp_TxnRef: " + idHD + ". " + e.getMessage());
+                            return null;
+                        }
+                    } else {
+                        System.err.println("VNPayService: vnp_TxnRef " + vnp_TxnRef + " not found in map. Cannot update order status.");
+                        return null; // Indicate failure
+                    }
                 } else {
-                    System.out.println("Transaction Failed with Status: " + request.getParameter("vnp_TransactionStatus"));
-                    return 0;
+                    System.out.println("VNPayService: Transaction status is FAILED: " + vnp_TransactionStatus);
+                    if (idHD != null) {
+                        try {
+                            Integer orderIdInt = Integer.parseInt(idHD); // Parse to Integer
+                            System.out.println("VNPayService: Updating order status for idHD: " + idHD + " to FAILED.");
+                            hoaDonService.updateHoaDonStatus(orderIdInt, (short) 2, null); // Assuming 2 is FAILED
+                            System.out.println("VNPayService: Order status updated successfully for order: " + idHD);
+                        } catch (NumberFormatException e) {
+                            System.err.println("VNPayService: Error parsing idHD from vnp_TxnRef: " + idHD + ". " + e.getMessage());
+                        }
+                    }
+                    return null; // Indicate failure
                 }
             } else {
-                System.out.println("Invalid Signature. Fields: " + fields);
-                return -1;
+                System.err.println("VNPayService: Invalid Signature. Fields: " + fields);
+                return null; // Indicate failure
             }
         } catch (Exception e) {
-            System.err.println("Error in orderReturn: " + e.getMessage());
+            System.err.println("VNPayService: Error in orderReturn: " + e.getMessage());
             e.printStackTrace();
-            return -1;
+            return null; // Indicate failure
         }
     }
 

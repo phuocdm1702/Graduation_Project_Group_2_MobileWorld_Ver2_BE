@@ -31,7 +31,7 @@ public class MomoController {
             // Extract idHD from orderInfo (e.g., "Thanh toan hoa don 123")
             String idHD = null;
             if (orderInfo != null && orderInfo.startsWith("Thanh toan hoa don ")) {
-                idHD = orderInfo.substring("Thanh toan hoa don ".length());
+                idHD = orderInfo.substring("Thanh toan hoa don ".length()).trim();
             }
 
             PaymentResponse paymentResponse = momoService.createMomoPayment(orderId, returnUrl, notifyUrl, amount, orderInfo, requestId, idHD);

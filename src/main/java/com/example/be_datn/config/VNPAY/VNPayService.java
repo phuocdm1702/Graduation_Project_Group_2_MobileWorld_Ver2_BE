@@ -10,41 +10,33 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class VNPayService {
 
     @Autowired
-    private HoaDonService hoaDonService; // Inject HoaDonService
+    private HoaDonService hoaDonService;
 
-    // Map to store VNPay vnp_TxnRef to internal idHD mapping
-    private final Map<String, String> vnpTxnRefToIdHDMap = new ConcurrentHashMap<>();
-
-    public String createOrder(HttpServletRequest request, long amount, String orderInfor, String urlReturn, String idHD){ // Added idHD parameter
+    public String createOrder(HttpServletRequest request, long amount, String orderInfor, String urlReturn, String idHD){
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
-        String vnp_TxnRef = VNPayConfig.getRandomNumber(8) + System.currentTimeMillis(); // Appending timestamp for more uniqueness
+        // Embed idHD into vnp_TxnRef to make the process stateless
+        String vnp_TxnRef = idHD + "_" + System.currentTimeMillis();
         String vnp_IpAddr = VNPayConfig.getIpAddress(request);
         String vnp_TmnCode = VNPayConfig.vnp_TmnCode;
-        String orderType = "250000";
-
-        vnpTxnRefToIdHDMap.put(vnp_TxnRef, idHD); // Store the mapping
+        String orderType = "250000"; // Default order type
 
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
         vnp_Params.put("vnp_Command", vnp_Command);
         vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
-        vnp_Params.put("vnp_Amount", String.valueOf(amount*100));
+        vnp_Params.put("vnp_Amount", String.valueOf(amount * 100));
         vnp_Params.put("vnp_CurrCode", "VND");
-
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
         vnp_Params.put("vnp_OrderInfo", orderInfor);
         vnp_Params.put("vnp_OrderType", orderType);
         vnp_Params.put("vnp_ReturnUrl", urlReturn);
-        String locate = "vn";
-        vnp_Params.put("vnp_Locale", locate);
-
+        vnp_Params.put("vnp_Locale", "vn");
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
@@ -56,112 +48,108 @@ public class VNPayService {
         String vnp_ExpireDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
 
-        List fieldNames = new ArrayList(vnp_Params.keySet());
+        List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
         Collections.sort(fieldNames);
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
-        Iterator itr = fieldNames.iterator();
+        Iterator<String> itr = fieldNames.iterator();
         while (itr.hasNext()) {
-            String fieldName = (String) itr.next();
-            String fieldValue = (String) vnp_Params.get(fieldName);
+            String fieldName = itr.next();
+            String fieldValue = vnp_Params.get(fieldName);
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                //Build hash data
-                hashData.append(fieldName);
-                hashData.append('=');
                 try {
-                    hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    //Build query
-                    query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()));
+                    // Build hash data
+                    hashData.append(fieldName);
+                    hashData.append('=');
+                    hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()));
+                    // Build query
+                    query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8.toString()));
                     query.append('=');
-                    query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                    query.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()));
+                    if (itr.hasNext()) {
+                        query.append('&');
+                        hashData.append('&');
+                    }
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
-                }
-                if (itr.hasNext()) {
-                    query.append('&');
-                    hashData.append('&');
                 }
             }
         }
         String queryUrl = query.toString();
-        String salt = VNPayConfig.vnp_HashSecret;
-        String vnp_SecureHash = VNPayConfig.hmacSHA512(salt, hashData.toString());
+        String vnp_SecureHash = VNPayConfig.hmacSHA512(VNPayConfig.vnp_HashSecret, hashData.toString());
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-        String paymentUrl = VNPayConfig.vnp_PayUrl + "?" + queryUrl;
-        return paymentUrl;
+        return VNPayConfig.vnp_PayUrl + "?" + queryUrl;
     }
 
-    public String orderReturn(HttpServletRequest request) { // Changed return type to String
-        System.out.println("VNPayService: Entering orderReturn method.");
+    public String orderReturn(HttpServletRequest request) {
         try {
-            Map fields = new HashMap();
-            for (Enumeration params = request.getParameterNames(); params.hasMoreElements();) {
-                String fieldName = URLEncoder.encode((String) params.nextElement(), StandardCharsets.US_ASCII.toString());
-                String fieldValue = URLEncoder.encode(request.getParameter(fieldName), StandardCharsets.US_ASCII.toString());
+            Map<String, String> fields = new HashMap<>();
+            for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements();) {
+                String fieldName = params.nextElement();
+                String fieldValue = request.getParameter(fieldName);
                 if ((fieldValue != null) && (fieldValue.length() > 0)) {
                     fields.put(fieldName, fieldValue);
                 }
             }
+
             String vnp_SecureHash = request.getParameter("vnp_SecureHash");
-            String vnp_TxnRef = request.getParameter("vnp_TxnRef"); // Get vnp_TxnRef
-            String vnp_TransactionStatus = request.getParameter("vnp_TransactionStatus"); // Get transaction status
+            fields.remove("vnp_SecureHashType");
+            fields.remove("vnp_SecureHash");
 
-            System.out.println("VNPayService: Received vnp_TxnRef: " + vnp_TxnRef + ", vnp_TransactionStatus: " + vnp_TransactionStatus);
-
-            if (fields.containsKey("vnp_SecureHashType")) {
-                fields.remove("vnp_SecureHashType");
+            // Create the hash data from the request params
+            List<String> fieldNames = new ArrayList<>(fields.keySet());
+            Collections.sort(fieldNames);
+            StringBuilder hashData = new StringBuilder();
+            for (int i = 0; i < fieldNames.size(); i++) {
+                String fieldName = fieldNames.get(i);
+                String fieldValue = fields.get(fieldName);
+                if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                    hashData.append(fieldName);
+                    hashData.append('=');
+                    hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()));
+                    if (i < fieldNames.size() - 1) {
+                        hashData.append('&');
+                    }
+                }
             }
-            if (fields.containsKey("vnp_SecureHash")) {
-                fields.remove("vnp_SecureHash");
-            }
-            String signValue = VNPayConfig.hashAllFields(fields);
-            System.out.println("VNPayService: Calculated Hash: " + signValue + ", Received Hash: " + vnp_SecureHash);
 
-            String idHD = vnpTxnRefToIdHDMap.remove(vnp_TxnRef); // Retrieve and remove mapping
-            System.out.println("VNPayService: Retrieved idHD from map: " + idHD);
+            String signValue = VNPayConfig.hmacSHA512(VNPayConfig.vnp_HashSecret, hashData.toString());
 
             if (signValue.equals(vnp_SecureHash)) {
-                System.out.println("VNPayService: Signature valid.");
-                if ("00".equals(vnp_TransactionStatus)) { // VNPay success code
-                    System.out.println("VNPayService: Transaction status is SUCCESS (00).");
-                    if (idHD != null) {
-                        try {
-                            Integer orderIdInt = Integer.parseInt(idHD); // Parse to Integer
-                            System.out.println("VNPayService: Updating order status for idHD: " + idHD + " to PAID.");
-                            hoaDonService.updateHoaDonStatus(orderIdInt, (short) 1, null); // Assuming 1 is PAID
-                            System.out.println("VNPayService: Order status updated successfully for order: " + idHD);
-                            return idHD; // Return idHD for successful redirect
-                        } catch (NumberFormatException e) {
-                            System.err.println("VNPayService: Error parsing idHD from vnp_TxnRef: " + idHD + ". " + e.getMessage());
-                            return null;
-                        }
+                String vnp_TxnRef = request.getParameter("vnp_TxnRef");
+                String vnp_TransactionStatus = request.getParameter("vnp_TransactionStatus");
+
+                String idHD = null;
+                if (vnp_TxnRef != null && vnp_TxnRef.contains("_")) {
+                    idHD = vnp_TxnRef.split("_")[0];
+                }
+
+                if (idHD == null) {
+                    System.err.println("VNPayService: Could not extract idHD from vnp_TxnRef: " + vnp_TxnRef);
+                    return null;
+                }
+
+                try {
+                    Integer orderIdInt = Integer.parseInt(idHD);
+                    if ("00".equals(vnp_TransactionStatus)) {
+                        hoaDonService.updateHoaDonStatus(orderIdInt, (short) 1, null);
+                        return idHD;
                     } else {
-                        System.err.println("VNPayService: vnp_TxnRef " + vnp_TxnRef + " not found in map. Cannot update order status.");
-                        return null; // Indicate failure
+                        hoaDonService.updateHoaDonStatus(orderIdInt, (short) 4, null);
+                        return null;
                     }
-                } else {
-                    System.out.println("VNPayService: Transaction status is FAILED: " + vnp_TransactionStatus);
-                    if (idHD != null) {
-                        try {
-                            Integer orderIdInt = Integer.parseInt(idHD); // Parse to Integer
-                            System.out.println("VNPayService: Updating order status for idHD: " + idHD + " to FAILED.");
-                            hoaDonService.updateHoaDonStatus(orderIdInt, (short) 2, null); // Assuming 2 is FAILED
-                            System.out.println("VNPayService: Order status updated successfully for order: " + idHD);
-                        } catch (NumberFormatException e) {
-                            System.err.println("VNPayService: Error parsing idHD from vnp_TxnRef: " + idHD + ". " + e.getMessage());
-                        }
-                    }
-                    return null; // Indicate failure
+                } catch (NumberFormatException e) {
+                    System.err.println("VNPayService: Error parsing idHD from vnp_TxnRef: " + idHD + ". " + e.getMessage());
+                    return null;
                 }
             } else {
-                System.err.println("VNPayService: Invalid Signature. Fields: " + fields);
-                return null; // Indicate failure
+                System.err.println("VNPayService: Invalid Signature.");
+                return null;
             }
         } catch (Exception e) {
             System.err.println("VNPayService: Error in orderReturn: " + e.getMessage());
             e.printStackTrace();
-            return null; // Indicate failure
+            return null;
         }
     }
-
 }

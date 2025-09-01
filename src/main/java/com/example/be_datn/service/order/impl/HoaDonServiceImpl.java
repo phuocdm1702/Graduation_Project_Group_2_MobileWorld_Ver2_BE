@@ -189,14 +189,16 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public HoaDonResponse updateHoaDonStatus(Integer id, Short trangThai, Integer idNhanVien) {
+    public synchronized HoaDonResponse updateHoaDonStatus(Integer id, Short trangThai, Integer idNhanVien) {
         HoaDon hoaDon = hoaDonRepository.findHoaDonDetailById(id)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại hoặc đã bị xóa"));
 
-        // Removed check for loaiDon to allow payment gateway updates
-        // if (!"online".equalsIgnoreCase(hoaDon.getLoaiDon())) {
-        //     throw new RuntimeException("Chỉ có thể cập nhật trạng thái cho hóa đơn online");
-        // }
+        // Idempotency Check: Only process orders that are in "Pending Confirmation" state (0).
+        // This prevents processing the same payment notification multiple times (e.g., from redirect and IPN).
+        if (hoaDon.getTrangThai() != 0) {
+            System.out.println("Order " + id + " has already been processed. Current status: " + hoaDon.getTrangThai() + ". Ignoring update request.");
+            return hoaDonMapper.mapToDto(hoaDon); // Return current state without changes
+        }
 
         if (!isValidTrangThai(trangThai)) {
             throw new RuntimeException("Trạng thái không hợp lệ");

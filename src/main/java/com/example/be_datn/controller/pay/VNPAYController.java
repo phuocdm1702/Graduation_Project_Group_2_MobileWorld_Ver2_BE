@@ -40,13 +40,15 @@ public class VNPAYController {
 
     @GetMapping("/vnpay-payment")
     public RedirectView paymentReturn(HttpServletRequest request) {
-        String idHD = String.valueOf(vnPayService.orderReturn(request)); // Now returns idHD or null
+        String idHD = vnPayService.orderReturn(request); // This can be a String or null
 
         String frontendRedirectUrl;
-        if (idHD != null) {
+        // Check for null or empty string to decide the redirect url
+        if (idHD != null && !idHD.isEmpty()) {
             frontendRedirectUrl = "http://localhost:5173/hoaDon/" + idHD + "/detail";
         } else {
-            frontendRedirectUrl = "http://localhost:5173/banHang"; // Redirect to a general sales page or error page
+            // Redirect to a generic failure/error page if idHD is not returned
+            frontendRedirectUrl = "http://localhost:5173/payment-failure";
         }
 
         return new RedirectView(frontendRedirectUrl);

@@ -976,7 +976,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                     .append("<meta name='viewport' content='width=device-width, initial-scale=1.0'>")
                     .append("<style>")
                     .append("body { font-family: 'Arial', sans-serif; background-color: #f4f7fa; margin: 0; padding: 0; }")
-                    .append(".container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden; }")
+                    .append(".container { max-width: 1000px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden; }")
                     .append(".header { background: linear-gradient(90deg, #002c69, #13ad75); color: #ffffff; padding: 20px; text-align: center; position: relative; }")
                     .append(".logo { max-width: 100px; position: absolute; top: 10px; left: 20px; }")
                     .append(".header h1 { margin: 0; font-size: 24px; }")
@@ -995,6 +995,22 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                     .append(".cancel-button:hover { color: #DC2626; }")
                     .append(".footer { background-color: #f4f7fa; padding: 15px; text-align: center; font-size: 14px; color: #6B7280; }")
                     .append(".footer a { color: #002c69; text-decoration: none; }")
+                    // Timeline CSS - Simple and reliable for email
+                    .append(".timeline-container { margin: 25px 0; padding: 25px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; }")
+                    .append(".timeline-title { font-size: 18px; font-weight: bold; color: #212529; text-align: center; margin-bottom: 25px; }")
+                    .append(".timeline-wrapper { text-align: center; }")
+                    .append(".timeline-step { display: inline-block; text-align: center; margin: 0 15px; vertical-align: top; }")
+                    .append(".timeline-circle { width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 10px; display: table-cell; vertical-align: middle; text-align: center; font-size: 16px; font-weight: bold; color: white; }")
+                    .append(".timeline-circle.completed { background-color: #28a745; }")
+                    .append(".timeline-circle.current { background-color: #007bff; }")
+                    .append(".timeline-circle.pending { background-color: #6c757d; }")
+                    .append(".timeline-circle.cancelled { background-color: #dc3545; }")
+                    .append(".timeline-connector { display: inline-block; width: 80px; height: 4px; background-color: #dee2e6; margin: 23px 0; vertical-align: middle; }")
+                    .append(".timeline-connector.active { background-color: #28a745; }")
+                    .append(".timeline-label { font-size: 12px; font-weight: bold; color: #495057; margin-bottom: 5px; }")
+                    .append(".timeline-date { font-size: 10px; color: #6c757d; }")
+                    .append(".timeline-status { margin-top: 20px; padding: 15px; background: #ffffff; border: 1px solid #dee2e6; border-radius: 5px; text-align: center; }")
+                    .append(".timeline-status-text { font-size: 14px; font-weight: bold; color: #212529; }")
                     .append("</style>")
                     .append("</head>")
                     .append("<body>")
@@ -1052,8 +1068,8 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                     .append("<p><strong>Phương thức thanh toán:</strong> COD (Thanh toán khi nhận hàng)</p>")
                     .append("</div>")
 
-                    // Trạng thái đơn hàng
-                    .append("<p><strong>Trạng thái đơn hàng:</strong> " + getTrangThaiText(hoaDonDetailResponse.getTrangThai()) + "</p>")
+                    // Timeline trạng thái đơn hàng
+                    .append(generateTimelineHTML(hoaDonDetailResponse))
 
                     // Link tra cứu và hủy đơn
                     .append("<p><strong>Mã hóa đơn:</strong> " + (hoaDonDetailResponse.getMaHoaDon() != null ? hoaDonDetailResponse.getMaHoaDon() : "N/A") + "</p>")
@@ -1080,18 +1096,140 @@ public class BanHangClientServiceImpl implements BanHangClientService {
     private String getTrangThaiText(Short trangThai) {
         switch (trangThai) {
             case 0:
-                return "Chờ thanh toán";
+                return "Chờ xác nhận";
             case 1:
-                return "Đã thanh toán";
+                return "Chờ giao hàng";
             case 2:
                 return "Đang giao";
             case 3:
-                return "Đã giao";
+                return "Hoàn thành";
             case 4:
                 return "Đã hủy";
             default:
                 return "Không xác định";
         }
+    }
+
+    private String generateTimelineHTML(HoaDonDetailResponse hoaDonDetailResponse) {
+        StringBuilder timeline = new StringBuilder();
+        Short currentStatus = hoaDonDetailResponse.getTrangThai();
+        
+        timeline.append("<div class='timeline-container'>")
+                .append("<div class='timeline-title'>Trạng thái đơn hàng</div>")
+                .append("<div class='timeline-wrapper'>");
+
+        // Timeline steps definition
+        String[][] timelineSteps = {
+            {"0", "1", "Chờ xác nhận"},
+            {"1", "2", "Chờ giao hàng"},
+            {"2", "3", "Đang giao"},
+            {"3", "4", "Hoàn thành"}
+        };
+
+        // Get order history to determine actual dates
+        List<HoaDonDetailResponse.LichSuHoaDonInfo> lichSuList = hoaDonDetailResponse.getLichSuHoaDonInfos();
+        
+        for (int i = 0; i < timelineSteps.length; i++) {
+            String[] step = timelineSteps[i];
+            Short stepStatus = Short.parseShort(step[0]);
+            String stepNumber = step[1];
+            String label = step[2];
+            String stepClass = getTimelineStepClass(stepStatus, currentStatus);
+            String stepDate = getStepDate(stepStatus, lichSuList, hoaDonDetailResponse);
+            
+            // Timeline step
+            timeline.append("<div class='timeline-step'>")
+                    .append("<div class='timeline-circle ").append(stepClass).append("'>")
+                    .append(stepNumber)
+                    .append("</div>")
+                    .append("<div class='timeline-label'>").append(label).append("</div>");
+            
+            if (!stepDate.isEmpty()) {
+                timeline.append("<div class='timeline-date'>").append(stepDate).append("</div>");
+            }
+            
+            timeline.append("</div>");
+            
+            // Connector line (except after last step)
+            if (i < timelineSteps.length - 1) {
+                String connectorClass = (stepStatus < currentStatus) ? "active" : "";
+                timeline.append("<div class='timeline-connector ").append(connectorClass).append("'></div>");
+            }
+        }
+        
+        timeline.append("</div>");
+        
+        // Current status display
+        timeline.append("<div class='timeline-status'>")
+                .append("<div class='timeline-status-text'>")
+                .append("Trạng thái hiện tại: ").append(getTrangThaiText(currentStatus));
+        
+        if (currentStatus == 4) {
+            timeline.append(" - Đơn hàng đã bị hủy");
+        }
+        
+        timeline.append("</div></div></div>");
+
+        return timeline.toString();
+    }
+
+
+    private String getTimelineStepClass(Short stepStatus, Short currentStatus) {
+        if (currentStatus == 4) { // Cancelled
+            return stepStatus == 0 ? "completed" : "pending";
+        }
+        
+        if (stepStatus < currentStatus) {
+            return "completed";
+        } else if (stepStatus.equals(currentStatus)) {
+            return "current";
+        } else {
+            return "pending";
+        }
+    }
+
+    private String getStepDate(Short stepStatus, List<HoaDonDetailResponse.LichSuHoaDonInfo> lichSuList, HoaDonDetailResponse hoaDonDetailResponse) {
+        if (lichSuList == null || lichSuList.isEmpty()) {
+            return stepStatus == 0 ? formatDate(hoaDonDetailResponse.getNgayTao()) : "";
+        }
+
+        // Find the most recent history entry for this status
+        String targetAction = getActionForStatus(stepStatus);
+        
+        return lichSuList.stream()
+                .filter(lichSu -> lichSu.getHanhDong() != null && lichSu.getHanhDong().contains(targetAction))
+                .map(lichSu -> formatDate(lichSu.getThoiGian()))
+                .findFirst()
+                .orElse(stepStatus == 0 ? formatDate(hoaDonDetailResponse.getNgayTao()) : "");
+    }
+
+    private String getActionForStatus(Short status) {
+        switch (status) {
+            case 0: return "Chờ xác nhậnnhận";
+            case 1: return "Chờ giao hàng";
+            case 2: return "Đang giao";
+            case 3: return "Hoàn thành";
+            case 4: return "Đã hủy";
+            default: return "";
+        }
+    }
+
+    private String formatDate(Object date) {
+        if (date == null) return "";
+        
+        try {
+            if (date instanceof Instant) {
+                return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                        .withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                        .format((Instant) date);
+            } else if (date instanceof Date) {
+                return new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format((Date) date);
+            }
+        } catch (Exception e) {
+            System.err.println("Error formatting date: " + e.getMessage());
+        }
+        
+        return "";
     }
 
     private HoaDonDetailResponse mapToHoaDonDetailResponse(HoaDon hoaDon) {

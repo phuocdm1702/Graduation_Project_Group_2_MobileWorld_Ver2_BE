@@ -202,7 +202,7 @@ public class HoaDonController {
     }
 
     @PostMapping("/xac-nhan-imei/{idHD}")
-    public ResponseEntity<HoaDonResponse> confirmAndAssignIMEI(
+    public ResponseEntity<?> confirmAndAssignIMEI(
             @PathVariable Integer idHD,
             @RequestBody Map<Integer, String> imelMap) {
         try {
@@ -212,11 +212,11 @@ public class HoaDonController {
         } catch (IllegalArgumentException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", "Lỗi server: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -311,10 +311,12 @@ public class HoaDonController {
     public ResponseEntity<Page<HoaDonChiTietImeiResponse>> getImeiByHoaDonId(
             @PathVariable Integer hoaDonId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer chiTietSanPhamId,
+            @RequestParam(required = false) String chiTietSanPhamIds) {
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<HoaDonChiTietImeiResponse> response = hoaDonService.getImeiByHoaDonId(hoaDonId, pageable);
+            Page<HoaDonChiTietImeiResponse> response = hoaDonService.getImeiByHoaDonId(hoaDonId, chiTietSanPhamId, chiTietSanPhamIds, pageable);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);

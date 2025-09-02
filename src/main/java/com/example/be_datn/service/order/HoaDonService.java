@@ -49,6 +49,6 @@ public interface HoaDonService {
 
     HoaDonResponse deleteProductFromHoaDonChiTiet(Integer idHD, Integer idHoaDonChiTiet);
 
-    Page<HoaDonChiTietImeiResponse> getImeiByHoaDonId(Integer hoaDonId, Pageable pageable);
+    Page<HoaDonChiTietImeiResponse> getImeiByHoaDonId(Integer hoaDonId, Integer chiTietSanPhamId, String chiTietSanPhamIds, Pageable pageable);
 
 }

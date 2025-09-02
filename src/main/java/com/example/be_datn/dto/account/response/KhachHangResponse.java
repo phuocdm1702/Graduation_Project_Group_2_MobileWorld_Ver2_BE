@@ -21,8 +21,29 @@ public class KhachHangResponse {
     private Date createdAt;
     private Boolean macDinh;
 
+    public KhachHangResponse(Integer id, String ma, String tenKH, Date ngaySinh, String anhKhachHang, String thanhPho, String quan, String phuong, String diaChiCuThe, String cccd, String email, String soDienThoai, String userName, Boolean gioiTinh, Date createdAt, Boolean macDinh) {
+        this.id = id;
+        this.ma = ma;
+        this.tenKH = tenKH;
+        this.ngaySinh = ngaySinh;
+        this.anhKhachHang = anhKhachHang;
+        this.thanhPho = thanhPho;
+        this.quan = quan;
+        this.phuong = phuong;
+        this.diaChiCuThe = diaChiCuThe;
+        this.cccd = cccd;
+        this.email = email;
+        this.soDienThoai = soDienThoai;
+        this.userName = userName;
+        this.gioiTinh = gioiTinh;
+        this.createdAt = createdAt;
+        this.macDinh = macDinh;
+    }
+
     public KhachHangResponse() {
     }
+
+
 
     public Integer getId() {
         return id;

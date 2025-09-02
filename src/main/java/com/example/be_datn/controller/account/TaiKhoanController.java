@@ -1,5 +1,6 @@
 package com.example.be_datn.controller.account;
 
+import com.example.be_datn.dto.account.response.KhachHangResponse;
 import com.example.be_datn.dto.account.response.TaiKhoanDTO;
 import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.account.TaiKhoan;
@@ -94,6 +95,25 @@ public class TaiKhoanController {
             return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/dang-ky-email")
+    public ResponseEntity<?> dangKyBangEmail(@RequestParam String email) {
+        try {
+            KhachHang khachHang = khachHangServices.dangKyBangEmail(email);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Đăng ký thành công",
+                    "data", khachHang
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+
 
 
     @GetMapping("/thong-tin-khach-hang/{idKhachHang}")

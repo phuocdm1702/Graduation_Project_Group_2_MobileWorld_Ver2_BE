@@ -232,6 +232,72 @@ public class KhachHangServicesImpl implements KhachHangServices {
         return khachHangRepository.save(kh);
     }
 
+    private String taoMaKhachHangTuEmail(String email) {
+        String prefix = email.split("@")[0];
+        String onlyLetters = prefix.replaceAll("\\d", "");
+
+        String mainPart;
+        if (onlyLetters.length() > 4) {
+            String lastPart = onlyLetters.substring(onlyLetters.length() - 4);
+            String firstPart = onlyLetters.substring(0, 2);
+            mainPart = lastPart + firstPart;
+        } else {
+            mainPart = onlyLetters;
+        }
+
+        mainPart = mainPart.toLowerCase();
+
+        // kiểm tra trùng trong DB
+        String maKhachHang = mainPart;
+        int count = 1;
+        while (khachHangRepository.existsByMa(maKhachHang)) {
+            maKhachHang = mainPart + count;
+            count++;
+        }
+
+        return maKhachHang;
+    }
+
+
+
+    public KhachHang dangKyBangEmail(String email) {
+        taiKhoanRepository.findByEmail(email)
+                .ifPresent(tk -> { throw new RuntimeException("Email đã tồn tại"); });
+        // sinh username và password ngẫu nhiên
+        String username = "user" + System.currentTimeMillis();
+        String randomPassword = emailServices.generateRandomPassword(8);
+        QuyenHan quyenHan = new QuyenHan();
+        quyenHan.setId(3);
+        // tạo tài khoản
+        TaiKhoan taiKhoan = TaiKhoan.builder()
+                .idQuyenHan(quyenHan)
+                .tenDangNhap(username)
+                .email(email)
+                .matKhau(randomPassword)
+                .deleted(true)
+                .build();
+        taiKhoan = taiKhoanRepository.save(taiKhoan);
+
+        // tạo khách hàng
+        String maKhachHang = taoMaKhachHangTuEmail(email);
+        KhachHang khachHang = KhachHang.builder()
+                .idTaiKhoan(taiKhoan)
+                .ten(username)
+                .ma(maKhachHang)
+                .deleted(false)
+                .createdAt(new Date())
+                .build();
+        khachHangRepository.save(khachHang);
+
+
+        try {
+            emailServices.guiEmailTaiKhoan(email, username, randomPassword);
+        } catch (Exception e) {
+            System.err.println("Lỗi gửi email: " + e.getMessage());
+        }
+        return khachHang;
+    }
+
 
     //add nhanh khach hang ban hang
     @Override

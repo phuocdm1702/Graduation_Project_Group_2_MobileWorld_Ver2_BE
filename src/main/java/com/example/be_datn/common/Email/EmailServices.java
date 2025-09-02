@@ -535,4 +535,90 @@ public class EmailServices {
     public void scheduleDailyStatsEmail() throws MessagingException {
         sendDailyStatsEmail("minhndth02076@fpt.edu.vn");
     }
+
+    @Async
+    public void guiEmailTaiKhoan(String toEmail, String customerName, String randomPassword) {
+            try {
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+                helper.setTo(toEmail);
+                helper.setSubject("🎉 Chào mừng bạn trở thành khách hàng của MobileWorld!");
+                helper.setFrom("no-reply@mobileworld.com.vn");
+
+                // HTML nội dung email
+                String htmlContent = """
+                    <!DOCTYPE html>
+                    <html lang="vi">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Chào Mừng Khách Hàng Mới</title>
+                        <style>
+                            body { font-family: 'Poppins', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
+                            .container { max-width: 600px; margin: auto; padding: 20px; }
+                            .header { background: linear-gradient(135deg, #28a745, #1e7e34); padding: 25px; text-align: center; border-radius: 12px 12px 0 0; }
+                            .header h1 { margin: 0; color: #fff; font-size: 26px; }
+                            .content { background: #fff; padding: 25px; border-radius: 0 0 12px 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); text-align: center; }
+                            .highlight-box { background: #e8f5e9; color: #155724; padding: 15px; border-radius: 8px; margin: 20px 0; font-weight: 500; }
+                            .account-info { background: #f9f9f9; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left; }
+                            .account-info p { margin: 8px 0; font-size: 14px; }
+                            .account-info strong { color: #28a745; }
+                            .cta-button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #28a745, #218838); color: #fff; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: 500; }
+                            .cta-button:hover { background: linear-gradient(135deg, #218838, #1e7e34); }
+                            .footer { text-align: center; padding: 15px 0; font-size: 12px; color: #666; }
+                            .footer a { color: #28a745; text-decoration: none; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="header">
+                                <h1>MobileWorld</h1>
+                            </div>
+                            <div class="content">
+                                <h2>Xin chào %s!</h2>
+                                <p>Cảm ơn bạn đã trở thành khách hàng của MobileWorld 🎉</p>
+                                <div class="highlight-box">🎊 Tài khoản của bạn đã được tạo thành công!</div>
+                                <div class="account-info">
+                                    <p><strong>Tên đăng nhập:</strong> %s</p>
+                                    <p><strong>Mật khẩu:</strong> %s</p>
+                                    <p><em>⚠️ Vui lòng đăng nhập để kích hoạt tài khoản.</em></p>
+                                </div>
+                                <p><a href="http://localhost:3000/login" class="cta-button">ĐĂNG NHẬP NGAY</a></p>
+                            </div>
+                            <div class="footer">
+                                <p>Chúng tôi rất hân hạnh được phục vụ bạn ❤️</p>
+                                <p>Trân trọng, <strong>MobileWorld</strong></p>
+                                <p>Liên hệ: <a href="mailto:support@mobileworld.com.vn">support@mobileworld.com.vn</a></p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    """.formatted(toEmail, customerName, randomPassword);
+
+                // Nội dung dạng text fallback
+                String plainTextContent = """
+                    Xin chào %s!
+                    
+                    Cảm ơn bạn đã trở thành khách hàng của MobileWorld 🎉
+                    
+                    Tài khoản của bạn đã được tạo thành công:
+                    - Tên đăng nhập: %s
+                    - Mật khẩu: %s
+                    
+                    Vui lòng đăng nhập để kích hoạt tài khoản tại: http://localhost:3000/login
+                    
+                    Trân trọng,
+                    MobileWorld
+                    Liên hệ: support@mobileworld.com.vn
+                    """.formatted(customerName, toEmail, randomPassword);
+
+                helper.setText(plainTextContent, htmlContent);
+
+                mailSender.send(message);
+                System.out.println("✅ Email đã được gửi tới: " + toEmail);
+            } catch (MessagingException e) {
+                System.err.println("❌ Lỗi khi gửi email tới " + toEmail + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+    }
 }

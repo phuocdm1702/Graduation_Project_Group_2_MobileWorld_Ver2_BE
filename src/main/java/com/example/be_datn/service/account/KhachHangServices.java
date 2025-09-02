@@ -56,4 +56,6 @@ public interface KhachHangServices {
     Map<String, Object> layThongTinKhachHang(Integer idKhachHang);
 
     HoaDon searchKhachHangAndUpdateHoaDon(String keyword, Integer hoaDonId);
+
+    KhachHang dangKyBangEmail(String email);
 }

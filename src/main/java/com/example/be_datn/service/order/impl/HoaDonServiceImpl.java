@@ -21,6 +21,7 @@ import com.example.be_datn.repository.product.ChiTietSanPhamRepository;
 import com.example.be_datn.repository.product.ImelDaBanRepository;
 import com.example.be_datn.repository.product.ImelRepository;
 import com.example.be_datn.service.order.HoaDonService;
+import com.example.be_datn.service.clientService.BanHangClientService;
 import com.example.be_datn.service.order.XuatDanhSachHoaDon;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
@@ -74,6 +75,9 @@ public class HoaDonServiceImpl implements HoaDonService {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private BanHangClientService banHangClientService;
 
     @Override
     @Cacheable(value = "hoaDonPage", key = "#loaiDon + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
@@ -217,6 +221,17 @@ public class HoaDonServiceImpl implements HoaDonService {
         lichSuHoaDonRepository.save(lichSuHoaDon);
         hoaDonRepository.save(hoaDon);
 
+        // Send email notification with timeline status
+        try {
+            HoaDonDetailResponse hoaDonDetail = getHoaDonDetail(hoaDon.getId());
+            if (hoaDonDetail.getEmail() != null && !hoaDonDetail.getEmail().isEmpty()) {
+                banHangClientService.guiEmailThongTinDonHang(hoaDonDetail, hoaDonDetail.getEmail());
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi email thông báo trạng thái: " + e.getMessage());
+            // Don't throw exception to avoid breaking the status update
+        }
+
         return hoaDonMapper.mapToDto(hoaDon);
     }
 
@@ -226,145 +241,12 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    @Transactional  // THÊM ANNOTATION NÀY
+    @Transactional
     public HoaDonResponse confirmAndAssignIMEI(Integer idHD, Map<Integer, String> imelMap) {
-        if (imelMap == null || imelMap.isEmpty()) {
-            throw new IllegalArgumentException("imelMap cannot be null or empty");
-        }
-
-        HoaDon hoaDon = hoaDonRepository.findById(idHD)
-                .orElseThrow(() -> new IllegalArgumentException("Hóa đơn không tồn tại hoặc đã bị xóa: idHD=" + idHD));
-
-        if (!"online".equalsIgnoreCase(hoaDon.getLoaiDon())) {
-            throw new IllegalArgumentException("Chỉ có thể gán IMEI cho hóa đơn online");
-        }
-        if (hoaDon.getTrangThai() != 0) {
-            throw new IllegalArgumentException("Chỉ có thể gán IMEI cho hóa đơn ở trạng thái chờ xác nhận (trangThai = 0)");
-        }
-
-        List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(idHD);
-        if (chiTietList.isEmpty()) {
-            throw new IllegalArgumentException("Không tìm thấy chi tiết hóa đơn cho idHD: " + idHD);
-        }
-
-        // SỬA LOGIC XỬ LÝ KEY - ĐƠN GIẢN HÓA
-        for (Map.Entry<Integer, String> entry : imelMap.entrySet()) {
-            Integer chiTietSanPhamId = entry.getKey();  // Sử dụng trực tiếp chiTietSanPhamId
-            String imel = entry.getValue();
-
-            // Tìm trực tiếp HoaDonChiTiet theo chiTietSanPhamId
-            HoaDonChiTiet chiTiet = chiTietList.stream()
-                    .filter(ct -> ct.getIdChiTietSanPham().getId().equals(chiTietSanPhamId))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Không tìm thấy chi tiết hóa đơn cho chiTietSanPhamId: " + chiTietSanPhamId));
-
-            ChiTietSanPham chiTietSanPham = chiTiet.getIdChiTietSanPham();
-
-            // Xử lý IMEI cũ (nếu có)
-            ImelDaBan oldImelDaBan = chiTiet.getIdImelDaBan();
-            if (oldImelDaBan != null) {
-                chiTiet.setIdImelDaBan(null);
-                hoaDonChiTietRepository.save(chiTiet);
-
-                Imel oldImel = imelRepository.findByImelAndDeleted(oldImelDaBan.getImel(), true).orElse(null);
-                if (oldImel != null) {
-                    oldImel.setDeleted(false);
-                    imelRepository.save(oldImel);
-                }
-
-                ChiTietSanPham oldChiTietSanPham = chiTiet.getIdChiTietSanPham();
-                if (oldChiTietSanPham != null) {
-                    oldChiTietSanPham.setDeleted(false);
-                    chiTietSanPhamRepository.save(oldChiTietSanPham);
-                }
-
-                imelDaBanRepository.delete(oldImelDaBan);
-            }
-
-            // Kiểm tra IMEI mới
-            Imel newImelEntity = imelRepository.findByImelAndDeleted(imel, false)
-                    .orElseThrow(() -> new IllegalArgumentException("IMEI " + imel + " không tồn tại hoặc đã được sử dụng!"));
-
-            Optional<ChiTietSanPham> newChiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(imel);
-            if (newChiTietSanPhamOpt.isEmpty()) {
-                throw new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm cho IMEI " + imel);
-            }
-            ChiTietSanPham newChiTietSanPham = newChiTietSanPhamOpt.get();
-
-            // Kiểm tra khớp thông số sản phẩm
-            if (!newChiTietSanPham.getIdSanPham().getId().equals(chiTietSanPham.getIdSanPham().getId()) ||
-                    !newChiTietSanPham.getIdRam().getId().equals(chiTietSanPham.getIdRam().getId()) ||
-                    !newChiTietSanPham.getIdBoNhoTrong().getId().equals(chiTietSanPham.getIdBoNhoTrong().getId()) ||
-                    !newChiTietSanPham.getIdMauSac().getId().equals(chiTietSanPham.getIdMauSac().getId())) {
-                throw new IllegalArgumentException("IMEI " + imel + " không khớp với thông số sản phẩm!");
-            }
-
-            // Cập nhật trạng thái IMEI mới
-            newImelEntity.setDeleted(true);
-            imelRepository.save(newImelEntity);
-
-            // Tạo và lưu ImelDaBan mới
-            ImelDaBan imelDaBan = ImelDaBan.builder()
-                    .imel(imel)
-                    .ngayBan(new Date())
-                    .ghiChu("Đã gán cho hóa đơn " + hoaDon.getMa())
-                    .deleted(false)
-                    .build();
-            imelDaBanRepository.save(imelDaBan);
-
-            // Cập nhật ChiTietSanPham mới
-            chiTiet.setIdChiTietSanPham(newChiTietSanPham);
-            newChiTietSanPham.setDeleted(true);
-            chiTietSanPhamRepository.save(newChiTietSanPham);
-
-            // Cập nhật HoaDonChiTiet
-            chiTiet.setIdImelDaBan(imelDaBan);
-            chiTiet.setGia(newChiTietSanPham.getGiaBan());
-            chiTiet.setTrangThai((short) 2);
-            hoaDonChiTietRepository.save(chiTiet);
-        }
-
-        // Cập nhật tổng tiền hóa đơn
-        BigDecimal tongTienSanPham = chiTietList.stream()
-                .filter(hdct -> !hdct.getDeleted())
-                .map(HoaDonChiTiet::getGia)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        hoaDon.setTienSanPham(tongTienSanPham);
-
-        // Cập nhật tổng tiền sau giảm
-        BigDecimal giamGia = BigDecimal.ZERO;
-        if (hoaDon.getIdPhieuGiamGia() != null) {
-            PhieuGiamGia phieuGiamGia = hoaDon.getIdPhieuGiamGia();
-            if (phieuGiamGia.getPhanTramGiamGia() != null) {
-                BigDecimal phanTram = BigDecimal.valueOf(phieuGiamGia.getPhanTramGiamGia() / 100.0);
-                giamGia = tongTienSanPham.multiply(phanTram);
-                if (phieuGiamGia.getSoTienGiamToiDa() != null) {
-                    BigDecimal toiDa = BigDecimal.valueOf(phieuGiamGia.getSoTienGiamToiDa());
-                    if (giamGia.compareTo(toiDa) > 0) {
-                        giamGia = toiDa;
-                    }
-                }
-            }
-        }
-        hoaDon.setTongTienSauGiam(tongTienSanPham.subtract(giamGia));
-        hoaDon.setUpdatedAt(new Date());
-
-        hoaDonRepository.save(hoaDon);
-
-        // Ghi lịch sử hóa đơn
-        LichSuHoaDon lichSu = LichSuHoaDon.builder()
-                .ma("LSHD_" + UUID.randomUUID().toString().substring(0, 8))
-                .hanhDong("Xác nhận và gán IMEI cho hóa đơn " + hoaDon.getMa())
-                .thoiGian(Instant.now())
-                .hoaDon(hoaDon)
-                .idNhanVien(nhanVienRepository.findById(1)
-                        .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại")))
-                .deleted(false)
-                .build();
-        lichSuHoaDonRepository.save(lichSu);
-
-        return hoaDonMapper.mapToDto(hoaDon);
+        banHangClientService.xacNhanVaGanImei(idHD, imelMap);
+        HoaDon updatedHoaDon = hoaDonRepository.findById(idHD)
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại sau khi cập nhật IMEI"));
+        return hoaDonMapper.mapToDto(updatedHoaDon);
     }
 
     @Override
@@ -839,13 +721,34 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public Page<HoaDonChiTietImeiResponse> getImeiByHoaDonId(Integer hoaDonId, Pageable pageable) {
+    public Page<HoaDonChiTietImeiResponse> getImeiByHoaDonId(Integer hoaDonId, Integer chiTietSanPhamId, String chiTietSanPhamIds, Pageable pageable) {
         // Kiểm tra hóa đơn tồn tại
         hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
 
         // Lấy danh sách HoaDonChiTiet của hóa đơn
         List<HoaDonChiTiet> chiTietList = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(hoaDonId);
+
+        // Lọc theo chiTietSanPhamId hoặc chiTietSanPhamIds nếu được cung cấp
+        if (chiTietSanPhamIds != null && !chiTietSanPhamIds.trim().isEmpty()) {
+            // Parse comma-separated chiTietSanPhamIds
+            List<Integer> idList = Arrays.stream(chiTietSanPhamIds.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Integer::parseInt)
+                    .collect(Collectors.toList());
+            
+            chiTietList = chiTietList.stream()
+                    .filter(chiTiet -> chiTiet.getIdChiTietSanPham() != null && 
+                            idList.contains(chiTiet.getIdChiTietSanPham().getId()))
+                    .collect(Collectors.toList());
+        } else if (chiTietSanPhamId != null) {
+            // Fallback to single chiTietSanPhamId for backward compatibility
+            chiTietList = chiTietList.stream()
+                    .filter(chiTiet -> chiTiet.getIdChiTietSanPham() != null && 
+                            chiTiet.getIdChiTietSanPham().getId().equals(chiTietSanPhamId))
+                    .collect(Collectors.toList());
+        }
 
         // Chuyển đổi sang DTO
         List<HoaDonChiTietImeiResponse> responseList = chiTietList.stream()

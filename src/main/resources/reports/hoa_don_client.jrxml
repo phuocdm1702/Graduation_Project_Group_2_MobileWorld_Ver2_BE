@@ -278,7 +278,7 @@
         </band>
     </detail>
 
-    <pageFooter>
+    <summary>
         <band height="235">
             <!-- Dashed line above footer -->
             <line>
@@ -424,5 +424,5 @@
                 <text><![CDATA[Quét mã QR để xem chi tiết hóa đơn]]></text>
             </staticText>
         </band>
-    </pageFooter>
+    </summary>
 </jasperReport>

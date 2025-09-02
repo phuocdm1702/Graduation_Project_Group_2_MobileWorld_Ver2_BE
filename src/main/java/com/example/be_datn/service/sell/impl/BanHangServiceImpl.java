@@ -1199,6 +1199,43 @@ public class BanHangServiceImpl implements BanHangService {
         return dto;
     }
 
+    @Override
+    public Integer getCartItemCount(Integer idHD) {
+        try {
+            String ghKey = GH_PREFIX + idHD;
+            GioHangDTO gh = (GioHangDTO) redisTemplate.opsForValue().get(ghKey);
+
+            if (gh == null || gh.getChiTietGioHangDTOS() == null) {
+                return 0;
+            }
+
+            return gh.getChiTietGioHangDTOS().size();
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy số lượng sản phẩm trong giỏ hàng ID " + idHD + ": " + e.getMessage());
+            return 0;
+        }
+    }
+
+    @Override
+    public Map<Integer, Integer> getAllCartItemCounts() {
+        Map<Integer, Integer> cartCounts = new HashMap<>();
+
+        try {
+            // Lấy danh sách hóa đơn chờ
+            List<HoaDonDTO> hoaDonChos = getHDCho();
+
+            for (HoaDonDTO hoaDon : hoaDonChos) {
+                Integer count = getCartItemCount(hoaDon.getId());
+                cartCounts.put(hoaDon.getId(), count);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy số lượng sản phẩm trong tất cả giỏ hàng: " + e.getMessage());
+        }
+
+        return cartCounts;
+    }
+
     private void sendGioHangUpdate(Integer hoaDonId, GioHangDTO gioHangDTO) {
         try {
             HoaDon hoaDon = hoaDonRepository.findById(hoaDonId).orElse(null);

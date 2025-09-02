@@ -263,4 +263,50 @@ public class BanHangController {
         KhachHang khachHang = khachHangServices.findById(id);
         return ResponseEntity.ok(khachHang);
     }
+
+    @GetMapping("/gio-hang/count/{idHD}")
+    public ResponseEntity<Map<String, Object>> getCartItemCount(@PathVariable Integer idHD) {
+        try {
+            Integer count = banHangService.getCartItemCount(idHD);
+            Map<String, Object> response = new HashMap<>();
+            response.put("hoaDonId", idHD);
+            response.put("itemCount", count);
+            response.put("success", true);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("hoaDonId", idHD);
+            errorResponse.put("itemCount", 0);
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Lỗi khi lấy số lượng sản phẩm: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @GetMapping("/gio-hang/counts/all")
+    public ResponseEntity<Map<String, Object>> getAllCartItemCounts() {
+        try {
+            Map<Integer, Integer> cartCounts = banHangService.getAllCartItemCounts();
+            Map<String, Object> response = new HashMap<>();
+            response.put("cartCounts", cartCounts);
+            response.put("success", true);
+            response.put("totalCarts", cartCounts.size());
+
+            // Tính tổng số sản phẩm trong tất cả giỏ hàng
+            Integer totalItems = cartCounts.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum();
+            response.put("totalItems", totalItems);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("cartCounts", new HashMap<>());
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Lỗi khi lấy số lượng sản phẩm trong tất cả giỏ hàng: " + e.getMessage());
+            errorResponse.put("totalCarts", 0);
+            errorResponse.put("totalItems", 0);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 }

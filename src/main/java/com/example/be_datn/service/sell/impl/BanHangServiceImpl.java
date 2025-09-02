@@ -471,89 +471,82 @@ public class BanHangServiceImpl implements BanHangService {
         }
 
         List<ChiTietGioHangDTO> updatedItems = new ArrayList<>();
-        List<ChiTietGioHangDTO> removedItems = new ArrayList<>();
+        ChiTietGioHangDTO itemToRemove = null;
 
-        // Cách 1: Nếu có IMEI cụ thể, chỉ xóa item với IMEI đó
+        // Tìm item cần xóa theo IMEI (ưu tiên) hoặc theo spId
         if (maImel != null && !maImel.isEmpty()) {
-            boolean found = false;
+            // Trường hợp 1: Xóa theo IMEI cụ thể
             for (ChiTietGioHangDTO item : gh.getChiTietGioHangDTOS()) {
-                if (item.getMaImel().equals(maImel.trim()) && !found) {
-                    // Xóa item đầu tiên tìm thấy với IMEI này
-                    removedItems.add(item);
-                    found = true;
-                } else {
-                    // Giữ lại các item khác
-                    updatedItems.add(item);
+                if (maImel.trim().equals(item.getMaImel())) {
+                    itemToRemove = item;
+                    break; // Tìm thấy item với IMEI chính xác
                 }
             }
 
-            if (!found) {
+            if (itemToRemove == null) {
                 throw new RuntimeException("Không tìm thấy sản phẩm với IMEI: " + maImel);
             }
-        }
-        // Cách 2: Nếu không có IMEI, chỉ xóa MỘT item đầu tiên có chiTietSanPhamId tương ứng
-        else if (spId != null) {
-            boolean found = false;
+        } else if (spId != null) {
+            // Trường hợp 2: Xóa theo chiTietSanPhamId (chỉ khi không có IMEI)
             for (ChiTietGioHangDTO item : gh.getChiTietGioHangDTOS()) {
-                if (item.getChiTietSanPhamId().equals(spId) && !found) {
-                    // Xóa item đầu tiên tìm thấy với chiTietSanPhamId này
-                    removedItems.add(item);
-                    found = true;
-                } else {
-                    // Giữ lại các item khác
-                    updatedItems.add(item);
+                if (item.getChiTietSanPhamId().equals(spId)) {
+                    itemToRemove = item;
+                    break; // Lấy item đầu tiên tìm thấy với chiTietSanPhamId này
                 }
             }
 
-            if (!found) {
+            if (itemToRemove == null) {
                 throw new RuntimeException("Không tìm thấy sản phẩm với ID: " + spId);
             }
         } else {
             throw new RuntimeException("Phải cung cấp IMEI hoặc ID sản phẩm để xóa!");
         }
 
-        // Xử lý khôi phục IMEI cho các item bị xóa
-        for (ChiTietGioHangDTO removedItem : removedItems) {
-            String imeiToRestore = removedItem.getMaImel().trim();
-
-            Imel imelEntity = imelRepository.findByImelAndDeleted(imeiToRestore, true)
-                    .orElse(null);
-            if (imelEntity != null && !imelDaBanRepository.existsByMa(imeiToRestore)) {
-                imelEntity.setDeleted(false);
-                imelRepository.save(imelEntity);
-                System.out.println("Đã đặt lại deleted = false cho IMEI: " + imeiToRestore);
-
-                // Khôi phục ChiTietDotGiamGia
-                Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(imeiToRestore);
-                if (chiTietSanPhamOpt.isPresent()) {
-                    Optional<ChiTietDotGiamGia> chiTietDotGiamGiaOpt = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdAndDeleted(chiTietSanPhamOpt.get().getId(), true);
-                    if (chiTietDotGiamGiaOpt.isPresent()) {
-                        ChiTietDotGiamGia chiTietDotGiamGia = chiTietDotGiamGiaOpt.get();
-                        chiTietDotGiamGia.setDeleted(false);
-                        chiTietDotGiamGiaRepository.save(chiTietDotGiamGia);
-                        System.out.println("Đã đặt lại deleted = false cho ChiTietDotGiamGia của ChiTietSanPhamId: " + chiTietSanPhamOpt.get().getId());
-                    }
-                }
+        // Tạo danh sách mới không chứa item bị xóa
+        for (ChiTietGioHangDTO item : gh.getChiTietGioHangDTOS()) {
+            if (!item.equals(itemToRemove)) {
+                updatedItems.add(item);
             }
+        }
 
-            // Khôi phục phiếu giảm giá nếu có
-            if (removedItem.getIdPhieuGiamGia() != null) {
-                PhieuGiamGia pgg = phieuGiamGiaRepository.findById(removedItem.getIdPhieuGiamGia()).orElse(null);
-                if (pgg != null) {
-                    pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
-                    pgg.setTrangThai(true);
-                    phieuGiamGiaRepository.save(pgg);
-                    System.out.println("Đã khôi phục số lượng dùng cho phiếu giảm giá ID: " + removedItem.getIdPhieuGiamGia());
+        // Xử lý khôi phục IMEI cho item bị xóa
+        String imeiToRestore = itemToRemove.getMaImel().trim();
+
+        Imel imelEntity = imelRepository.findByImelAndDeleted(imeiToRestore, true)
+                .orElse(null);
+        if (imelEntity != null && !imelDaBanRepository.existsByMa(imeiToRestore)) {
+            imelEntity.setDeleted(false);
+            imelRepository.save(imelEntity);
+            System.out.println("Đã đặt lại deleted = false cho IMEI: " + imeiToRestore);
+
+            // Khôi phục ChiTietDotGiamGia
+            Optional<ChiTietSanPham> chiTietSanPhamOpt = chiTietSanPhamRepository.findByImel(imeiToRestore);
+            if (chiTietSanPhamOpt.isPresent()) {
+                Optional<ChiTietDotGiamGia> chiTietDotGiamGiaOpt = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdAndDeleted(chiTietSanPhamOpt.get().getId(), true);
+                if (chiTietDotGiamGiaOpt.isPresent()) {
+                    ChiTietDotGiamGia chiTietDotGiamGia = chiTietDotGiamGiaOpt.get();
+                    chiTietDotGiamGia.setDeleted(false);
+                    chiTietDotGiamGiaRepository.save(chiTietDotGiamGia);
+                    System.out.println("Đã đặt lại deleted = false cho ChiTietDotGiamGia của ChiTietSanPhamId: " + chiTietSanPhamOpt.get().getId());
                 }
             }
         }
 
-        // Đánh dấu các bản ghi GioHangTam liên quan là deleted (chỉ cho các IMEI bị xóa)
-        for (ChiTietGioHangDTO removedItem : removedItems) {
-            gioHangTamRepository.markAsDeletedByIdHoaDonAndImei(idHD, removedItem.getMaImel().trim());
+        // Khôi phục phiếu giảm giá nếu có
+        if (itemToRemove.getIdPhieuGiamGia() != null) {
+            PhieuGiamGia pgg = phieuGiamGiaRepository.findById(itemToRemove.getIdPhieuGiamGia()).orElse(null);
+            if (pgg != null) {
+                pgg.setSoLuongDung(pgg.getSoLuongDung() + 1);
+                pgg.setTrangThai(true);
+                phieuGiamGiaRepository.save(pgg);
+                System.out.println("Đã khôi phục số lượng dùng cho phiếu giảm giá ID: " + itemToRemove.getIdPhieuGiamGia());
+            }
         }
 
-        // Cập nhật giỏ hàng
+        // Đánh dấu bản ghi GioHangTam liên quan là deleted (chỉ cho IMEI bị xóa)
+        gioHangTamRepository.markAsDeletedByIdHoaDonAndImei(idHD, imeiToRestore);
+
+        // Cập nhật giỏ hàng với danh sách mới
         gh.setChiTietGioHangDTOS(updatedItems);
         gh.setTongTien(updatedItems.stream()
                 .map(item -> item.getTongTien() != null ? item.getTongTien() : BigDecimal.ZERO)

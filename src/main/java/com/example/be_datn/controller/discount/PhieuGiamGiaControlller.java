@@ -494,6 +494,93 @@ public class PhieuGiamGiaControlller {
     }
 
 
+    @GetMapping("/applicable-vouchers")
+    public ResponseEntity<List<PhieuGiamGia>> getApplicableVouchers(
+            @RequestParam("totalPrice") BigDecimal totalPrice,
+            @RequestParam(value = "khachHangId", required = false) Integer khachHangId) {
+
+        Date currentDate = new Date();
+        Double tongTienDouble = totalPrice.doubleValue();
+
+        // Lấy tất cả phiếu giảm giá công khai hợp lệ
+        List<PhieuGiamGia> validPublicDiscounts = phieuGiamGiaRepository.findValidPublicVouchers(tongTienDouble, currentDate);
+
+        // Lấy tất cả phiếu giảm giá riêng tư hợp lệ (nếu có khachHangId)
+        List<PhieuGiamGia> validPrivateDiscounts = new ArrayList<>();
+        if (khachHangId != null && khachHangId > 0) {
+            List<PhieuGiamGiaCaNhan> privateVouchers = phieuGiamGiaCaNhanRepository.findValidPrivateVouchersByKhachHang(
+                    khachHangId, tongTienDouble, currentDate);
+            validPrivateDiscounts = privateVouchers.stream()
+                    .map(PhieuGiamGiaCaNhan::getIdPhieuGiamGia)
+                    .collect(Collectors.toList());
+        }
+
+        // Kết hợp danh sách phiếu giảm giá hợp lệ
+        List<PhieuGiamGia> allValidDiscounts = new ArrayList<>();
+        allValidDiscounts.addAll(validPublicDiscounts);
+        allValidDiscounts.addAll(validPrivateDiscounts);
+
+        // Loại bỏ các phiếu trùng lặp (giữ lại phiếu đầu tiên gặp)
+        List<PhieuGiamGia> uniqueDiscounts = allValidDiscounts.stream()
+                .filter(pgg -> pgg.getId() != null)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(PhieuGiamGia::getId, p -> p, (p1, p2) -> p1),
+                        Map::values
+                ))
+                .stream()
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(uniqueDiscounts);
+    }
+
+
+    @GetMapping("/best-applicable-voucher")
+    public ResponseEntity<PhieuGiamGia> getBestApplicableVoucher(
+            @RequestParam("totalPrice") BigDecimal totalPrice,
+            @RequestParam(value = "khachHangId", required = false) Integer khachHangId) {
+
+        Date currentDate = new Date();
+        Double tongTienDouble = totalPrice.doubleValue();
+
+        // Lấy tất cả phiếu giảm giá công khai hợp lệ
+        List<PhieuGiamGia> validPublicDiscounts = phieuGiamGiaRepository.findValidPublicVouchers(tongTienDouble, currentDate);
+
+        // Lấy tất cả phiếu giảm giá riêng tư hợp lệ (nếu có khachHangId)
+        List<PhieuGiamGia> validPrivateDiscounts = new ArrayList<>();
+        if (khachHangId != null && khachHangId > 0) {
+            List<PhieuGiamGiaCaNhan> privateVouchers = phieuGiamGiaCaNhanRepository.findValidPrivateVouchersByKhachHang(
+                    khachHangId, tongTienDouble, currentDate);
+            validPrivateDiscounts = privateVouchers.stream()
+                    .map(PhieuGiamGiaCaNhan::getIdPhieuGiamGia)
+                    .collect(Collectors.toList());
+        }
+
+        // Kết hợp danh sách phiếu giảm giá hợp lệ
+        List<PhieuGiamGia> allValidDiscounts = new ArrayList<>();
+        allValidDiscounts.addAll(validPublicDiscounts);
+        allValidDiscounts.addAll(validPrivateDiscounts);
+
+        if (allValidDiscounts.isEmpty()) {
+            return ResponseEntity.ok().body(null); // Không có phiếu nào tốt hơn
+        }
+
+        // Chọn phiếu có giá trị giảm lớn nhất
+        PhieuGiamGia bestDiscount = allValidDiscounts.stream()
+                .max(Comparator.comparingDouble(pgg -> {
+                    if ("Phần trăm".equals(pgg.getLoaiPhieuGiamGia())) {
+                        // Calculate actual discount amount for percentage-based vouchers
+                        double calculatedAmount = (totalPrice.doubleValue() * pgg.getPhanTramGiamGia()) / 100.0;
+                        return Math.min(calculatedAmount, pgg.getSoTienGiamToiDa());
+                    } else {
+                        return pgg.getSoTienGiamToiDa();
+                    }
+                }))
+                .orElse(null);
+
+        return ResponseEntity.ok(bestDiscount);
+    }
+
+
     @GetMapping("/find-better-discount")
     public ResponseEntity<?> findBetterDiscount(
             @RequestParam("currentDiscountMa") String currentDiscountMa,

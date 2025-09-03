@@ -146,29 +146,29 @@ public class BanHangClientController {
             System.out.println("HoaDon ID: " + idHD);
             System.out.println("Received payload: " + payload);
             System.out.println("Payload type: " + payload.getClass().getName());
-            
+
             // Convert payload to Map<Integer, String>
             Map<Integer, String> imelMap = new HashMap<>();
-            
+
             if (payload instanceof Map) {
                 Map<?, ?> rawMap = (Map<?, ?>) payload;
                 for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
                     try {
                         Integer key = null;
                         String value = null;
-                        
+
                         // Handle different key types
                         if (entry.getKey() instanceof Integer) {
                             key = (Integer) entry.getKey();
                         } else if (entry.getKey() instanceof String) {
                             key = Integer.parseInt((String) entry.getKey());
                         }
-                        
+
                         // Handle different value types
                         if (entry.getValue() instanceof String) {
                             value = (String) entry.getValue();
                         }
-                        
+
                         if (key != null && value != null) {
                             imelMap.put(key, value);
                             System.out.println("Mapped: " + key + " -> " + value);
@@ -178,9 +178,9 @@ public class BanHangClientController {
                     }
                 }
             }
-            
+
             System.out.println("Final IMEI Map: " + imelMap);
-            
+
             HoaDonDetailResponse response = banHangClientService.xacNhanVaGanImei(idHD, imelMap);
             return ResponseEntity.ok(response);
         } catch (Exception e) {

@@ -218,6 +218,8 @@ public class HoaDonServiceImpl implements HoaDonService {
                         .orElseThrow(() -> new RuntimeException("Nhân viên không tồn tại"))
                 : null);
         lichSuHoaDon.setHoaDon(hoaDon);
+        // Lưu trạng thái mới sau khi chuyển để timeline có thể filter chính xác
+        lichSuHoaDon.setDeleted(trangThai);
 
         lichSuHoaDonRepository.save(lichSuHoaDon);
         hoaDonRepository.save(hoaDon);
@@ -270,23 +272,48 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
-    public HoaDonResponse updateHoaDon(Integer id, String maHD, String loaiDon) {
+    public HoaDonResponse updateHoaDon(Integer id, String maHD, String loaiDon, Short trangThai) {
         HoaDon hoaDon = hoaDonRepository.findHoaDonDetailById(id)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại hoặc đã bị xóa"));
+        
+        Short oldTrangThai = hoaDon.getTrangThai();
         hoaDon.setMa(maHD);
         hoaDon.setLoaiDon(loaiDon);
+        
+        // Cập nhật trạng thái nếu được cung cấp
+        if (trangThai != null) {
+            hoaDon.setTrangThai(trangThai);
+        }
 
-        LichSuHoaDon lichSuHoaDon = LichSuHoaDon.builder()
+        // Lưu hóa đơn trước để có ID và state mới nhất
+        hoaDon = hoaDonRepository.save(hoaDon);
+
+        // Lưu lịch sử cập nhật thông tin
+        LichSuHoaDon lichSuThongTin = LichSuHoaDon.builder()
                 .ma("LSHD_" + System.currentTimeMillis())
                 .hanhDong("Cập nhật thông tin hóa đơn: " + maHD)
                 .thoiGian(Instant.now())
                 .hoaDon(hoaDon)
                 .idNhanVien(nhanVienRepository.findById(1)
                         .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại")))
+                .deleted(oldTrangThai) // Lưu trạng thái cũ trước khi chuyển
                 .build();
+        lichSuHoaDonRepository.save(lichSuThongTin);
 
-        lichSuHoaDonRepository.save(lichSuHoaDon);
-        hoaDonRepository.save(hoaDon);
+        // Lưu lịch sử thay đổi trạng thái nếu có thay đổi
+        if (trangThai != null && !trangThai.equals(oldTrangThai)) {
+            String statusText = getStatusText(trangThai);
+            LichSuHoaDon lichSuTrangThai = LichSuHoaDon.builder()
+                    .ma("LSHD_" + System.currentTimeMillis() + "_STATUS")
+                    .hanhDong("Cập nhật trạng thái: " + statusText)
+                    .thoiGian(Instant.now())
+                    .hoaDon(hoaDon)
+                    .idNhanVien(nhanVienRepository.findById(1)
+                            .orElseThrow(() -> new RuntimeException("Nhân viên mặc định không tồn tại")))
+                    .deleted(trangThai)
+                    .build();
+            lichSuHoaDonRepository.save(lichSuTrangThai);
+        }
 
         // Tạo response
         HoaDonResponse response = hoaDonMapper.mapToDto(hoaDon);
@@ -295,6 +322,17 @@ public class HoaDonServiceImpl implements HoaDonService {
         }
 
         return response;
+    }
+
+    private String getStatusText(Short trangThai) {
+        switch (trangThai) {
+            case 0: return "Chờ xác nhận";
+            case 1: return "Chờ giao hàng";
+            case 2: return "Đang giao";
+            case 3: return "Hoàn thành";
+            case 4: return "Đã hủy";
+            default: return "Không xác định";
+        }
     }
 
     private boolean isValidTrangThai(Short trangThai) {
@@ -790,5 +828,37 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .tenKhachHang(hoaDon.getTenKhachHang())
                 .soDienThoaiKhachHang(hoaDon.getSoDienThoaiKhachHang())
                 .build();
+    }
+
+    @Override
+    public Map<String, Long> getStatusCounts() {
+        List<HoaDon> allInvoices = hoaDonRepository.findAll().stream()
+                .filter(hoaDon -> hoaDon.getDeleted() == null || !hoaDon.getDeleted())
+                .collect(Collectors.toList());
+        
+        Map<String, Long> statusCounts = new HashMap<>();
+        statusCounts.put("Chờ xác nhận", 0L);
+        statusCounts.put("Chờ giao hàng", 0L);
+        statusCounts.put("Đang giao", 0L);
+        statusCounts.put("Hoàn thành", 0L);
+        statusCounts.put("Đã hủy", 0L);
+        
+        for (HoaDon hoaDon : allInvoices) {
+            String statusString = mapStatus(hoaDon.getTrangThai());
+            statusCounts.put(statusString, statusCounts.get(statusString) + 1);
+        }
+        
+        return statusCounts;
+    }
+
+    private String mapStatus(Short statusNumber) {
+        switch (statusNumber) {
+            case 0: return "Chờ xác nhận";
+            case 1: return "Chờ giao hàng";
+            case 2: return "Đang giao";
+            case 3: return "Hoàn thành";
+            case 4: return "Đã hủy";
+            default: return "N/A";
+        }
     }
 }

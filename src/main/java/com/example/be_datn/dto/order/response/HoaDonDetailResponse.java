@@ -3,8 +3,6 @@ package com.example.be_datn.dto.order.response;
 import com.example.be_datn.entity.account.NhanVien;
 import com.example.be_datn.entity.discount.PhieuGiamGia;
 import com.example.be_datn.entity.order.HoaDon;
-import com.example.be_datn.entity.product.ImelDaBan;
-import jdk.jshell.Snippet;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -110,6 +108,7 @@ public class HoaDonDetailResponse {
         private Instant thoiGian;
         private String tenNhanVien;
         private Integer idHoaDon;
+        private Short trangThai;
     }
 
     // Builder Pattern

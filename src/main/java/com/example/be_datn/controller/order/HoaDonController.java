@@ -62,8 +62,8 @@ public class HoaDonController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long minAmount,
             @RequestParam(required = false) Long maxAmount,
-            @RequestParam(required = false) Timestamp startDate,
-            @RequestParam(required = false) Timestamp endDate,
+            @RequestParam(required = false) Long startDate,  // Changed to Long to receive timestamp
+            @RequestParam(required = false) Long endDate,    // Changed to Long to receive timestamp
             @RequestParam(required = false) Short trangThai,
             @RequestParam(required = false) String loaiDon,
             @RequestParam(defaultValue = "id") String sortBy,  // Mới: Field sắp xếp
@@ -77,12 +77,17 @@ public class HoaDonController {
         if (minAmount != null && maxAmount != null && minAmount > maxAmount) {
             return ResponseEntity.badRequest().body("minAmount phải nhỏ hơn hoặc bằng maxAmount");
         }
-        if (startDate != null && endDate != null && startDate.after(endDate)) {
+        
+        // Convert Long timestamps to Timestamp objects
+        Timestamp startTimestamp = startDate != null ? new Timestamp(startDate) : null;
+        Timestamp endTimestamp = endDate != null ? new Timestamp(endDate) : null;
+        
+        if (startTimestamp != null && endTimestamp != null && startTimestamp.after(endTimestamp)) {
             return ResponseEntity.badRequest().body("startDate phải trước hoặc bằng endDate");
         }
         Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);  // Xây sort động
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startDate, endDate, trangThai, loaiDon, pageable);
+        Page<HoaDonResponse> response = hoaDonService.getHoaDonAndFilters(keyword, minAmount, maxAmount, startTimestamp, endTimestamp, trangThai, loaiDon, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -240,10 +245,11 @@ public class HoaDonController {
     public ResponseEntity<HoaDonResponse> updateHoaDonDetail(
             @PathVariable Integer id,
             @RequestParam String maHD,
-            @RequestParam String loaiHD) {
+            @RequestParam String loaiHD,
+            @RequestParam(required = false) Short trangThai) {
         try {
             // Gọi service, thông báo WebSocket đã được tích hợp trong HoaDonServiceImpl
-            HoaDonResponse response = hoaDonService.updateHoaDon(id, maHD, loaiHD);
+            HoaDonResponse response = hoaDonService.updateHoaDon(id, maHD, loaiHD, trangThai);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
@@ -304,6 +310,17 @@ public class HoaDonController {
             Map<String, String> error = new HashMap<>();
             error.put("message", "Lỗi server: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/status-counts")
+    public ResponseEntity<Map<String, Long>> getStatusCounts() {
+        try {
+            Map<String, Long> statusCounts = hoaDonService.getStatusCounts();
+            return ResponseEntity.ok(statusCounts);
+        } catch (Exception e) {
+            Map<String, Long> error = new HashMap<>();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 

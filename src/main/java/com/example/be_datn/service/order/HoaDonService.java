@@ -35,7 +35,7 @@ public interface HoaDonService {
 
     HoaDonResponse updateHoaDonKH(Integer id, String tenKH, String sdt, String diaChi, String email);
 
-    HoaDonResponse updateHoaDon(Integer id, String maHD, String loaHD);
+    HoaDonResponse updateHoaDon(Integer id, String maHD, String loaiDon, Short trangThai);
 
     HoaDon updatePhieuGiamGia(Integer hoaDonId, Integer idPhieuGiamGia);
 
@@ -50,5 +50,7 @@ public interface HoaDonService {
     HoaDonResponse deleteProductFromHoaDonChiTiet(Integer idHD, Integer idHoaDonChiTiet);
 
     Page<HoaDonChiTietImeiResponse> getImeiByHoaDonId(Integer hoaDonId, Integer chiTietSanPhamId, String chiTietSanPhamIds, Pageable pageable);
+
+    Map<String, Long> getStatusCounts();
 
 }

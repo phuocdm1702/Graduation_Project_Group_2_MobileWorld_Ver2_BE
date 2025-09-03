@@ -899,7 +899,7 @@ public class BanHangServiceImpl implements BanHangService {
         lichSu.setMa(hoaDon.getMa());
         lichSu.setHanhDong("Thanh toán hóa đơn");
         lichSu.setThoiGian(Instant.now());
-        lichSu.setDeleted(false);
+        lichSu.setDeleted((short) 0); // Trạng thái "Chờ xác nhận"
         lichSuHoaDonRepository.save(lichSu);
 
         xoaGioHang(idHD);

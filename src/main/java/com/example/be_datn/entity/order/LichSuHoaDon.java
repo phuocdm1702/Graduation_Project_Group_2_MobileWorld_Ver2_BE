@@ -45,6 +45,6 @@ public class LichSuHoaDon {
     private Instant thoiGian;
 
     @Column(name = "deleted")
-    private Boolean deleted;
+    private Short deleted;
 
 }

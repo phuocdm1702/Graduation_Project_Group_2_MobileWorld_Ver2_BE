@@ -65,7 +65,7 @@ public interface TrangChuRepository extends JpaRepository<LichSuHoaDon, Integer>
     Object[] thongKeChiTietSanPham();
 
     @Query("""
-        SELECT lshd FROM LichSuHoaDon lshd WHERE lshd.deleted = false ORDER BY lshd.thoiGian DESC
+        SELECT lshd FROM LichSuHoaDon lshd ORDER BY lshd.thoiGian DESC
     """)
     List<LichSuHoaDon> getAllLichSuHoaDon(Pageable pageable);
 }

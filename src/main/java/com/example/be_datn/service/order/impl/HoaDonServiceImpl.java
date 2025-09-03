@@ -203,13 +203,6 @@ public class HoaDonServiceImpl implements HoaDonService {
             hoaDon.setDeleted(false);
         }
 
-        // Idempotency Check: Only process orders that are in "Pending Confirmation" state (0).
-        // This prevents processing the same payment notification multiple times (e.g., from redirect and IPN).
-        if (hoaDon.getTrangThai() != 0) {
-            System.out.println("Order " + id + " has already been processed. Current status: " + hoaDon.getTrangThai() + ". Ignoring update request.");
-            return hoaDonMapper.mapToDto(hoaDon); // Return current state without changes
-        }
-
         if (!isValidTrangThai(trangThai)) {
             throw new RuntimeException("Trạng thái không hợp lệ");
         }
@@ -228,17 +221,6 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         lichSuHoaDonRepository.save(lichSuHoaDon);
         hoaDonRepository.save(hoaDon);
-
-        // Send email notification with timeline status
-        try {
-            HoaDonDetailResponse hoaDonDetail = getHoaDonDetail(hoaDon.getId());
-            if (hoaDonDetail.getEmail() != null && !hoaDonDetail.getEmail().isEmpty()) {
-                banHangClientService.guiEmailThongTinDonHang(hoaDonDetail, hoaDonDetail.getEmail());
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi khi gửi email thông báo trạng thái: " + e.getMessage());
-            // Don't throw exception to avoid breaking the status update
-        }
 
         return hoaDonMapper.mapToDto(hoaDon);
     }
@@ -329,6 +311,7 @@ public class HoaDonServiceImpl implements HoaDonService {
             default: return "N/A";
         }
     }
+
 
     public HoaDon updatePhieuGiamGia(Integer hoaDonId, Integer idPhieuGiamGia) {
         if (hoaDonId == null) {

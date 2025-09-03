@@ -1195,7 +1195,8 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         String targetAction = getActionForStatus(stepStatus);
         
         return lichSuList.stream()
-                .filter(lichSu -> lichSu.getHanhDong() != null && lichSu.getHanhDong().contains(targetAction))
+                .filter(lichSu -> lichSu.getHanhDong() != null && lichSu.getHanhDong().equals(targetAction))
+                .sorted((a, b) -> b.getThoiGian().compareTo(a.getThoiGian())) // Sắp xếp theo thời gian mới nhất
                 .map(lichSu -> formatDate(lichSu.getThoiGian()))
                 .findFirst()
                 .orElse(stepStatus == 0 ? formatDate(hoaDonDetailResponse.getNgayTao()) : "");
@@ -1203,11 +1204,11 @@ public class BanHangClientServiceImpl implements BanHangClientService {
 
     private String getActionForStatus(Short status) {
         switch (status) {
-            case 0: return "Chờ xác nhậnnhận";
-            case 1: return "Chờ giao hàng";
-            case 2: return "Đang giao";
-            case 3: return "Hoàn thành";
-            case 4: return "Đã hủy";
+            case 0: return "Cập nhật trạng thái: Chờ xác nhận";
+            case 1: return "Cập nhật trạng thái: Chờ giao hàng";
+            case 2: return "Cập nhật trạng thái: Đang giao";
+            case 3: return "Cập nhật trạng thái: Hoàn thành";
+            case 4: return "Cập nhật trạng thái: Đã hủy";
             default: return "";
         }
     }
@@ -1265,11 +1266,12 @@ public class BanHangClientServiceImpl implements BanHangClientService {
 
         List<HoaDonDetailResponse.LichSuHoaDonInfo> lichSuHoaDonInfos = lichSuHoaDonRepository.findById(hoaDon.getId())
                 .stream()
+                .filter(lshd -> lshd.getDeleted() == null || !lshd.getDeleted()) // Chỉ lấy lịch sử chưa bị xóa
                 .map(lshd -> new HoaDonDetailResponse.LichSuHoaDonInfo(
                         lshd.getMa(),
                         lshd.getHanhDong(),
                         lshd.getThoiGian(),
-                        lshd.getIdNhanVien().getTenNhanVien(),
+                        lshd.getIdNhanVien() != null ? lshd.getIdNhanVien().getTenNhanVien() : "Hệ thống",
                         lshd.getHoaDon().getId()
                 ))
                 .collect(Collectors.toList());

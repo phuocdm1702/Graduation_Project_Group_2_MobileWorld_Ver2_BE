@@ -102,6 +102,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
                 OR h.ma LIKE %:keyword%
                 OR h.tenKhachHang LIKE %:keyword%
                 OR h.soDienThoaiKhachHang LIKE %:keyword%
+                OR h.idNhanVien.ma LIKE %:keyword%
             )
             AND (:minAmount IS NULL OR h.tongTienSauGiam >= :minAmount)
             AND (:maxAmount IS NULL OR h.tongTienSauGiam <= :maxAmount)

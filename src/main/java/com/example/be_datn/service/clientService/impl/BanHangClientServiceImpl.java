@@ -692,15 +692,14 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         lichSu.setMa("LSHD_" + UUID.randomUUID().toString().substring(0, 8));
         lichSu.setHanhDong("Thanh toán hóa đơn qua client (" + kieuThanhToan + "), chờ xác nhận IMEI");
         lichSu.setThoiGian(Instant.now());
-        lichSu.setDeleted(false);
+        lichSu.setDeleted((short) 0); // Trạng thái "Chờ xác nhận"
         lichSuHoaDonRepository.save(lichSu);
 
         // Xóa giỏ hàng
         redisTemplate.delete(ghKey);
 
-        // Gửi email
+        // Tạo response (email sẽ được gửi từ frontend thông qua EmailController API)
         HoaDonDetailResponse response = mapToHoaDonDetailResponse(hoaDon);
-        guiEmailThongTinDonHang(response, hoaDonRequest.getEmail());
 
         return response;
     }
@@ -880,7 +879,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
             lichSu.setMa("LSHD_" + UUID.randomUUID().toString().substring(0, 8));
             lichSu.setHanhDong("Xác nhận và gán IMEI cho hóa đơn " + hoaDon.getMa());
             lichSu.setThoiGian(Instant.now());
-            lichSu.setDeleted(false);
+            lichSu.setDeleted((short) 0); // Trạng thái "Chờ xác nhận"
             lichSuHoaDonRepository.save(lichSu);
 
             return mapToHoaDonDetailResponse(hoaDon);
@@ -1011,6 +1010,9 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                     .append("<p><strong>Địa chỉ giao hàng:</strong> " + (hoaDonDetailResponse.getDiaChiKhachHang() != null ? hoaDonDetailResponse.getDiaChiKhachHang() : "N/A") + "</p>")
                     .append("</div>")
 
+                    // Timeline trạng thái đơn hàng
+                    .append(generateTimelineHTML(hoaDonDetailResponse))
+                    
                     // Chi tiết sản phẩm
                     .append("<h2>Chi tiết đơn hàng</h2>");
             List<HoaDonDetailResponse.SanPhamChiTietInfo> sanPhamChiTietInfos = hoaDonDetailResponse.getSanPhamChiTietInfos();
@@ -1075,13 +1077,13 @@ public class BanHangClientServiceImpl implements BanHangClientService {
     private String getTrangThaiText(Short trangThai) {
         switch (trangThai) {
             case 0:
-                return "Chờ thanh toán";
+                return "Chờ xác nhận";
             case 1:
-                return "Đã thanh toán";
+                return "Chờ giao hàng";
             case 2:
                 return "Đang giao";
             case 3:
-                return "Đã giao";
+                return "Hoàn thành";
             case 4:
                 return "Đã hủy";
             default:
@@ -1089,8 +1091,188 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         }
     }
 
+    /**
+     * Tạo HTML timeline cho email dựa trên lịch sử hóa đơn
+     */
+    private String generateTimelineHTML(HoaDonDetailResponse hoaDonDetailResponse) {
+        StringBuilder timeline = new StringBuilder();
+        
+        // CSS cho timeline - Gmail compatible
+        timeline.append("<style>")
+                .append(".timeline { margin: 20px 0; padding: 0; }")
+                .append(".timeline-item { display: table; width: 100%; margin: 12px 0; border-collapse: separate; }")
+                .append(".timeline-icon-cell { display: table-cell; width: 50px; vertical-align: top; padding-right: 15px; }")
+                .append(".timeline-content-cell { display: table-cell; vertical-align: top; }")
+                .append(".timeline-icon { width: 44px; height: 44px; border-radius: 22px; display: inline-block; text-align: center; line-height: 44px; font-size: 20px; font-weight: bold; }")
+                .append(".timeline-title { font-weight: 600; color: #1a365d; margin: 0 0 4px 0; font-size: 16px; }")
+                .append(".timeline-date { color: #718096; font-size: 13px; margin: 0; font-style: italic; }")
+                .append(".timeline-connector { width: 2px; height: 20px; background: #e2e8f0; margin: 8px auto; }")
+                .append(".status-completed { background: linear-gradient(135deg, #38a169, #48bb78); color: #ffffff; box-shadow: 0 2px 4px rgba(56, 161, 105, 0.3); }")
+                .append(".status-current { background: linear-gradient(135deg, #3182ce, #4299e1); color: #ffffff; box-shadow: 0 2px 8px rgba(49, 130, 206, 0.4); border: 2px solid #ffffff; }")
+                .append(".status-pending { background: #f7fafc; color: #a0aec0; border: 2px solid #e2e8f0; }")
+                .append(".status-cancelled { background: linear-gradient(135deg, #e53e3e, #f56565); color: #ffffff; box-shadow: 0 2px 4px rgba(229, 62, 62, 0.3); }")
+                .append(".timeline-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 16px 0; }")
+                .append(".timeline-header { color: #2d3748; font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; }")
+                .append(".timeline-header-icon { margin-right: 8px; font-size: 20px; }")
+                .append("</style>");
+
+        // Timeline với inline styles cho email compatibility
+        timeline.append("<div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 16px 0;'>")
+                .append("<h2 style='color: #2d3748; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;'>")
+                .append("🚚 Tiến trình đơn hàng")
+                .append("</h2>");
+
+        // Lấy trạng thái hiện tại
+        Short currentStatus = hoaDonDetailResponse.getTrangThai();
+        
+        // Các trạng thái timeline
+        String[] statuses = {"Chờ xác nhận", "Chờ giao hàng", "Đang giao", "Hoàn thành"};
+        String[] icons = {"📋", "📦", "🚚", "✅"};
+        
+        // Nếu đơn hàng bị hủy, chỉ hiển thị trạng thái hủy
+        if (currentStatus == 4) {
+            timeline.append("<table style='width: 100%; border-collapse: collapse;'>")
+                    .append("<tr>")
+                    .append("<td style='width: 60px; vertical-align: top; padding: 8px 0;'>")
+                    .append("<div style='width: 44px; height: 44px; border-radius: 22px; background: linear-gradient(135deg, #e53e3e, #f56565); color: white; text-align: center; line-height: 44px; font-size: 20px; box-shadow: 0 2px 4px rgba(229, 62, 62, 0.3);'>❌</div>")
+                    .append("</td>")
+                    .append("<td style='vertical-align: top; padding: 8px 0 8px 10px;'>")
+                    .append("<div style='font-weight: 600; color: #1a365d; margin: 0 0 4px 0; font-size: 16px;'>Đơn hàng đã bị hủy</div>")
+                    .append("<div style='color: #718096; font-size: 13px; margin: 0; font-style: italic;'>")
+                    .append(getStepDate(hoaDonDetailResponse, 4))
+                    .append("</div>")
+                    .append("</td>")
+                    .append("</tr>")
+                    .append("</table>");
+        } else {
+            // Hiển thị timeline bình thường với table layout
+            timeline.append("<table style='width: 100%; border-collapse: collapse;'>");
+            
+            for (int i = 0; i < statuses.length; i++) {
+                String stepDate = getStepDate(hoaDonDetailResponse, i);
+                String iconStyle = getTableIconStyle(i, currentStatus);
+                
+                timeline.append("<tr>")
+                        .append("<td style='width: 60px; vertical-align: top; padding: 8px 0; position: relative;'>")
+                        .append("<div style='").append(iconStyle).append("'>")
+                        .append(icons[i])
+                        .append("</div>");
+                
+                // Thêm connector line trừ item cuối
+                if (i < statuses.length - 1) {
+                    timeline.append("<div style='position: absolute; left: 21px; top: 52px; width: 2px; height: 24px; background: #e2e8f0;'></div>");
+                }
+                
+                timeline.append("</td>")
+                        .append("<td style='vertical-align: top; padding: 8px 0 8px 10px;'>")
+                        .append("<div style='font-weight: 600; color: #1a365d; margin: 0 0 4px 0; font-size: 16px;'>").append(statuses[i]).append("</div>")
+                        .append("<div style='color: #718096; font-size: 13px; margin: 0; font-style: italic;'>").append(stepDate).append("</div>")
+                        .append("</td>")
+                        .append("</tr>");
+            }
+            
+            timeline.append("</table>");
+        }
+
+        timeline.append("</div>");
+        
+        return timeline.toString();
+    }
+
+    /**
+     * Lấy class CSS cho từng bước timeline
+     */
+    private String getTimelineStepClass(int step, Short currentStatus) {
+        if (currentStatus == 4) return "status-cancelled"; // Đã hủy
+        
+        if (step < currentStatus) return "status-completed"; // Đã hoàn thành
+        if (step == currentStatus) return "status-current";  // Đang thực hiện
+        return "status-pending"; // Chưa thực hiện
+    }
+
+    /**
+     * Lấy table-compatible inline style cho icon timeline (email compatible)
+     */
+    private String getTableIconStyle(int step, Short currentStatus) {
+        String baseStyle = "width: 44px; height: 44px; border-radius: 22px; text-align: center; line-height: 44px; font-size: 20px; font-weight: bold;";
+        
+        if (currentStatus == 4) {
+            return baseStyle + " background: linear-gradient(135deg, #e53e3e, #f56565); color: white; box-shadow: 0 2px 4px rgba(229, 62, 62, 0.3);";
+        }
+        
+        if (step < currentStatus) {
+            // Completed
+            return baseStyle + " background: linear-gradient(135deg, #38a169, #48bb78); color: white; box-shadow: 0 2px 4px rgba(56, 161, 105, 0.3);";
+        } else if (step == currentStatus) {
+            // Current
+            return baseStyle + " background: linear-gradient(135deg, #3182ce, #4299e1); color: white; box-shadow: 0 2px 8px rgba(49, 130, 206, 0.4); border: 2px solid white;";
+        } else {
+            // Pending
+            return baseStyle + " background: #f7fafc; color: #a0aec0; border: 2px solid #e2e8f0;";
+        }
+    }
+
+    /**
+     * Lấy thời gian cho từng bước từ lịch sử hóa đơn
+     */
+    private String getStepDate(HoaDonDetailResponse hoaDonDetailResponse, int statusStep) {
+        List<HoaDonDetailResponse.LichSuHoaDonInfo> lichSuList = hoaDonDetailResponse.getLichSuHoaDonInfos();
+        
+        if (lichSuList == null || lichSuList.isEmpty()) {
+            return "Chưa cập nhật";
+        }
+
+        // Map từ statusStep sang action string để tìm trong lịch sử
+        String targetAction = getActionForStatus(statusStep);
+        
+        // Tìm lịch sử tương ứng với hành động
+        Optional<HoaDonDetailResponse.LichSuHoaDonInfo> lichSu = lichSuList.stream()
+                .filter(lshd -> lshd.getHanhDong() != null && lshd.getHanhDong().equals(targetAction))
+                .sorted((a, b) -> b.getThoiGian().compareTo(a.getThoiGian())) // Lấy thời gian mới nhất
+                .findFirst();
+        
+        if (lichSu.isPresent()) {
+            return formatDate(lichSu.get().getThoiGian());
+        }
+        
+        // Fallback: nếu là trạng thái đầu tiên và không có lịch sử, dùng ngày tạo hóa đơn
+        if (statusStep == 0 && hoaDonDetailResponse.getNgayTao() != null) {
+            return formatDate(hoaDonDetailResponse.getNgayTao().toInstant());
+        }
+        
+        return "Chưa cập nhật";
+    }
+
+
+    /**
+     * Map từ status step sang action string để tìm trong lịch sử hóa đơn
+     */
+    private String getActionForStatus(int statusStep) {
+        switch (statusStep) {
+            case 0: return "Cập nhật trạng thái: Chờ xác nhận";
+            case 1: return "Cập nhật trạng thái: Chờ giao hàng";
+            case 2: return "Cập nhật trạng thái: Đang giao";
+            case 3: return "Cập nhật trạng thái: Hoàn thành";
+            case 4: return "Cập nhật trạng thái: Đã hủy";
+            default: return "Cập nhật trạng thái";
+        }
+    }
+
+    /**
+     * Format thời gian cho timeline
+     */
+    private String formatDate(Instant instant) {
+        if (instant == null) return "Chưa cập nhật";
+        
+        java.time.format.DateTimeFormatter formatter = 
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                .withZone(java.time.ZoneId.systemDefault());
+        
+        return formatter.format(instant);
+    }
+
     private HoaDonDetailResponse mapToHoaDonDetailResponse(HoaDon hoaDon) {
-        List<HoaDonDetailResponse.SanPhamChiTietInfo> sanPhamChiTietInfos = hoaDonChiTietRepository.findById(hoaDon.getId())
+        List<HoaDonDetailResponse.SanPhamChiTietInfo> sanPhamChiTietInfos = hoaDonChiTietRepository.findByHoaDonIdAndDeletedFalse(hoaDon.getId())
                 .stream()
                 .map(hdct -> {
                     ChiTietSanPham ctsp = hdct.getIdChiTietSanPham();
@@ -1112,7 +1294,7 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 })
                 .collect(Collectors.toList());
 
-        List<HoaDonDetailResponse.ThanhToanInfo> thanhToanInfos = hinhThucThanhToanRepository.findById(hoaDon.getId())
+        List<HoaDonDetailResponse.ThanhToanInfo> thanhToanInfos = hinhThucThanhToanRepository.findByHoaDonId(hoaDon.getId())
                 .stream()
                 .map(httt -> new HoaDonDetailResponse.ThanhToanInfo(
                         httt.getMa(),
@@ -1122,14 +1304,15 @@ public class BanHangClientServiceImpl implements BanHangClientService {
                 ))
                 .collect(Collectors.toList());
 
-        List<HoaDonDetailResponse.LichSuHoaDonInfo> lichSuHoaDonInfos = lichSuHoaDonRepository.findById(hoaDon.getId())
+        List<HoaDonDetailResponse.LichSuHoaDonInfo> lichSuHoaDonInfos = lichSuHoaDonRepository.findByHoaDonId(hoaDon.getId())
                 .stream()
                 .map(lshd -> new HoaDonDetailResponse.LichSuHoaDonInfo(
                         lshd.getMa(),
                         lshd.getHanhDong(),
                         lshd.getThoiGian(),
-                        lshd.getIdNhanVien().getTenNhanVien(),
-                        lshd.getHoaDon().getId()
+                        lshd.getIdNhanVien() != null ? lshd.getIdNhanVien().getTenNhanVien() : "Hệ thống",
+                        lshd.getHoaDon().getId(),
+                        lshd.getDeleted()
                 ))
                 .collect(Collectors.toList());
 

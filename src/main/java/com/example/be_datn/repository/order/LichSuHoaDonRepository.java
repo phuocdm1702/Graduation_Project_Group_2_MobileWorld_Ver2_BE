@@ -4,6 +4,9 @@ import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.order.LichSuHoaDon;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface LichSuHoaDonRepository extends JpaRepository<LichSuHoaDon, Integer> {
     void deleteByHoaDon(HoaDon hoaDon);
+    List<LichSuHoaDon> findByHoaDonId(Integer hoaDonId);
 }

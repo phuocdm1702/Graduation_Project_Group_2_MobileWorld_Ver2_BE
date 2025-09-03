@@ -658,24 +658,22 @@ public class BanHangClientServiceImpl implements BanHangClientService {
         PhuongThucThanhToan phuongThuc = phuongThucThanhToanRepository.findById(phuongThucThanhToanId)
                 .orElseThrow(() -> new RuntimeException("Phương thức thanh toán với ID " + phuongThucThanhToanId + " không tồn tại!"));
         String kieuThanhToan = phuongThuc.getKieuThanhToan();
-        if (kieuThanhToan == null || kieuThanhToan.trim().isEmpty()) {
-            throw new RuntimeException("Kiểu thanh toán không hợp lệ cho phương thức có ID " + phuongThucThanhToanId);
-        }
-
         HinhThucThanhToan hinhThuc = new HinhThucThanhToan();
         hinhThuc.setHoaDon(hoaDon);
         hinhThuc.setIdPhuongThucThanhToan(phuongThuc);
         hinhThuc.setMa(generateUniqueMaHinhThucThanhToan());
         hinhThuc.setDeleted(false);
 
-        if ("Chuyển khoản".equalsIgnoreCase(kieuThanhToan)) {
-            hinhThuc.setTienChuyenKhoan(tongTienSauGiam);
-            hinhThuc.setTienMat(BigDecimal.ZERO);
-        } else if ("Tiền mặt".equalsIgnoreCase(kieuThanhToan)) {
+        // Refactored logic based on ID
+        if (phuongThuc.getId() == 1) { // Tiền mặt
             hinhThuc.setTienMat(tongTienSauGiam);
             hinhThuc.setTienChuyenKhoan(BigDecimal.ZERO);
+        } else if (phuongThuc.getId() == 2 || phuongThuc.getId() == 3) { // VNPay or MoMo
+            hinhThuc.setTienChuyenKhoan(tongTienSauGiam);
+            hinhThuc.setTienMat(BigDecimal.ZERO);
         } else {
-            throw new RuntimeException("Phương thức thanh toán không được hỗ trợ: " + kieuThanhToan);
+            // Fallback or throw error for unsupported methods
+            throw new RuntimeException("Phương thức thanh toán không được hỗ trợ với ID: " + phuongThuc.getId());
         }
 
         // Sau khi thanh toán, đặt trạng thái hóa đơn về 0 (chờ xác nhận IMEI)

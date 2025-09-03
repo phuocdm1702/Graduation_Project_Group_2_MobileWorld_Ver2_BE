@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.be_datn.service.order.HoaDonService;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
@@ -16,6 +18,9 @@ public class MomoController {
 
     @Autowired
     private MomoService momoService;
+
+    @Autowired
+    private HoaDonService hoaDonService;
 
     @PostMapping("/create-payment")
     public ResponseEntity<PaymentResponse> createPayment(@RequestParam("amount") String amount, @RequestParam("orderInfo") String orderInfo) {
@@ -49,22 +54,45 @@ public class MomoController {
 
     @GetMapping("/success")
     public RedirectView success(@RequestParam("resultCode") String resultCode, @RequestParam("extraData") String extraData) {
-        // The invoice ID (idHD) is now reliably passed in extraData
         String idHD = extraData;
 
-        // Process the payment result to update order status in DB
-        momoService.processMomoPaymentResult(idHD, resultCode);
+        if ("0".equals(resultCode)) {
+            boolean paymentProcessed = false;
+            int retries = 3;
+            for (int i = 0; i < retries; i++) {
+                try {
+                    // Attempt to update the invoice status.
+                    // Status 1: Chờ giao hàng (Pending Delivery)
+                    hoaDonService.updateHoaDonStatus(Integer.parseInt(idHD), (short) 1, null);
+                    paymentProcessed = true;
+                    System.out.println("MoMo payment processed successfully for order ID: " + idHD + " on attempt " + (i + 1));
+                    break; // Exit loop on success
+                } catch (Exception e) {
+                    System.err.println("Attempt " + (i + 1) + ": Failed to process MoMo payment for order ID " + idHD + ". Error: " + e.getMessage());
+                    if (i < retries - 1) {
+                        try {
+                            Thread.sleep(1000); // Wait for 1 second before retrying
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Payment processing was interrupted.");
+                        }
+                    } else {
+                        // All retries failed
+                        System.err.println("All retries failed for order ID: " + idHD + ". The invoice might not exist or another issue occurred.");
+                        // Redirect to a failure page if all retries fail
+                        return new RedirectView("http://localhost:5173/payment-failure?orderId=" + idHD);
+                    }
+                }
+            }
 
-        // Determine frontend redirect URL based on payment status
-        String frontendRedirectUrl;
-        if ("0".equals(resultCode) && idHD != null && !idHD.trim().isEmpty()) { // MoMo success code
-            frontendRedirectUrl = "http://localhost:5173/hoaDon/" + idHD.trim() + "/detail";
-        } else {
-            // For failed payments, redirect to a failure page or back to the cart
-            frontendRedirectUrl = "http://localhost:5173/payment-failure"; // Example failure URL
+            if (paymentProcessed) {
+                // On successful payment processing, redirect to the detail page.
+                return new RedirectView("http://localhost:5173/hoaDon/" + idHD.trim() + "/detail");
+            }
         }
 
-        return new RedirectView(frontendRedirectUrl);
+        // If resultCode is not 0 or if processing failed after retries
+        return new RedirectView("http://localhost:5173/payment-failure?orderId=" + idHD);
     }
 
     @PostMapping("/notify")

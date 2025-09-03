@@ -12,6 +12,7 @@ import com.example.be_datn.entity.order.LichSuHoaDon;
 import com.example.be_datn.entity.product.ChiTietSanPham;
 import com.example.be_datn.entity.product.Imel;
 import com.example.be_datn.entity.product.ImelDaBan;
+import com.example.be_datn.exception.ResourceNotFoundException;
 import com.example.be_datn.repository.account.NhanVien.NhanVienRepository;
 import com.example.be_datn.repository.discount.PhieuGiamGiaRepository;
 import com.example.be_datn.repository.order.HoaDonChiTietRepository;
@@ -194,8 +195,13 @@ public class HoaDonServiceImpl implements HoaDonService {
 
     @Override
     public synchronized HoaDonResponse updateHoaDonStatus(Integer id, Short trangThai, Integer idNhanVien) {
-        HoaDon hoaDon = hoaDonRepository.findHoaDonDetailById(id)
-                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại hoặc đã bị xóa"));
+        HoaDon hoaDon = hoaDonRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn không tồn tại hoặc đã bị xóa"));
+
+        // If the invoice was in a pending state (deleted = true), mark it as active.
+        if (hoaDon.getDeleted()) {
+            hoaDon.setDeleted(false);
+        }
 
         // Idempotency Check: Only process orders that are in "Pending Confirmation" state (0).
         // This prevents processing the same payment notification multiple times (e.g., from redirect and IPN).

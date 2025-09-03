@@ -5,6 +5,7 @@ import com.example.be_datn.dto.sell.request.ChiTietGioHangDTO;
 import com.example.be_datn.dto.sell.request.GioHangDTO;
 import com.example.be_datn.dto.sell.request.HoaDonDTO;
 import com.example.be_datn.dto.sell.response.ChiTietSanPhamGroupDTO;
+import com.example.be_datn.entity.account.KhachHang;
 import com.example.be_datn.entity.discount.PhieuGiamGiaCaNhan;
 import com.example.be_datn.entity.order.HoaDon;
 import com.example.be_datn.entity.product.ChiTietSanPham;
@@ -55,4 +56,6 @@ public interface BanHangService {
     Integer getCartItemCount(Integer idHD);
 
     Map<Integer, Integer> getAllCartItemCounts();
+
+    KhachHang getKhachHangByHoaDonId(Integer idHD);
 }

@@ -133,10 +133,17 @@ public class BanHangServiceImpl implements BanHangService {
         return "HD_" + code.toString();
     }
 
-//    @Override
-//    public List<HoaDonDTO> getHDCho() {
-//        return hoaDonRepository.findAllHDNotConfirm().stream().map(this::mapToHoaDonDto).collect(Collectors.toList());
-//    }
+    @Override
+    public KhachHang getKhachHangByHoaDonId(Integer idHD) {
+        HoaDon hoaDon = hoaDonRepository.findById(idHD)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
+
+        if (hoaDon.getIdKhachHang() == null) {
+            throw new RuntimeException("Hóa đơn không có thông tin khách hàng");
+        }
+
+        return hoaDon.getIdKhachHang();
+    }
 
     @Override
     public List<HoaDonDTO> getHDCho() {

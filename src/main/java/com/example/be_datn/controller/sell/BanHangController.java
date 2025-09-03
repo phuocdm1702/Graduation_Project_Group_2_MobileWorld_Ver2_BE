@@ -63,6 +63,18 @@ public class BanHangController {
         return ResponseEntity.ok(banHangService.getHDCho());
     }
 
+    @GetMapping("/hoa-don/{idHD}/khach-hang")
+    public ResponseEntity<KhachHang> getKhachHangByHoaDonId(@PathVariable Integer idHD) {
+        try {
+            KhachHang khachHang = banHangService.getKhachHangByHoaDonId(idHD);
+            return ResponseEntity.ok(khachHang);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     @PostMapping("/add/tao-hd-cho")
     public ResponseEntity<HoaDonDTO> addHD(@RequestBody HoaDonRequest request) {
         Integer idKhachHangToUse = (request.getIdKhachHang() != null) ? request.getIdKhachHang() : 1;

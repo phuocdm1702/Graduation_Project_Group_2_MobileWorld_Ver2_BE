@@ -310,10 +310,6 @@ public class BanHangServiceImpl implements BanHangService {
         HoaDon hoaDon = hoaDonRepository.findById(idHD)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn có id: " + idHD));
 
-        if (hoaDon.getTrangThai() != 0) {
-            throw new RuntimeException("Hóa đơn này không phải hóa đơn chờ!");
-        }
-
         ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTietGioHangDTO.getChiTietSanPhamId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm!"));
 
@@ -875,7 +871,7 @@ public class BanHangServiceImpl implements BanHangService {
         hoaDon.setTongTien(tongTienSauGiam);
         hoaDon.setLoaiDon(hoaDonRequest.getLoaiDon() != null ? hoaDonRequest.getLoaiDon() : "trực tiếp");
         hoaDon.setTongTienSauGiam(tongTienSauGiam);
-        hoaDon.setTrangThai("trực tiếp".equals(hoaDonRequest.getLoaiDon()) ? (short) 3 : (short) 1);
+        hoaDon.setTrangThai("trực tiếp".equals(hoaDonRequest.getLoaiDon()) ? (short) 1 : (short) 3);
         hoaDon.setNgayThanhToan(Instant.now());
         hoaDon.setDeleted(false);
         hoaDon = hoaDonRepository.save(hoaDon);

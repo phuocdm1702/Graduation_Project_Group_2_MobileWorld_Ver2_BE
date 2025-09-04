@@ -1,7 +1,10 @@
 package com.example.be_datn.controller.pay;
 
 import com.example.be_datn.config.VNPAY.VNPayService;
+import com.example.be_datn.dto.order.request.HoaDonRequest;
+import com.example.be_datn.dto.pay.request.HinhThucThanhToanDTO;
 import com.example.be_datn.service.order.HoaDonService;
+import com.example.be_datn.service.sell.BanHangService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,6 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.view.RedirectView;
+
+import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/payment")
@@ -20,6 +27,9 @@ public class VNPAYController {
 
     @Autowired
     private HoaDonService hoaDonService;
+
+    @Autowired
+    private BanHangService banHangService;
 
     @PostMapping("/create")
     public ResponseEntity<String> createPayment(HttpServletRequest request,
@@ -52,14 +62,35 @@ public class VNPAYController {
             int retries = 3;
             for (int i = 0; i < retries; i++) {
                 try {
-                    // Attempt to update the invoice status.
-                    // Status 1: Chờ giao hàng (Pending Delivery)
-                    hoaDonService.updateHoaDonStatus(Integer.parseInt(idHD), (short) 1, null);
+                    // Get invoice details to determine payment amount
+                    Integer invoiceId = Integer.parseInt(idHD);
+                    var invoice = hoaDonService.getHoaDonDetail(invoiceId);
+                    
+                    // Create HoaDonRequest for VNPay payment
+                    HoaDonRequest hoaDonRequest = new HoaDonRequest();
+                    hoaDonRequest.setLoaiDon("trực tiếp");
+                    hoaDonRequest.setTongTienSauGiam(invoice.getTongTienSauGiam());
+                    
+                    // Create payment method for VNPay
+                    Set<HinhThucThanhToanDTO> hinhThucThanhToans = new HashSet<>();
+                    HinhThucThanhToanDTO vnpayPayment = new HinhThucThanhToanDTO();
+                    vnpayPayment.setPhuongThucThanhToanId(2); // VNPay payment method ID
+                    vnpayPayment.setTienChuyenKhoan(invoice.getTongTienSauGiam()); // Set actual payment amount
+                    vnpayPayment.setTienMat(BigDecimal.ZERO);
+                    hinhThucThanhToans.add(vnpayPayment);
+                    hoaDonRequest.setHinhThucThanhToan(hinhThucThanhToans);
+
+                    // Call thanhToan API instead of just updating status
+                    // This will process the cart items and create HoaDonChiTiet records
+                    banHangService.thanhToan(invoiceId, hoaDonRequest);
+                    
                     paymentProcessed = true;
                     System.out.println("VNPay payment processed successfully for order ID: " + idHD + " on attempt " + (i + 1));
+                    System.out.println("Cart items have been transferred to HoaDonChiTiet for order: " + idHD);
                     break; // Exit loop on success
                 } catch (Exception e) {
                     System.err.println("Attempt " + (i + 1) + ": Failed to process VNPay payment for order ID " + idHD + ". Error: " + e.getMessage());
+                    e.printStackTrace();
                     if (i < retries - 1) {
                         try {
                             Thread.sleep(1000); // Wait for 1 second before retrying
